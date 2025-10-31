@@ -8,6 +8,32 @@ import remarkGfm from 'remark-gfm';
 import { parseExamMarkdown } from '@/lib/examParser';
 import { ExamInteractiveView } from './exam-prep/ExamInteractiveView';
 
+const TRUTHY_ENV_VALUES = new Set(['true', '1', 'yes', 'y', 'on', 'enabled']);
+const FALSY_ENV_VALUES = new Set(['false', '0', 'no', 'n', 'off', 'disabled']);
+
+const parseEnvBoolean = (value?: string | undefined): boolean | undefined => {
+  if (typeof value !== 'string') return undefined;
+  const normalized = value.trim().toLowerCase();
+  if (TRUTHY_ENV_VALUES.has(normalized)) return true;
+  if (FALSY_ENV_VALUES.has(normalized)) return false;
+  return undefined;
+};
+
+const isDashAIEnabled = () => {
+  const candidates = [
+    process.env.NEXT_PUBLIC_AI_PROXY_ENABLED,
+    process.env.EXPO_PUBLIC_AI_PROXY_ENABLED,
+  ];
+
+  for (const candidate of candidates) {
+    const parsed = parseEnvBoolean(candidate);
+    if (parsed === true) return true;
+    if (parsed === false) continue;
+  }
+
+  return false;
+};
+
 interface AskAIWidgetProps {
   inline?: boolean;
   initialPrompt?: string;
@@ -41,7 +67,7 @@ export function AskAIWidget({ inline = true, initialPrompt, displayMessage, full
 
       const supabase = createClient();
       try {
-        const ENABLED = process.env.NEXT_PUBLIC_AI_PROXY_ENABLED === 'true' || process.env.EXPO_PUBLIC_AI_PROXY_ENABLED === 'true';
+        const ENABLED = isDashAIEnabled();
         if (!ENABLED) {
           setMessages((m) => [...m, { role: 'assistant', text: 'Dash AI is not enabled in this environment.' }]);
           return;
@@ -175,7 +201,7 @@ export function AskAIWidget({ inline = true, initialPrompt, displayMessage, full
 
     const supabase = createClient();
     try {
-      const ENABLED = process.env.NEXT_PUBLIC_AI_PROXY_ENABLED === 'true' || process.env.EXPO_PUBLIC_AI_PROXY_ENABLED === 'true';
+      const ENABLED = isDashAIEnabled();
       if (!ENABLED) {
         setMessages((m) => [...m, { role: 'assistant', text: 'Dash AI is not enabled in this environment.' }]);
         return;
