@@ -196,10 +196,11 @@ export function ExamPrepWidget({ onAskDashAI, guestMode = false }: ExamPrepWidge
     // Check guest mode limit (backend validation)
     if (guestMode) {
       try {
-        const { assertSupabase } = await import('@/lib/supabase');
+        const { createClient } = await import('@/lib/supabase/client');
+        const supabase = createClient();
         
         // Check backend rate limit
-        const { data: limitCheck, error } = await assertSupabase().rpc('check_guest_limit', {
+        const { data: limitCheck, error } = await supabase.rpc('check_guest_limit', {
           p_ip_address: 'CLIENT_IP', // Backend replaces with real IP
           p_resource_type: 'exam_prep',
           p_daily_limit: 1
@@ -214,7 +215,7 @@ export function ExamPrepWidget({ onAskDashAI, guestMode = false }: ExamPrepWidge
         }
 
         // Log usage
-        await assertSupabase().rpc('log_guest_usage', {
+        await supabase.rpc('log_guest_usage', {
           p_ip_address: 'CLIENT_IP',
           p_user_agent: navigator.userAgent,
           p_resource_type: 'exam_prep',
