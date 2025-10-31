@@ -48,17 +48,32 @@ export function TierBadge({ userId, preschoolId, size = 'md', showUpgrade = fals
 
     const loadTier = async () => {
       try {
-        // If we have userId, try to use get_my_trial_status RPC for more accurate subscription info
+        // PRIORITY 1: Use get_my_trial_status RPC for accurate user/school subscription info
+        // This handles parents with user-level trials and those without schools
         if (userId) {
           try {
             const { data: trialStatus, error: rpcError } = await supabase.rpc('get_my_trial_status');
             
             if (!rpcError && trialStatus) {
-              const status = trialStatus.status || 'free';
               const planTier = trialStatus.plan_tier || 'free';
+              const subscriptionType = trialStatus.subscription_type || 'none';
               
-              // Use the plan tier from the subscription
-              setTier(planTier);
+              // User has their own subscription (parent trial) - use that tier
+              if (subscriptionType === 'user') {
+                setTier(planTier);
+                setLoading(false);
+                return;
+              }
+              
+              // User has school subscription - use that tier
+              if (subscriptionType === 'school') {
+                setTier(planTier);
+                setLoading(false);
+                return;
+              }
+              
+              // No subscription found - free tier
+              setTier('free');
               setLoading(false);
               return;
             }
@@ -67,19 +82,21 @@ export function TierBadge({ userId, preschoolId, size = 'md', showUpgrade = fals
           }
         }
 
-        // Fallback: direct school lookup (for backward compatibility)
+        // FALLBACK: Direct school lookup (for backward compatibility or if RPC fails)
         let schoolId = preschoolId;
 
-        if (userId) {
-          const { data, error } = await supabase.rpc('get_my_trial_status');
-          if (cancelled) return;
-          if (error) {
-            console.warn('[TierBadge] Failed to load user tier from trial status:', error);
-            setTier('free');
-          } else {
-            const response = (data || {}) as { plan_tier?: string | null };
-            setTier(response.plan_tier ? response.plan_tier.toLowerCase() : 'free');
-          }
+        if (!schoolId && userId) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('preschool_id')
+            .eq('id', userId)
+            .maybeSingle();
+          schoolId = profile?.preschool_id || undefined;
+        }
+
+        if (!schoolId) {
+          // No school ID and no user subscription - default to free
+          setTier('free');
           return;
         }
 
@@ -103,10 +120,9 @@ export function TierBadge({ userId, preschoolId, size = 'md', showUpgrade = fals
 
         setTier('free');
       } catch (error) {
-        if (!cancelled) {
-          console.error('[TierBadge] Error loading tier:', error);
-          setTier('free');
-        }
+        console.error('Error loading tier:', error);
+        // Default to free on error
+        setTier('free');
       } finally {
         if (!cancelled) {
           setLoading(false);
