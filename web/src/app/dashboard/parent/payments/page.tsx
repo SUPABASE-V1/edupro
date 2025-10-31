@@ -62,11 +62,11 @@ export default function PaymentsPage() {
       setEmail(session.user.email || '');
       setUserId(session.user.id);
       
-      // Get children for this parent
+      // Get children for this parent (check students table)
       const { data: children } = await supabase
-        .from('profiles')
+        .from('students')
         .select('id')
-        .eq('parent_id', session.user.id);
+        .or(`parent_id.eq.${session.user.id},guardian_id.eq.${session.user.id}`);
       
       const childIds = (children || []).map((c: any) => c.id);
       setStudentIds(childIds);
