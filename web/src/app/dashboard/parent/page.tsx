@@ -40,7 +40,6 @@ type TrialStatusResponse = {
   days_remaining: number | null;
   plan_tier: string | null;
   plan_name: string | null;
-  owner_type?: string | null;
   message?: string | null;
 };
 
@@ -97,21 +96,24 @@ export default function ParentDashboard() {
       const sb = createClient();
       const storageKey = userId ? `EDUDASH_CAPS_FREE_USED_${userId}` : null;
 
-      let planTier: string | null = null;
-      let isTrialActive = false;
+      let planTier: string | null = trialStatus?.plan_tier ? trialStatus.plan_tier.toLowerCase() : null;
+      let isTrialActive = Boolean(trialStatus?.is_trial);
 
-      // 1. Try new subscription registry via RPC (handles trial state)
-      try {
-        const { data: trialData, error: trialError } = await sb.rpc('get_my_trial_status');
-        if (trialError) {
-          console.warn('[ParentDashboard] Failed to fetch trial status:', trialError);
-        } else if (trialData) {
-          const tier = (trialData as any).plan_tier as string | null;
-          planTier = tier ? tier.toLowerCase() : null;
-          isTrialActive = Boolean((trialData as any).is_trial);
+      // 1. If we have no cached tier info, fetch fresh trial status
+      if (!planTier && !isTrialActive) {
+        try {
+          const { data: trialData, error: trialError } = await sb.rpc('get_my_trial_status');
+          if (trialError) {
+            console.warn('[ParentDashboard] Failed to fetch trial status on demand:', trialError);
+          } else if (trialData) {
+            const typed = (trialData || null) as TrialStatusResponse | null;
+            setTrialStatus(typed);
+            planTier = typed?.plan_tier ? typed.plan_tier.toLowerCase() : null;
+            isTrialActive = Boolean(typed?.is_trial);
+          }
+        } catch (err) {
+          console.warn('[ParentDashboard] get_my_trial_status threw an error:', err);
         }
-      } catch (err) {
-        console.warn('[ParentDashboard] get_my_trial_status threw an error:', err);
       }
 
       // 2. Fallback to legacy school column if tier still unknown
@@ -407,6 +409,12 @@ export default function ParentDashboard() {
   }
 
   const activeChild = childrenCards.find((c) => c.id === activeChildId);
+
+  const normalizedTier = useMemo(() => trialStatus?.plan_tier?.toLowerCase() ?? null, [trialStatus?.plan_tier]);
+  const isTrialActive = Boolean(trialStatus?.is_trial);
+  const isParentFreeTier = !normalizedTier || normalizedTier === 'free' || normalizedTier === 'parent-free';
+  const trialDaysRemaining = typeof trialStatus?.days_remaining === 'number' ? trialStatus?.days_remaining : null;
+  const trialEndDateDisplay = trialStatus?.trial_end_date ? new Date(trialStatus.trial_end_date) : null;
 
   return (
     <div className="app">
