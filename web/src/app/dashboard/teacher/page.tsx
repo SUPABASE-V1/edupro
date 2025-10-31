@@ -138,7 +138,7 @@ export default function TeacherDashboard() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', paddingLeft: 32 }}>
                 <p style={{ margin: 0, fontSize: 14, opacity: 0.9 }}>{roleDisplay}</p>
                 <span style={{ opacity: 0.7 }}>•</span>
-                <TierBadge userId={userId} size="sm" showUpgrade />
+                <TierBadge userId={userId} size="sm" showUpgrade={true} />
               </div>
             </div>
           </div>
