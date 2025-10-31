@@ -202,10 +202,13 @@ CREATE POLICY "Parents can view their children's fees"
   FOR SELECT
   TO authenticated
   USING (
+    -- Check if student is linked to this parent
     student_id IN (
-      SELECT id FROM public.profiles WHERE parent_id = auth.uid()
+      SELECT id FROM public.students WHERE parent_id = auth.uid() OR guardian_id = auth.uid()
     )
+    -- Or if the current user is the student themselves
     OR auth.uid() = student_id
+    -- Or if user is school staff
     OR preschool_id IN (
       SELECT preschool_id FROM public.profiles WHERE id = auth.uid() AND role IN ('principal', 'teacher', 'superadmin')
     )
@@ -230,9 +233,11 @@ CREATE POLICY "Parents can view their payments"
   FOR SELECT
   TO authenticated
   USING (
+    -- Check if student is linked to this parent
     student_id IN (
-      SELECT id FROM public.profiles WHERE parent_id = auth.uid()
+      SELECT id FROM public.students WHERE parent_id = auth.uid() OR guardian_id = auth.uid()
     )
+    -- Or if user is school staff
     OR preschool_id IN (
       SELECT preschool_id FROM public.profiles WHERE id = auth.uid() AND role IN ('principal', 'superadmin')
     )
