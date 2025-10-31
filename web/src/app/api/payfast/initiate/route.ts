@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
     // Verify fee assignment belongs to user's child
     const { data: assignment, error: assignError } = await supabase
       .from('student_fee_assignments')
-      .select('*, profiles!inner(parent_id)')
+      .select('*')
       .eq('id', fee_assignment_id)
       .eq('student_id', student_id)
       .single();
@@ -47,10 +47,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if user is the parent
-    if (assignment.profiles.parent_id !== user.id) {
+    // Verify the student is linked to this parent
+    const { data: student, error: studentError } = await supabase
+      .from('students')
+      .select('parent_id, guardian_id')
+      .eq('id', student_id)
+      .single();
+
+    if (studentError || !student) {
       return NextResponse.json(
-        { error: 'Access denied' },
+        { error: 'Student not found' },
+        { status: 404 }
+      );
+    }
+
+    // Check if user is the parent or guardian
+    if (student.parent_id !== user.id && student.guardian_id !== user.id) {
+      return NextResponse.json(
+        { error: 'Access denied - you are not the parent/guardian of this student' },
         { status: 403 }
       );
     }
