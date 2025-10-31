@@ -15,6 +15,11 @@ import {
   Settings,
   Menu,
   X,
+  DollarSign,
+  Calendar,
+  FileText,
+  Zap,
+  Home,
 } from 'lucide-react';
 
 interface ParentShellProps {
@@ -24,19 +29,25 @@ interface ParentShellProps {
   preschoolName?: string;
   unreadCount?: number;
   children: React.ReactNode;
+  rightSidebar?: React.ReactNode;
+  onOpenDashAI?: () => void;
 }
 
-export function ParentShell({ tenantSlug, userEmail, userName, preschoolName, unreadCount = 0, children }: ParentShellProps) {
+export function ParentShell({ tenantSlug, userEmail, userName, preschoolName, unreadCount = 0, children, rightSidebar, onOpenDashAI }: ParentShellProps) {
   const router = useRouter();
   const pathname = usePathname();
   const supabase = createClient();
-  const avatarLetter = useMemo(() => (userEmail?.[0] || 'U').toUpperCase(), [userEmail]);
+  const avatarLetter = useMemo(() => (userName?.[0] || userEmail?.[0] || 'P').toUpperCase(), [userName, userEmail]);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [mobileWidgetsOpen, setMobileWidgetsOpen] = useState(false);
 
   const nav = [
-    { href: '/dashboard/parent', label: 'Dashboard', icon: LayoutDashboard },
-    { href: '/dashboard/parent/messages', label: 'Messages', icon: MessageCircle, badge: unreadCount },
+    { href: '/dashboard/parent', label: 'Home', icon: Home },
     { href: '/dashboard/parent/children', label: 'My Children', icon: Users },
+    { href: '/dashboard/parent/payments', label: 'Fees & Payments', icon: DollarSign },
+    { href: '/dashboard/parent/calendar', label: 'Calendar', icon: Calendar },
+    { href: '/dashboard/parent/homework', label: 'Homework', icon: FileText },
+    { href: '/dashboard/parent/messages', label: 'Messages', icon: MessageCircle, badge: unreadCount },
     { href: '/dashboard/parent/settings', label: 'Settings', icon: Settings },
   ];
 
@@ -95,6 +106,19 @@ export function ParentShell({ tenantSlug, userEmail, userName, preschoolName, un
                 );
               })}
             </nav>
+            
+            {/* Dash AI Quick Access */}
+            <div style={{ padding: 'var(--space-3)', borderTop: '1px solid var(--border)' }}>
+              <button
+                className="navItem"
+                style={{ width: '100%', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white' }}
+                onClick={() => onOpenDashAI?.()}
+              >
+                <Zap className="navIcon" />
+                <span>Ask Dash AI</span>
+              </button>
+            </div>
+
             <div className="sidenavFooter">
               <button
                 className="navItem"
@@ -111,6 +135,41 @@ export function ParentShell({ tenantSlug, userEmail, userName, preschoolName, un
         <main className="content">
           {children}
         </main>
+
+        {/* Right Sidebar for Widgets */}
+        {rightSidebar && (
+          <>
+            <aside className="right sticky" aria-label="At a glance">
+              {rightSidebar}
+            </aside>
+            
+            {/* Mobile Widgets Button */}
+            <button
+              className="mobile-widgets-btn"
+              onClick={() => setMobileWidgetsOpen(true)}
+              style={{
+                position: 'fixed',
+                bottom: 'var(--space-4)',
+                right: 'var(--space-4)',
+                width: 56,
+                height: 56,
+                borderRadius: '50%',
+                background: 'var(--primary)',
+                color: 'white',
+                border: 'none',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                cursor: 'pointer',
+                display: 'none',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 100
+              }}
+              aria-label="Open widgets"
+            >
+              <Zap className="w-6 h-6" />
+            </button>
+          </>
+        )}
       </div>
 
       {/* Mobile Navigation Drawer (Left Sidebar) */}
@@ -180,6 +239,21 @@ export function ParentShell({ tenantSlug, userEmail, userName, preschoolName, un
               })}
             </nav>
             
+            {/* Dash AI Quick Access */}
+            <div style={{ padding: 'var(--space-3)', borderBottom: '1px solid var(--border)', marginBottom: 'var(--space-3)' }}>
+              <button
+                className="navItem"
+                style={{ width: '100%', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white' }}
+                onClick={() => {
+                  setMobileNavOpen(false);
+                  onOpenDashAI?.();
+                }}
+              >
+                <Zap className="navIcon" />
+                <span>Ask Dash AI</span>
+              </button>
+            </div>
+
             {/* Footer */}
             <div style={{ marginTop: 'auto', paddingTop: 'var(--space-4)' }}>
               <button
@@ -199,6 +273,55 @@ export function ParentShell({ tenantSlug, userEmail, userName, preschoolName, un
         </>
       )}
 
+      {/* Mobile Widgets Drawer (Right Sidebar for At a Glance) */}
+      {mobileWidgetsOpen && rightSidebar && (
+        <>
+          <div 
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'rgba(0, 0, 0, 0.85)',
+              zIndex: 9998,
+              display: 'none',
+            }}
+            className="mobile-widgets-overlay"
+            onClick={() => setMobileWidgetsOpen(false)}
+          />
+          <div 
+            style={{
+              position: 'fixed',
+              top: 0,
+              right: 0,
+              bottom: 0,
+              width: '85%',
+              maxWidth: 360,
+              background: 'var(--surface-1)',
+              zIndex: 9999,
+              overflowY: 'auto',
+              padding: 'var(--space-4)',
+              display: 'none',
+              animation: 'slideInRight 0.3s ease-out',
+            }}
+            className="mobile-widgets-drawer"
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
+              <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>Quick Access</h3>
+              <button 
+                onClick={() => setMobileWidgetsOpen(false)}
+                className="iconBtn"
+                aria-label="Close"
+              >
+                <X className="icon20" />
+              </button>
+            </div>
+            {rightSidebar}
+          </div>
+        </>
+      )}
+
       <style jsx>{`
         @media (max-width: 1023px) {
           /* Show mobile navigation button */
@@ -214,10 +337,26 @@ export function ParentShell({ tenantSlug, userEmail, userName, preschoolName, un
           .mobile-nav-drawer {
             display: block !important;
           }
+          .mobile-widgets-overlay,
+          .mobile-widgets-drawer {
+            display: block !important;
+          }
+          /* Show floating Dash AI button */
+          .mobile-widgets-btn {
+            display: flex !important;
+          }
         }
         @keyframes slideInLeft {
           from {
             transform: translateX(-100%);
+          }
+          to {
+            transform: translateX(0);
+          }
+        }
+        @keyframes slideInRight {
+          from {
+            transform: translateX(100%);
           }
           to {
             transform: translateX(0);
