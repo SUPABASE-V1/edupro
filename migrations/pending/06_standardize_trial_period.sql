@@ -113,6 +113,25 @@ $$;
 
 COMMENT ON FUNCTION public.create_trial_subscription IS 'Creates a trial subscription using configured duration';
 
+-- ================================================================
+-- 3b. Create trigger function for automatic trial creation
+-- ================================================================
+
+CREATE OR REPLACE FUNCTION public.create_trial_subscription_trigger()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  -- Create trial subscription for new preschool
+  PERFORM create_trial_subscription(NEW.id);
+  RETURN NEW;
+END;
+$$;
+
+COMMENT ON FUNCTION public.create_trial_subscription_trigger IS 'Trigger function to auto-create trial subscriptions for new preschools';
+
 -- Recreate trigger if it was dropped by CASCADE
 DROP TRIGGER IF EXISTS trigger_create_trial_subscription ON preschools;
 CREATE TRIGGER trigger_create_trial_subscription
