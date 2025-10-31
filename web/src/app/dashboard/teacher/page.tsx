@@ -174,6 +174,10 @@ export default function TeacherDashboard() {
       <div className="section">
         <div className="sectionTitle">Quick actions</div>
         <div className="grid2">
+          <button className="qa" onClick={() => router.push('/dashboard/teacher/exams')}>
+            <FileText className="icon20" />
+            <span>Create Exam</span>
+          </button>
           <button className="qa" onClick={() => router.push('/dashboard/teacher/lessons')}>
             <BookOpen className="icon20" />
             <span>Create Lesson Plan</span>
@@ -181,10 +185,6 @@ export default function TeacherDashboard() {
           <button className="qa" onClick={() => router.push('/dashboard/teacher/assignments')}>
             <ClipboardCheck className="icon20" />
             <span>Grade Assignments</span>
-          </button>
-          <button className="qa" onClick={() => router.push('/dashboard/teacher/classes')}>
-            <Users className="icon20" />
-            <span>View Classes</span>
           </button>
           <button className="qa" onClick={() => router.push('/dashboard/teacher/messages')}>
             <MessageCircle className="icon20" />
