@@ -202,6 +202,34 @@ export default function ParentDashboard() {
     initAuth();
   }, [router, supabase]);
 
+  // Start parent trial on first dashboard visit
+  useEffect(() => {
+    const startTrialIfNeeded = async () => {
+      if (!userId || !profile) return;
+      
+      // Only for parents
+      if (profile.role !== 'parent') return;
+      
+      try {
+        // Call start_parent_trial RPC - it's idempotent so safe to call multiple times
+        const { data, error } = await supabase.rpc('start_parent_trial');
+        
+        if (error) {
+          console.error('Error starting parent trial:', error);
+          return;
+        }
+        
+        if (data?.success && !data?.already_exists) {
+          console.log('Parent trial started successfully:', data);
+        }
+      } catch (err) {
+        console.error('Failed to start parent trial:', err);
+      }
+    };
+
+    startTrialIfNeeded();
+  }, [userId, profile, supabase]);
+
   // Load link requests (parent's own and incoming to approve)
   useEffect(() => {
     const loadLinkRequests = async () => {
