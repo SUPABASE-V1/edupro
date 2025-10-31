@@ -33,6 +33,7 @@ import { ExamPrepWidget } from '@/components/dashboard/exam-prep/ExamPrepWidget'
 import { ParentOnboarding } from '@/components/dashboard/parent/ParentOnboarding';
 import { PendingRequestsWidget } from '@/components/dashboard/parent/PendingRequestsWidget';
 import { ParentShell } from '@/components/dashboard/parent/ParentShell';
+import { ParentShell } from '@/components/dashboard/parent/ParentShell';
 
 type TrialStatusResponse = {
   is_trial: boolean;
@@ -388,40 +389,13 @@ export default function ParentDashboard() {
 
   const activeChild = childrenCards.find((c) => c.id === activeChildId);
 
-  const normalizedTier = useMemo(() => trialStatus?.plan_tier?.toLowerCase() ?? null, [trialStatus?.plan_tier]);
-  const isTrialActive = Boolean(trialStatus?.is_trial);
-  const isParentFreeTier = !normalizedTier || normalizedTier === 'free' || normalizedTier === 'parent-free';
-  const trialDaysRemaining = typeof trialStatus?.days_remaining === 'number' ? trialStatus?.days_remaining : null;
-  const trialEndDateDisplay = trialStatus?.trial_end_date ? new Date(trialStatus.trial_end_date) : null;
-
-  return (
-    <div className="app">
-      <header className="topbar">
-        <div className="topbarRow topbarEdge">
-          <div className="leftGroup">
-            {preschoolName ? (
-              <div className="chip" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ fontSize: 16 }}>??</span>
-                <span style={{ fontWeight: 600 }}>{preschoolName}</span>
-              </div>
-            ) : profile?.preschoolId ? (
-              <div className="chip" style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--warning-bg)', color: 'var(--warning)' }}>
-                <span style={{ fontSize: 16 }}>??</span>
-                <span style={{ fontWeight: 600 }}>School Info Loading...</span>
-              </div>
-            ) : (
-              <div className="chip" style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white' }}>
-                <span style={{ fontSize: 16 }}>??</span>
-                <span style={{ fontWeight: 600 }}>Independent Parent</span>
-              </div>
-            )}
-          </div>
-          <div className="rightGroup">
-            <button className="iconBtn" aria-label="Notifications">
-              <Bell className="icon20" />
-            </button>
-            <div className="avatar">{avatarLetter}</div>
-          </div>
+  // Right Sidebar Content
+  const rightSidebar = (
+    <div style={{ overflowY: 'auto', height: '100%', display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+      <div className="card">
+        <div className="sectionTitle">
+          <Clock className="w-4 h-4 text-purple-400" />
+          At a Glance
         </div>
         <ul style={{ display: 'grid', gap: 8 }}>
           <li className="listItem"><span>Upcoming events</span><span className="badge">{activeChild ? metrics.upcomingEvents : 0}</span></li>
@@ -797,6 +771,7 @@ export default function ParentDashboard() {
               </div>
             )}
       </ParentShell>
+      </ParentShell>
 
       {/* Ask AI Modal - Fullscreen */}
       {showAskAI && (
@@ -844,6 +819,7 @@ export default function ParentDashboard() {
           </div>
         </div>
       )}
+    </>
     </>
   );
 }
