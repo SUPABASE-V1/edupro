@@ -6,7 +6,13 @@
  * Usage: node scripts/quick-mvp-content.js
  */
 
-require('dotenv').config();
+// Load environment variables
+try {
+  require('dotenv').config();
+} catch (e) {
+  console.log('⚠️  dotenv not installed, using process.env directly');
+}
+
 const { createClient } = require('@supabase/supabase-js');
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '';
@@ -22,99 +28,111 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const MVP_PAPERS = [
   {
+    document_type: 'exam',
     title: 'Grade 9 Mathematics November 2023',
     grade: '9',
     subject: 'Mathematics',
     year: 2023,
     term: 4,
-    pdf_url: 'https://www.education.gov.za/Portals/0/Documents/Exams/Grade9_Maths_Nov2023.pdf',
-    source: 'dbe_official'
+    content_text: 'Grade 9 Mathematics Past Paper - November 2023. Sample questions on Algebra, Geometry, and Number Operations.',
+    file_url: 'https://www.education.gov.za/Portals/0/Documents/Exams/Grade9_Maths_Nov2023.pdf',
+    file_path: 'caps/grade9/mathematics/2023/nov/exam.pdf',
+    source_url: 'https://www.education.gov.za/',
+    keywords: ['algebra', 'geometry', 'mathematics', 'grade 9']
   },
   {
+    document_type: 'exam',
     title: 'Grade 9 Mathematics June 2023',
     grade: '9',
     subject: 'Mathematics',
     year: 2023,
     term: 2,
-    pdf_url: 'https://www.education.gov.za/Portals/0/Documents/Exams/Grade9_Maths_Jun2023.pdf',
-    source: 'dbe_official'
+    content_text: 'Grade 9 Mathematics Past Paper - June 2023. Mid-year examination covering Term 1 and 2 content.',
+    file_url: 'https://www.education.gov.za/Portals/0/Documents/Exams/Grade9_Maths_Jun2023.pdf',
+    file_path: 'caps/grade9/mathematics/2023/jun/exam.pdf',
+    source_url: 'https://www.education.gov.za/',
+    keywords: ['algebra', 'fractions', 'mathematics', 'grade 9']
   },
   {
+    document_type: 'exam',
     title: 'Grade 9 Mathematics November 2022',
     grade: '9',
     subject: 'Mathematics',
     year: 2022,
     term: 4,
-    pdf_url: 'https://www.education.gov.za/Portals/0/Documents/Exams/Grade9_Maths_Nov2022.pdf',
-    source: 'dbe_official'
+    content_text: 'Grade 9 Mathematics Past Paper - November 2022. End of year examination with comprehensive coverage.',
+    file_url: 'https://www.education.gov.za/Portals/0/Documents/Exams/Grade9_Maths_Nov2022.pdf',
+    file_path: 'caps/grade9/mathematics/2022/nov/exam.pdf',
+    source_url: 'https://www.education.gov.za/',
+    keywords: ['percentage', 'geometry', 'mathematics', 'grade 9']
   }
 ];
 
 const MVP_QUESTIONS = [
   {
-    grade: '9',
-    subject: 'Mathematics',
-    topic: 'Algebra',
+    question_number: '1',
     question_text: 'Simplify: 3x + 2x - 5',
-    question_type: 'short_answer',
-    difficulty: 'easy',
     marks: 2,
-    year: 2023,
-    source: 'dbe_past_paper',
-    correct_answer: '5x - 5',
-    explanation: 'Combine like terms: 3x + 2x = 5x, so the answer is 5x - 5'
-  },
-  {
+    difficulty: 'easy',
     grade: '9',
     subject: 'Mathematics',
     topic: 'Algebra',
-    question_text: 'Solve for x: 2x + 5 = 13',
-    question_type: 'short_answer',
-    difficulty: 'medium',
-    marks: 3,
     year: 2023,
-    source: 'dbe_past_paper',
-    correct_answer: 'x = 4',
-    explanation: 'Subtract 5 from both sides: 2x = 8, then divide by 2: x = 4'
+    question_type: 'short_answer',
+    answer_text: '5x - 5',
+    marking_guideline: 'Combine like terms: 3x + 2x = 5x, so the answer is 5x - 5'
   },
   {
+    question_number: '2',
+    question_text: 'Solve for x: 2x + 5 = 13',
+    marks: 3,
+    difficulty: 'medium',
+    grade: '9',
+    subject: 'Mathematics',
+    topic: 'Algebra',
+    year: 2023,
+    question_type: 'short_answer',
+    answer_text: 'x = 4',
+    marking_guideline: 'Subtract 5 from both sides: 2x = 8, then divide by 2: x = 4'
+  },
+  {
+    question_number: '3',
+    question_text: 'Calculate the area of a triangle with base 8cm and height 5cm.',
+    marks: 2,
+    difficulty: 'easy',
     grade: '9',
     subject: 'Mathematics',
     topic: 'Geometry',
-    question_text: 'Calculate the area of a triangle with base 8cm and height 5cm.',
-    question_type: 'numeric',
-    difficulty: 'easy',
-    marks: 2,
     year: 2023,
-    source: 'dbe_past_paper',
-    correct_answer: '20',
-    explanation: 'Area = (base × height) / 2 = (8 × 5) / 2 = 20 cm²'
+    question_type: 'calculation',
+    answer_text: '20 cm²',
+    marking_guideline: 'Area = (base × height) / 2 = (8 × 5) / 2 = 20 cm²'
   },
   {
+    question_number: '4',
+    question_text: 'Simplify: 12/18',
+    marks: 2,
+    difficulty: 'easy',
     grade: '9',
     subject: 'Mathematics',
     topic: 'Fractions',
-    question_text: 'Simplify: 12/18',
-    question_type: 'short_answer',
-    difficulty: 'easy',
-    marks: 2,
     year: 2023,
-    source: 'dbe_past_paper',
-    correct_answer: '2/3',
-    explanation: 'Divide both numerator and denominator by GCD(12,18) = 6'
+    question_type: 'short_answer',
+    answer_text: '2/3',
+    marking_guideline: 'Divide both numerator and denominator by GCD(12,18) = 6'
   },
   {
+    question_number: '5',
+    question_text: 'Calculate 15% of R200',
+    marks: 2,
+    difficulty: 'easy',
     grade: '9',
     subject: 'Mathematics',
     topic: 'Percentage',
-    question_text: 'Calculate 15% of R200',
-    question_type: 'numeric',
-    difficulty: 'easy',
-    marks: 2,
     year: 2023,
-    source: 'dbe_past_paper',
-    correct_answer: '30',
-    explanation: '15% of R200 = 0.15 × 200 = R30'
+    question_type: 'calculation',
+    answer_text: 'R30',
+    marking_guideline: '15% of R200 = 0.15 × 200 = R30'
   }
 ];
 
@@ -123,21 +141,22 @@ async function main() {
   console.log('   Target: Grade 9 Mathematics');
   console.log('   Time: ~10 minutes\n');
 
-  // Step 1: Insert past papers
+  // Step 1: Insert past papers (into caps_documents)
   console.log('📚 Step 1: Inserting past papers...');
   try {
     const { data, error } = await supabase
-      .from('caps_past_papers')
+      .from('caps_documents')
       .insert(MVP_PAPERS)
       .select();
 
     if (error) {
       console.error('   ❌ Error inserting papers:', error.message);
+      console.error('   Details:', error);
     } else {
       console.log(`   ✅ Inserted ${data?.length || 0} past papers`);
     }
   } catch (err) {
-    console.error('   ❌ Unexpected error:', err.message);
+    console.error('   ❌ Unexpected error:', err);
   }
 
   // Step 2: Insert questions
@@ -160,10 +179,11 @@ async function main() {
   // Step 3: Verify
   console.log('\n✅ Step 3: Verifying content...');
   const { count: paperCount } = await supabase
-    .from('caps_past_papers')
+    .from('caps_documents')
     .select('*', { count: 'exact', head: true })
     .eq('grade', '9')
-    .eq('subject', 'Mathematics');
+    .eq('subject', 'Mathematics')
+    .eq('document_type', 'past_paper');
 
   const { count: questionCount } = await supabase
     .from('caps_exam_questions')
