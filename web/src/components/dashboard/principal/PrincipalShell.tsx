@@ -64,8 +64,9 @@ export function PrincipalShell({
     { href: '/dashboard/principal', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/dashboard/principal/students', label: 'Students', icon: Users },
     { href: '/dashboard/principal/teachers', label: 'Teachers', icon: School },
-    { href: '/dashboard/principal/financials', label: 'Financials', icon: DollarSign },
-    { href: '/dashboard/principal/reports', label: 'Reports', icon: FileText },
+    { href: '/dashboard/principal/fees', label: 'Fee Management', icon: DollarSign },
+    { href: '/dashboard/principal/financials', label: 'Financials', icon: FileText },
+    { href: '/dashboard/principal/reports', label: 'Reports', icon: Activity },
     { href: '/dashboard/principal/messages', label: 'Messages', icon: MessageCircle, badge: unreadCount },
     { href: '/dashboard/principal/settings', label: 'Settings', icon: Settings },
   ];

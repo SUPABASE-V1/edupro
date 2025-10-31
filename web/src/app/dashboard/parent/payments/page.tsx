@@ -45,67 +45,12 @@ export default function PaymentsPage() {
   const [activeTab, setActiveTab] = useState<'overview' | 'history' | 'upload'>('overview');
   const [loading, setLoading] = useState(true);
 
-  // Mock data - replace with real API calls
+  // Real data from database
   const [balance, setBalance] = useState(0);
-  const [upcomingPayments, setUpcomingPayments] = useState<Payment[]>([
-    {
-      id: '1',
-      amount: 1250,
-      dueDate: '2025-02-05',
-      status: 'pending',
-      description: 'February 2025 Tuition',
-    },
-    {
-      id: '2',
-      amount: 350,
-      dueDate: '2025-02-10',
-      status: 'pending',
-      description: 'February 2025 Meals',
-    },
-  ]);
-  const [paymentHistory, setPaymentHistory] = useState<Payment[]>([
-    {
-      id: '3',
-      amount: 1250,
-      dueDate: '2025-01-05',
-      status: 'paid',
-      description: 'January 2025 Tuition',
-      paidDate: '2025-01-04',
-      paymentMethod: 'Bank Transfer',
-    },
-    {
-      id: '4',
-      amount: 350,
-      dueDate: '2025-01-10',
-      status: 'paid',
-      description: 'January 2025 Meals',
-      paidDate: '2025-01-09',
-      paymentMethod: 'EFT',
-    },
-  ]);
-  const [feeStructure, setFeeStructure] = useState<FeeStructure[]>([
-    {
-      id: '1',
-      name: 'Monthly Tuition',
-      amount: 1250,
-      frequency: 'monthly',
-      description: 'Regular monthly school fees',
-    },
-    {
-      id: '2',
-      name: 'Meals',
-      amount: 350,
-      frequency: 'monthly',
-      description: 'Breakfast and lunch',
-    },
-    {
-      id: '3',
-      name: 'Registration Fee',
-      amount: 500,
-      frequency: 'once-off',
-      description: 'One-time registration (already paid)',
-    },
-  ]);
+  const [upcomingPayments, setUpcomingPayments] = useState<Payment[]>([]);
+  const [paymentHistory, setPaymentHistory] = useState<Payment[]>([]);
+  const [feeStructure, setFeeStructure] = useState<FeeStructure[]>([]);
+  const [studentIds, setStudentIds] = useState<string[]>([]);
 
   useEffect(() => {
     (async () => {
@@ -117,15 +62,109 @@ export default function PaymentsPage() {
       setEmail(session.user.email || '');
       setUserId(session.user.id);
       
-      // TODO: Fetch real payment data from database
-      // const { data: payments } = await supabase
-      //   .from('payments')
-      //   .select('*')
-      //   .eq('parent_id', session.user.id);
+      // Get children for this parent
+      const { data: children } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('parent_id', session.user.id);
+      
+      const childIds = (children || []).map((c: any) => c.id);
+      setStudentIds(childIds);
+      
+      if (childIds.length > 0) {
+        await loadPaymentData(childIds);
+      }
       
       setLoading(false);
     })();
   }, [router, supabase.auth]);
+
+  const loadPaymentData = async (childIds: string[]) => {
+    try {
+      // Fetch fee assignments for children
+      const { data: assignments, error: assignErr } = await supabase
+        .from('student_fee_assignments')
+        .select(`
+          id,
+          total_amount_cents,
+          paid_amount_cents,
+          balance_cents,
+          due_date,
+          status,
+          student_id,
+          fee_structure_id,
+          school_fee_structures (
+            name,
+            description,
+            billing_frequency
+          )
+        `)
+        .in('student_id', childIds)
+        .order('due_date', { ascending: true });
+
+      if (assignErr) {
+        console.error('Error loading fee assignments:', assignErr);
+        return;
+      }
+
+      // Split into upcoming and paid
+      const upcoming: Payment[] = [];
+      const history: Payment[] = [];
+      let totalBalance = 0;
+
+      (assignments || []).forEach((a: any) => {
+        const payment: Payment = {
+          id: a.id,
+          amount: a.total_amount_cents / 100,
+          dueDate: a.due_date,
+          status: a.status as any,
+          description: a.school_fee_structures?.name || 'School Fee',
+          paidDate: a.status === 'paid' ? a.due_date : undefined,
+          paymentMethod: a.status === 'paid' ? 'PayFast' : undefined,
+        };
+
+        if (a.status === 'paid') {
+          history.push(payment);
+        } else {
+          upcoming.push(payment);
+          totalBalance += a.balance_cents / 100;
+        }
+      });
+
+      setUpcomingPayments(upcoming);
+      setPaymentHistory(history);
+      setBalance(totalBalance);
+
+      // Fetch fee structures (to show what fees exist)
+      if (childIds.length > 0) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('preschool_id')
+          .eq('id', childIds[0])
+          .single();
+
+        if (profile?.preschool_id) {
+          const { data: structures } = await supabase
+            .from('school_fee_structures')
+            .select('*')
+            .eq('preschool_id', profile.preschool_id)
+            .eq('is_active', true);
+
+          const formatted = (structures || []).map((s: any) => ({
+            id: s.id,
+            name: s.name,
+            amount: s.amount_cents / 100,
+            frequency: s.billing_frequency,
+            description: s.description || '',
+          }));
+
+          setFeeStructure(formatted);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading payment data:', error);
+    }
+  };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-ZA', {
@@ -199,6 +238,40 @@ export default function PaymentsPage() {
   };
 
   const totalUpcoming = upcomingPayments.reduce((sum, p) => sum + p.amount, 0);
+
+  const handlePayNow = async (payment: Payment) => {
+    try {
+      // Get first student ID for this payment
+      if (studentIds.length === 0) {
+        alert('No student found for payment');
+        return;
+      }
+
+      // Create PayFast payment
+      const response = await fetch('/api/payfast/initiate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fee_assignment_id: payment.id,
+          amount_cents: Math.round(payment.amount * 100),
+          student_id: studentIds[0],
+          description: payment.description,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.payment_url) {
+        // Redirect to PayFast
+        window.location.href = data.payment_url;
+      } else {
+        alert('Failed to initiate payment: ' + (data.error || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Payment error:', error);
+      alert('Failed to process payment. Please try again.');
+    }
+  };
 
   return (
     <ParentShell tenantSlug={slug} userEmail={email}>
@@ -323,9 +396,13 @@ export default function PaymentsPage() {
                         </div>
                       </div>
                       <div style={{ display: 'flex', gap: 'var(--space-2)', marginTop: 'var(--space-3)' }}>
-                        <button className="btn btnPrimary" style={{ flex: 1 }}>
+                        <button 
+                          className="btn btnPrimary" 
+                          style={{ flex: 1 }}
+                          onClick={() => handlePayNow(payment)}
+                        >
                           <CreditCard className="icon16" />
-                          Pay Now
+                          Pay Now with PayFast
                         </button>
                         <button className="btn btnSecondary" onClick={() => setActiveTab('upload')}>
                           <Upload className="icon16" />

@@ -341,21 +341,21 @@ export default function PrincipalDashboard() {
             <School className="icon20" />
             <span>Manage Teachers</span>
           </button>
-          <button className="qa" onClick={() => router.push('/dashboard/principal/financials')}>
+          <button className="qa" onClick={() => router.push('/dashboard/principal/fees')}>
             <DollarSign className="icon20" />
+            <span>Manage Fees</span>
+          </button>
+          <button className="qa" onClick={() => router.push('/dashboard/principal/financials')}>
+            <FileText className="icon20" />
             <span>View Financials</span>
           </button>
           <button className="qa" onClick={() => router.push('/dashboard/principal/reports')}>
-            <FileText className="icon20" />
+            <Activity className="icon20" />
             <span>Generate Reports</span>
           </button>
           <button className="qa" onClick={() => router.push('/dashboard/principal/messages')}>
             <MessageCircle className="icon20" />
             <span>Send Announcement</span>
-          </button>
-          <button className="qa" onClick={() => router.push('/dashboard/principal/settings')}>
-            <Calendar className="icon20" />
-            <span>School Calendar</span>
           </button>
         </div>
       </div>
