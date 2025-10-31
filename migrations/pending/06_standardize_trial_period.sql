@@ -48,7 +48,7 @@ COMMENT ON FUNCTION public.get_trial_duration_days IS 'Returns the configured tr
 -- 3. Update create_trial_subscription function
 -- ================================================================
 
-CREATE OR REPLACE FUNCTION public.create_trial_subscription(p_preschool_id UUID)
+CREATE OR REPLACE FUNCTION public.create_trial_subscription(p_school_id UUID)
 RETURNS UUID
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -83,23 +83,21 @@ BEGIN
   END IF;
 
   -- Create trial subscription
-  INSERT INTO public.preschool_subscriptions (
-    preschool_id,
-    subscription_plan_id,
+  INSERT INTO public.subscriptions (
+    school_id,
+    plan_id,
     status,
-    trial_start_date,
+    start_date,
     trial_end_date,
     next_billing_date,
-    auto_renew,
     created_at
   ) VALUES (
-    p_preschool_id,
+    p_school_id,
     starter_plan_id,
-    'trial',
+    'trialing',
     NOW(),
     NOW() + (trial_days || ' days')::INTERVAL,
     NOW() + ((trial_days + grace_days) || ' days')::INTERVAL,
-    false,
     NOW()
   )
   RETURNING id INTO subscription_id;
@@ -114,16 +112,16 @@ COMMENT ON FUNCTION public.create_trial_subscription IS 'Creates a trial subscri
 -- 4. Create function to check if trial is active
 -- ================================================================
 
-CREATE OR REPLACE FUNCTION public.is_trial_active(p_preschool_id UUID)
+CREATE OR REPLACE FUNCTION public.is_trial_active(p_school_id UUID)
 RETURNS BOOLEAN
 LANGUAGE sql
 STABLE
 AS $$
   SELECT EXISTS (
     SELECT 1
-    FROM public.preschool_subscriptions
-    WHERE preschool_id = p_preschool_id
-    AND status = 'trial'
+    FROM public.subscriptions
+    WHERE school_id = p_school_id
+    AND status = 'trialing'
     AND trial_end_date > NOW()
   );
 $$;
@@ -134,16 +132,16 @@ GRANT EXECUTE ON FUNCTION public.is_trial_active(UUID) TO authenticated;
 -- 5. Create function to get trial days remaining
 -- ================================================================
 
-CREATE OR REPLACE FUNCTION public.get_trial_days_remaining(p_preschool_id UUID)
+CREATE OR REPLACE FUNCTION public.get_trial_days_remaining(p_school_id UUID)
 RETURNS INTEGER
 LANGUAGE sql
 STABLE
 AS $$
   SELECT 
     GREATEST(0, EXTRACT(DAY FROM (trial_end_date - NOW()))::INTEGER)
-  FROM public.preschool_subscriptions
-  WHERE preschool_id = p_preschool_id
-  AND status = 'trial'
+  FROM public.subscriptions
+  WHERE school_id = p_school_id
+  AND status = 'trialing'
   AND trial_end_date > NOW()
   LIMIT 1;
 $$;
