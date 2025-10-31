@@ -39,7 +39,8 @@ export function ExamInteractiveView({ exam, onClose }: ExamInteractiveViewProps)
     exam.sections.forEach((section) => {
       section.questions.forEach((question) => {
         const answer = studentAnswers[question.id] || '';
-        const result = gradeAnswer(question, answer);
+        // Pass isPractice flag to gradeAnswer - defaults to true for immediate feedback
+        const result = gradeAnswer(question, answer, exam.isPractice !== false);
         feedbackResults[question.id] = result;
         earnedMarks += result.marks;
       });
@@ -186,7 +187,7 @@ export function ExamInteractiveView({ exam, onClose }: ExamInteractiveViewProps)
               <XCircle className="w-5 h-5" style={{ color: 'var(--danger)' }} />
             )}
             <div style={{ flex: 1 }}>
-              <p style={{ fontSize: 13, margin: 0 }}>{questionFeedback.feedback}</p>
+              <p style={{ fontSize: 13, margin: 0, whiteSpace: 'pre-wrap' }}>{questionFeedback.feedback}</p>
               <p className="muted" style={{ fontSize: 12, marginTop: 4, marginBottom: 0 }}>
                 Marks awarded: {questionFeedback.marks}/{question.marks}
               </p>
