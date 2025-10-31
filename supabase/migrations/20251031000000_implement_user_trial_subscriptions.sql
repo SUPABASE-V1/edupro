@@ -104,9 +104,8 @@ BEGIN
   FROM profiles
   WHERE id = v_user_id;
   
-  -- Allow both 'parent' role and NULL role (for new signups that haven't set role yet)
-  -- This ensures parents can get trials even if they skip school selection
-  IF v_user_role IS NOT NULL AND v_user_role != 'parent' THEN
+  -- Only allow parents to get user-level trials
+  IF v_user_role IS NULL OR v_user_role != 'parent' THEN
     RETURN json_build_object(
       'success', false,
       'error', 'User trials are only available for parents',
@@ -224,7 +223,6 @@ BEGIN
     RETURN json_build_object(
       'is_trial', false,
       'status', 'free',
-      'plan_tier', 'free',
       'message', 'Not authenticated'
     );
   END IF;
@@ -235,13 +233,12 @@ BEGIN
   WHERE id = v_user_id;
   
   -- PRIORITY 1: Check for user-level subscription (for parents)
-  -- This ALWAYS takes precedence over school subscriptions
-  -- This is critical for parents to get their own trials independent of school status
+  -- This takes precedence over school subscriptions
   SELECT json_build_object(
     'is_trial', s.status = 'trialing',
     'status', s.status,
     'trial_end_date', s.trial_end_date,
-    'days_remaining', COALESCE(trial_days_remaining(s.id), 0),
+    'days_remaining', trial_days_remaining(s.id),
     'plan_tier', sp.tier,
     'plan_name', sp.name,
     'subscription_type', 'user',
@@ -251,23 +248,20 @@ BEGIN
   INNER JOIN subscription_plans sp ON s.plan_id = sp.id
   WHERE s.owner_type = 'user' 
   AND s.user_id = v_user_id
-  ORDER BY s.created_at DESC
   LIMIT 1;
   
-  -- If user has their own subscription, ALWAYS return it (don't check school)
-  -- This ensures parent trials work even if they're in a school with free tier
+  -- If user has their own subscription, return it
   IF result IS NOT NULL THEN
     RETURN result;
   END IF;
   
-  -- PRIORITY 2: For non-parents (teachers, principals), check school subscription
-  -- Parents without user subscriptions also fall back to school subscription
+  -- PRIORITY 2: Fall back to school subscription
   IF v_user_preschool_id IS NOT NULL THEN
     SELECT json_build_object(
       'is_trial', s.status = 'trialing',
       'status', s.status,
       'trial_end_date', s.trial_end_date,
-      'days_remaining', COALESCE(trial_days_remaining(s.id), 0),
+      'days_remaining', trial_days_remaining(s.id),
       'plan_tier', sp.tier,
       'plan_name', sp.name,
       'subscription_type', 'school',
@@ -277,7 +271,6 @@ BEGIN
     INNER JOIN subscription_plans sp ON s.plan_id = sp.id
     WHERE s.owner_type = 'school' 
     AND s.school_id = v_user_preschool_id
-    ORDER BY s.created_at DESC
     LIMIT 1;
     
     IF result IS NOT NULL THEN
@@ -286,12 +279,11 @@ BEGIN
   END IF;
   
   -- No subscription found - return free tier status
-  -- This is normal for users without any subscription
   RETURN json_build_object(
     'is_trial', false,
     'status', 'free',
     'plan_tier', 'free',
-    'message', 'No active subscription',
+    'message', 'No subscription found',
     'subscription_type', 'none'
   );
 END;

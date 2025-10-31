@@ -203,18 +203,15 @@ export default function ParentDashboard() {
   }, [router, supabase]);
 
   // Start parent trial on first dashboard visit
-  // This works for ALL parents, even those without a school/organization
   useEffect(() => {
     const startTrialIfNeeded = async () => {
-      if (!userId) return;
+      if (!userId || !profile) return;
       
-      // Wait a bit for profile to load, but don't block on it
-      // This ensures trial starts even if profile hasn't fully loaded
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Only for parents
+      if (profile.role !== 'parent') return;
       
       try {
         // Call start_parent_trial RPC - it's idempotent so safe to call multiple times
-        // Works for parents with OR without a linked school/organization
         const { data, error } = await supabase.rpc('start_parent_trial');
         
         if (error) {
@@ -223,10 +220,7 @@ export default function ParentDashboard() {
         }
         
         if (data?.success && !data?.already_exists) {
-          console.log('?? Parent trial started successfully:', data);
-          // Optionally show a success notification to the user
-        } else if (data?.already_exists) {
-          console.log('? Parent trial already active');
+          console.log('Parent trial started successfully:', data);
         }
       } catch (err) {
         console.error('Failed to start parent trial:', err);
@@ -234,7 +228,7 @@ export default function ParentDashboard() {
     };
 
     startTrialIfNeeded();
-  }, [userId, supabase]);
+  }, [userId, profile, supabase]);
 
   // Load link requests (parent's own and incoming to approve)
   useEffect(() => {

@@ -48,7 +48,27 @@ export function TierBadge({ userId, preschoolId, size = 'md', showUpgrade = fals
 
     const loadTier = async () => {
       try {
-        setLoading(true);
+        // If we have userId, try to use get_my_trial_status RPC for more accurate subscription info
+        if (userId) {
+          try {
+            const { data: trialStatus, error: rpcError } = await supabase.rpc('get_my_trial_status');
+            
+            if (!rpcError && trialStatus) {
+              const status = trialStatus.status || 'free';
+              const planTier = trialStatus.plan_tier || 'free';
+              
+              // Use the plan tier from the subscription
+              setTier(planTier);
+              setLoading(false);
+              return;
+            }
+          } catch (rpcErr) {
+            console.log('RPC get_my_trial_status not available, falling back to direct lookup');
+          }
+        }
+
+        // Fallback: direct school lookup (for backward compatibility)
+        let schoolId = preschoolId;
 
         if (userId) {
           const { data, error } = await supabase.rpc('get_my_trial_status');
