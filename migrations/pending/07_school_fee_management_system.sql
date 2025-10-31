@@ -541,6 +541,42 @@ GRANT EXECUTE ON FUNCTION public.create_default_fee_structures(UUID) TO authenti
 COMMENT ON FUNCTION public.create_default_fee_structures IS 'Creates default fee structures for a new school (principal can modify)';
 
 -- ================================================================
+-- 7. AUTO-GENERATE INVOICE ON FEE ASSIGNMENT (Optional)
+-- ================================================================
+-- This trigger can be enabled to automatically create invoices
+-- when fees are assigned to students. Uncomment to enable.
+
+/*
+CREATE OR REPLACE FUNCTION public.auto_create_invoice_on_fee_assignment()
+RETURNS TRIGGER AS $$
+DECLARE
+  v_invoice_id UUID;
+BEGIN
+  -- Only create invoice for non-zero amounts
+  IF NEW.total_amount_cents > 0 THEN
+    BEGIN
+      -- Try to create invoice (requires invoice system to be installed)
+      SELECT create_invoice_from_fee_assignment(NEW.id, NEW.due_date) INTO v_invoice_id;
+      
+      RAISE NOTICE 'Auto-created invoice % for fee assignment %', v_invoice_id, NEW.id;
+    EXCEPTION WHEN OTHERS THEN
+      -- Invoice system not installed yet, skip silently
+      RAISE NOTICE 'Invoice auto-creation skipped (invoice system not installed)';
+    END;
+  END IF;
+  
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS auto_create_invoice_on_fee_assignment ON public.student_fee_assignments;
+CREATE TRIGGER auto_create_invoice_on_fee_assignment
+  AFTER INSERT ON public.student_fee_assignments
+  FOR EACH ROW
+  EXECUTE FUNCTION public.auto_create_invoice_on_fee_assignment();
+*/
+
+-- ================================================================
 -- VERIFICATION
 -- ================================================================
 
@@ -559,4 +595,5 @@ BEGIN
   RAISE NOTICE '   2. Fees auto-assign to students by age group';
   RAISE NOTICE '   3. Parents can pay via PayFast integration';
   RAISE NOTICE '   4. Real-time payment tracking';
+  RAISE NOTICE '   5. Install invoice system for automated invoicing';
 END $$;
