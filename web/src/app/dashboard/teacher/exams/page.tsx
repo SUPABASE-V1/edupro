@@ -91,10 +91,63 @@ export default function TeacherExamsPage() {
     }
   };
 
-  const handleCreateExam = (prompt: string, display: string) => {
-    console.log('Creating exam:', { prompt, display });
-    setShowCreate(false);
-    setTimeout(loadExams, 2000); // Reload after generation
+  const handleCreateExam = async (prompt: string, display: string, language?: string, enableInteractive?: boolean) => {
+    try {
+      setLoading(true);
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        alert('You must be logged in to create exams');
+        return;
+      }
+
+      // Extract exam details from display
+      const examTypeMatch = display.match(/^(.*?):/);
+      const examType = examTypeMatch ? examTypeMatch[1].toLowerCase().replace(/\s+/g, '_') : 'practice_test';
+      
+      const gradeMatch = display.match(/Grade\s+(\w+)/i);
+      const grade = gradeMatch ? gradeMatch[1].toLowerCase() : 'unknown';
+      
+      const subjectMatch = display.match(/:\s*(.*?)\s+-/);
+      const subject = subjectMatch ? subjectMatch[1] : 'General';
+
+      // Save exam generation to database
+      const { data: exam, error } = await supabase
+        .from('exam_generations')
+        .insert({
+          user_id: user.id,
+          grade: grade,
+          subject: subject,
+          exam_type: examType,
+          prompt: prompt,
+          display_title: display,
+          generated_content: `Exam will be generated: ${prompt}`,
+          status: 'pending'
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating exam:', error);
+        alert('Failed to create exam. Please try again.');
+        return;
+      }
+
+      // Show success message
+      alert('✅ Exam created successfully!\n\nThe AI will generate your exam shortly. You can assign it to students once it\'s ready.');
+      
+      // Reload exams list
+      await loadExams();
+      
+      // Switch to "My Exams" tab
+      setSelectedTab('my-exams');
+    } catch (error) {
+      console.error('Error in handleCreateExam:', error);
+      alert('An error occurred while creating the exam.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleViewExam = (examId: string) => {
