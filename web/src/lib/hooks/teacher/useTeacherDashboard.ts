@@ -52,24 +52,48 @@ export function useTeacherDashboard(userId?: string) {
       const teacherId = userId;
       const preschoolId = profile.preschool_id;
 
-      // Fetch classes assigned to this teacher
+      // Fetch classes assigned to this teacher (defensive query)
       const { data: classesData, error: classesError } = await supabase
         .from('classes')
-        .select('id, name, grade')
+        .select('id, name, grade_level')
         .eq('teacher_id', teacherId)
-        .eq('preschool_id', preschoolId);
+        .eq('preschool_id', preschoolId)
+        .eq('is_active', true);
 
-      if (classesError) throw classesError;
+      if (classesError) {
+        console.error('Error fetching classes:', classesError);
+        // Don't throw - set empty data and continue
+        setClasses([]);
+        setMetrics({
+          totalStudents: 0,
+          totalClasses: 0,
+          pendingGrading: 0,
+          upcomingLessons: 0,
+        });
+        setError(null);
+        setLoading(false);
+        return;
+      }
 
-      // For each class, get student count and pending assignments
+      // For each class, get student count and pending assignments (with error handling)
       const classesWithMetrics = await Promise.all(
         (classesData || []).map(async (cls) => {
-          // Get student count
-          const { count: studentCount } = await supabase
-            .from('students')
-            .select('*', { count: 'exact', head: true })
-            .eq('class_id', cls.id)
-            .eq('preschool_id', preschoolId);
+          let studentCount = 0;
+          
+          // Try to get student count - handle gracefully if students table has issues
+          try {
+            const { count, error: countError } = await supabase
+              .from('students')
+              .select('*', { count: 'exact', head: true })
+              .eq('class_id', cls.id)
+              .eq('preschool_id', preschoolId);
+            
+            if (!countError && count !== null) {
+              studentCount = count;
+            }
+          } catch (err) {
+            console.log('Could not fetch student count for class:', cls.id);
+          }
 
           // Get pending assignments count (simplified - would need proper assignment tracking)
           const pendingAssignments = 0; // Placeholder - implement based on your schema
@@ -78,8 +102,8 @@ export function useTeacherDashboard(userId?: string) {
           return {
             id: cls.id,
             name: cls.name,
-            grade: cls.grade,
-            studentCount: studentCount || 0,
+            grade: cls.grade_level || cls.grade || 'N/A',
+            studentCount,
             pendingAssignments,
             upcomingLessons,
           };

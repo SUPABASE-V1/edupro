@@ -24,6 +24,7 @@ interface Class {
 }
 
 export default function TeacherExamsPage() {
+  const router = useRouter();
   const [exams, setExams] = useState<Exam[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
@@ -317,8 +318,23 @@ export default function TeacherExamsPage() {
       )}
 
       <div style={{ padding: 'var(--space-4)', maxWidth: '1200px', margin: '0 auto' }}>
-        {/* Header */}
+        {/* Back Button & Header */}
         <div style={{ marginBottom: 'var(--space-6)' }}>
+          <button 
+            onClick={() => router.back()}
+            className="btn btnSecondary"
+            style={{ 
+              display: 'inline-flex', 
+              alignItems: 'center', 
+              gap: 'var(--space-2)',
+              marginBottom: 'var(--space-4)',
+              padding: '8px 12px',
+              fontSize: 14
+            }}
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back
+          </button>
           <h1 style={{ fontSize: 32, fontWeight: 'bold', marginBottom: 'var(--space-2)' }}>
             📝 My Exams
           </h1>
