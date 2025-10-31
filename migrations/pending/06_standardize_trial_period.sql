@@ -48,6 +48,11 @@ COMMENT ON FUNCTION public.get_trial_duration_days IS 'Returns the configured tr
 -- 3. Update create_trial_subscription function
 -- ================================================================
 
+-- Drop all existing versions of the function to avoid conflicts
+DROP FUNCTION IF EXISTS public.create_trial_subscription() CASCADE;
+DROP FUNCTION IF EXISTS public.create_trial_subscription(UUID) CASCADE;
+
+-- Create the new version with clear signature
 CREATE OR REPLACE FUNCTION public.create_trial_subscription(p_school_id UUID)
 RETURNS UUID
 LANGUAGE plpgsql
@@ -108,9 +113,19 @@ $$;
 
 COMMENT ON FUNCTION public.create_trial_subscription IS 'Creates a trial subscription using configured duration';
 
+-- Recreate trigger if it was dropped by CASCADE
+DROP TRIGGER IF EXISTS trigger_create_trial_subscription ON preschools;
+CREATE TRIGGER trigger_create_trial_subscription
+  AFTER INSERT ON preschools
+  FOR EACH ROW
+  EXECUTE FUNCTION create_trial_subscription_trigger();
+
 -- ================================================================
 -- 4. Create function to check if trial is active
 -- ================================================================
+
+-- Drop existing versions
+DROP FUNCTION IF EXISTS public.is_trial_active(UUID) CASCADE;
 
 CREATE OR REPLACE FUNCTION public.is_trial_active(p_school_id UUID)
 RETURNS BOOLEAN
@@ -132,6 +147,9 @@ GRANT EXECUTE ON FUNCTION public.is_trial_active(UUID) TO authenticated;
 -- 5. Create function to get trial days remaining
 -- ================================================================
 
+-- Drop existing version
+DROP FUNCTION IF EXISTS public.get_trial_days_remaining(UUID) CASCADE;
+
 CREATE OR REPLACE FUNCTION public.get_trial_days_remaining(p_school_id UUID)
 RETURNS INTEGER
 LANGUAGE sql
@@ -152,6 +170,10 @@ GRANT EXECUTE ON FUNCTION public.get_trial_days_remaining(UUID) TO authenticated
 -- 6. Update user subscriptions function (for parents)
 -- ================================================================
 
+-- Drop existing version if any
+DROP FUNCTION IF EXISTS public.create_user_trial_subscription(UUID) CASCADE;
+
+-- Create the user trial subscription function
 CREATE OR REPLACE FUNCTION public.create_user_trial_subscription(p_user_id UUID)
 RETURNS UUID
 LANGUAGE plpgsql
