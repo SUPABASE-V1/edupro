@@ -6,7 +6,7 @@
  */
 
 import { useState, useCallback } from 'react';
-import { assertSupabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
 
 interface GuestLimitResponse {
   allowed: boolean;
@@ -50,8 +50,9 @@ export function useGuestRateLimit(options: UseGuestRateLimitOptions = {}) {
     
     try {
       const { ip } = await getClientInfo();
+      const supabase = createClient();
 
-      const { data, error } = await assertSupabase().rpc('check_guest_limit', {
+      const { data, error } = await supabase.rpc('check_guest_limit', {
         p_ip_address: ip,
         p_resource_type: resourceType,
         p_daily_limit: dailyLimit
@@ -92,8 +93,9 @@ export function useGuestRateLimit(options: UseGuestRateLimitOptions = {}) {
   const logUsage = useCallback(async (metadata: Record<string, any> = {}) => {
     try {
       const { ip, userAgent } = await getClientInfo();
+      const supabase = createClient();
 
-      const { error } = await assertSupabase().rpc('log_guest_usage', {
+      const { error } = await supabase.rpc('log_guest_usage', {
         p_ip_address: ip,
         p_user_agent: userAgent,
         p_resource_type: resourceType,
