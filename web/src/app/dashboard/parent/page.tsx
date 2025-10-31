@@ -99,29 +99,65 @@ export default function ParentDashboard() {
   const handleAskFromActivity = async (prompt: string, display: string, language?: string, enableInteractive?: boolean) => {
     try {
       const sb = createClient();
-      // Determine school plan
-      let plan = 'free';
-      const schoolId = profile?.preschoolId;
-      if (schoolId) {
-        const { data } = await sb
-          .from('preschools')
-          .select('subscription_plan')
-          .eq('id', schoolId)
-          .maybeSingle();
-        plan = (data?.subscription_plan as string | null) || 'free';
+      const storageKey = userId ? `EDUDASH_CAPS_FREE_USED_${userId}` : null;
+
+      let planTier: string | null = null;
+      let isTrialActive = false;
+
+      // 1. Try new subscription registry via RPC (handles trial state)
+      try {
+        const { data: trialData, error: trialError } = await sb.rpc('get_my_trial_status');
+        if (trialError) {
+          console.warn('[ParentDashboard] Failed to fetch trial status:', trialError);
+        } else if (trialData) {
+          const tier = (trialData as any).plan_tier as string | null;
+          planTier = tier ? tier.toLowerCase() : null;
+          isTrialActive = Boolean((trialData as any).is_trial);
+        }
+      } catch (err) {
+        console.warn('[ParentDashboard] get_my_trial_status threw an error:', err);
       }
 
-      const isFree = String(plan || 'free').toLowerCase() === 'free';
-      const key = `EDUDASH_CAPS_FREE_USED_${userId}`;
+      // 2. Fallback to legacy school column if tier still unknown
+      if (!planTier) {
+        const schoolId = profile?.preschoolId;
+        if (schoolId) {
+          try {
+            const { data, error } = await sb
+              .from('preschools')
+              .select('subscription_plan, subscription_tier')
+              .eq('id', schoolId)
+              .maybeSingle();
+            if (error) {
+              console.warn('[ParentDashboard] Failed to fetch school subscription info:', error);
+            } else if (data) {
+              const rawTier = (data.subscription_tier || data.subscription_plan) as string | null;
+              planTier = rawTier ? rawTier.toLowerCase() : null;
+            }
+          } catch (err) {
+            console.warn('[ParentDashboard] Error loading legacy subscription tier:', err);
+          }
+        }
+      }
 
-      if (isFree) {
-        const used = typeof window !== 'undefined' ? localStorage.getItem(key) : null;
-        if (used === '1') {
-          alert('Free tier limit reached. Upgrade to generate more activities.');
+      const normalizedTier = planTier ?? null;
+      const isFreeTier = !normalizedTier || normalizedTier === 'free' || normalizedTier === 'parent-free';
+
+      if (!isTrialActive && isFreeTier && storageKey) {
+        const today = new Date().toDateString();
+        const used = typeof window !== 'undefined' ? localStorage.getItem(storageKey) : null;
+
+        if (used === today) {
+          alert('Free tier daily limit reached. Upgrade to generate more activities.');
           return;
         }
-        // Mark as used immediately to prevent spamming
-        if (typeof window !== 'undefined') localStorage.setItem(key, '1');
+
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(storageKey, today);
+        }
+      } else if (!isFreeTier && storageKey && typeof window !== 'undefined') {
+        // Clear legacy free-tier flag once user is on trial/paid tier
+        localStorage.removeItem(storageKey);
       }
 
       setAIPrompt(prompt);
@@ -129,7 +165,8 @@ export default function ParentDashboard() {
       setAiLanguage(language || 'en-ZA');
       setAiInteractive(enableInteractive || false);
       setShowAskAI(true);
-    } catch {
+    } catch (error) {
+      console.warn('[ParentDashboard] handleAskFromActivity fallback path triggered:', error);
       // Fallback: allow one
       setAIPrompt(prompt);
       setAIDisplay(display);
