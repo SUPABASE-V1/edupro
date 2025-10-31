@@ -36,25 +36,25 @@ BEGIN
     WHERE p.is_active = true
     AND NOT EXISTS (
       SELECT 1 
-      FROM public.preschool_subscriptions ps 
-      WHERE ps.preschool_id = p.id 
-      AND ps.status = 'active'
+      FROM public.subscriptions s 
+      WHERE s.school_id = p.id 
+      AND s.status IN ('active', 'trialing')
     )
   LOOP
     BEGIN
       -- Create trial subscription
-      INSERT INTO public.preschool_subscriptions (
-        preschool_id,
-        subscription_plan_id,
+      INSERT INTO public.subscriptions (
+        school_id,
+        plan_id,
         status,
-        trial_start_date,
+        start_date,
         trial_end_date,
         next_billing_date,
         created_at
       ) VALUES (
         user_record.id,
         starter_plan_id,
-        'trial',
+        'trialing',
         NOW(),
         NOW() + INTERVAL '7 days',
         NOW() + INTERVAL '8 days', -- Grace period
@@ -92,22 +92,19 @@ BEGIN
       LIMIT 100 -- Safety limit
     LOOP
       BEGIN
-        -- Create user trial (for parents)
+        -- Create user trial (for parents) - if user_subscriptions table exists
+        -- Note: May need to be adjusted based on actual schema
         INSERT INTO public.user_subscriptions (
           user_id,
-          subscription_plan_id,
+          plan_id,
           status,
-          trial_start_date,
           trial_end_date,
-          next_billing_date,
           created_at
         ) VALUES (
           user_record.id,
           starter_plan_id,
-          'trial',
-          NOW(),
+          'trialing',
           NOW() + INTERVAL '7 days',
-          NOW() + INTERVAL '8 days',
           NOW()
         );
         
@@ -126,15 +123,14 @@ END $$;
 -- Update existing free users to trial
 -- ================================================================
 
-UPDATE public.preschool_subscriptions
+UPDATE public.subscriptions
 SET 
-  status = 'trial',
-  trial_start_date = NOW(),
+  status = 'trialing',
   trial_end_date = NOW() + INTERVAL '7 days',
   next_billing_date = NOW() + INTERVAL '8 days',
   updated_at = NOW()
 WHERE status = 'free'
-  AND trial_start_date IS NULL;
+  AND trial_end_date IS NULL;
 
 -- ================================================================
 -- Verification
@@ -145,8 +141,8 @@ DECLARE
   trial_count INTEGER;
 BEGIN
   SELECT COUNT(*) INTO trial_count
-  FROM public.preschool_subscriptions
-  WHERE status = 'trial';
+  FROM public.subscriptions
+  WHERE status = 'trialing';
   
   RAISE NOTICE '';
   RAISE NOTICE '📊 Current trial subscriptions: %', trial_count;
