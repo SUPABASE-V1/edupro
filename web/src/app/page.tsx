@@ -162,7 +162,7 @@ export default function Home() {
             <Link href="/exam-prep" style={{display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '8px 16px', background: '#fbbf24', color: '#0a0a0f', borderRadius: '8px', fontSize: '14px', fontWeight: 600, textDecoration: 'none'}}>Try Exam Prep →</Link>
           </div>
           <div style={{marginBottom: '16px', display: 'inline-block', background: 'rgba(251, 191, 36, 0.15)', border: '2px solid #fbbf24', borderRadius: '12px', padding: '12px 24px'}}>
-            <p style={{margin: 0, fontSize: '18px', fontWeight: 800, color: '#fbbf24', textTransform: 'uppercase', letterSpacing: '0.05em'}}>🎉 14-Day Free Trial • No Credit Card Required</p>
+            <p style={{margin: 0, fontSize: '18px', fontWeight: 800, color: '#fbbf24', textTransform: 'uppercase', letterSpacing: '0.05em'}}>🎉 7-Day Free Trial • No Credit Card Required</p>
           </div>
           <div className="heroCtas">
             <Link href="/sign-in" className="btn btnCyan" style={{height: '48px', padding: '0 32px', fontSize: '16px', borderRadius: '12px', fontWeight: 700}}>Start Free Trial →</Link>
@@ -362,7 +362,7 @@ export default function Home() {
                 <li>Child-safe explanations</li>
                 <li>Progress tracking</li>
               </ul>
-              <Link href="/sign-in" className="btn" style={{width: '100%', fontSize: '14px', background: '#0a0a0f', color: '#fff', fontWeight: 700, display: 'block', textAlign: 'center', padding: '12px'}}>Start 14-Day Free Trial</Link>
+              <Link href="/sign-in" className="btn" style={{width: '100%', fontSize: '14px', background: '#0a0a0f', color: '#fff', fontWeight: 700, display: 'block', textAlign: 'center', padding: '12px'}}>Start 7-Day Free Trial</Link>
             </div>
             <div className="pricingCard">
               <p className="kicker" style={{marginBottom: '12px', fontSize: '11px'}}>Starter Plan</p>
@@ -416,7 +416,7 @@ export default function Home() {
             <details>
               <summary style={{fontSize: '16px', fontWeight: 700}}>Can I try before committing?</summary>
               <p className="muted" style={{marginTop: '16px', lineHeight: 1.6, fontSize: '14px'}}>
-                Yes! We offer a free tier and a 14-day trial for premium plans. No credit card required to start.
+                Yes! We offer a free tier and a 7-day trial for premium plans. No credit card required to start.
               </p>
             </details>
           </div>
