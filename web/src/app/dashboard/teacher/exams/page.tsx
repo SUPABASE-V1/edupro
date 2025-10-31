@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, FileText, Users, Calendar, Download, Eye, Trash2 } from 'lucide-react';
+import { Plus, FileText, Users, Calendar, Download, Eye, Trash2, ArrowLeft } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { useRouter } from 'next/navigation';
 import { ExamPrepWidget } from '@/components/dashboard/exam-prep/ExamPrepWidget';
 
 interface Exam {
