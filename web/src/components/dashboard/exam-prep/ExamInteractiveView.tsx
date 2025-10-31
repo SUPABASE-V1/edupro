@@ -149,11 +149,12 @@ export function ExamInteractiveView({ exam, onClose }: ExamInteractiveViewProps)
           />
         ) : (
           <input
-            type={question.type === 'numeric' ? 'number' : 'text'}
+            type="text"
+            inputMode={question.type === 'numeric' ? 'decimal' : 'text'}
             value={answer}
             onChange={(e) => handleAnswerChange(question.id, e.target.value)}
             disabled={submitted}
-            placeholder="Enter your answer..."
+            placeholder={question.type === 'numeric' ? 'Enter your answer (e.g., 5, (x+2), [1,2])' : 'Enter your answer...'}
             style={{
               width: '100%',
               padding: 'var(--space-3)',
