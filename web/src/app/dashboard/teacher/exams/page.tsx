@@ -15,6 +15,13 @@ interface Exam {
   status: string;
 }
 
+interface Class {
+  id: string;
+  name: string;
+  grade_level: string;
+  student_count?: number;
+}
+
 export default function TeacherExamsPage() {
   const [exams, setExams] = useState<Exam[]>([]);
   const [loading, setLoading] = useState(true);
@@ -22,9 +29,16 @@ export default function TeacherExamsPage() {
   const [selectedTab, setSelectedTab] = useState<'my-exams' | 'create-new'>('my-exams');
   const [viewingExam, setViewingExam] = useState<string | null>(null);
   const [assigningExam, setAssigningExam] = useState<Exam | null>(null);
+  const [classes, setClasses] = useState<Class[]>([]);
+  const [selectedClass, setSelectedClass] = useState<string>('');
+  const [dueDate, setDueDate] = useState<string>(
+    new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16)
+  );
+  const [assigning, setAssigning] = useState(false);
 
   useEffect(() => {
     loadExams();
+    loadClasses();
   }, []);
 
   const loadExams = async () => {
@@ -90,8 +104,98 @@ export default function TeacherExamsPage() {
     setAssigningExam(exam);
   };
 
+  const loadClasses = async () => {
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Get classes taught by this teacher
+      const { data, error } = await supabase
+        .from('classes')
+        .select(`
+          id,
+          name,
+          grade_level,
+          enrollments:students_classes(count)
+        `)
+        .eq('teacher_id', user.id);
+
+      if (error) {
+        console.error('Error loading classes:', error);
+      } else {
+        const formattedClasses = (data || []).map(c => ({
+          id: c.id,
+          name: c.name,
+          grade_level: c.grade_level,
+          student_count: c.enrollments?.[0]?.count || 0
+        }));
+        setClasses(formattedClasses);
+      }
+    } catch (err) {
+      console.error('Error loading classes:', err);
+    }
+  };
+
   const handleDownloadPDF = async (exam: Exam) => {
     alert('📄 PDF export coming soon!\n\nThis will generate a downloadable PDF of the exam.');
+  };
+
+  const handleAssignExamSubmit = async () => {
+    if (!selectedClass || !assigningExam) return;
+
+    setAssigning(true);
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      // Get student IDs from selected class
+      const { data: enrollments, error: enrollError } = await supabase
+        .from('students_classes')
+        .select('student_id')
+        .eq('class_id', selectedClass);
+
+      if (enrollError) throw enrollError;
+
+      const studentIds = enrollments?.map(e => e.student_id) || [];
+
+      if (studentIds.length === 0) {
+        alert('No students found in this class');
+        return;
+      }
+
+      // Create assignment
+      const { data: assignment, error: assignError } = await supabase
+        .from('exam_assignments')
+        .insert({
+          exam_generation_id: assigningExam.id,
+          teacher_id: user.id,
+          title: assigningExam.title || `${assigningExam.grade} ${assigningExam.subject} Exam`,
+          student_ids: studentIds,
+          class_id: selectedClass,
+          due_date: dueDate,
+          status: 'active',
+          allow_late_submission: true,
+          show_correct_answers: false,
+          max_attempts: 1
+        })
+        .select()
+        .single();
+
+      if (assignError) throw assignError;
+
+      alert(`✅ Exam assigned successfully!\n\n• ${studentIds.length} students notified\n• Due: ${new Date(dueDate).toLocaleString()}`);
+      
+      setAssigningExam(null);
+      setSelectedClass('');
+      setDueDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16));
+    } catch (err: any) {
+      console.error('Error assigning exam:', err);
+      alert('Failed to assign exam: ' + (err.message || 'Unknown error'));
+    } finally {
+      setAssigning(false);
+    }
   };
 
   return (
@@ -132,14 +236,26 @@ export default function TeacherExamsPage() {
             
             <div style={{ marginBottom: 'var(--space-4)' }}>
               <label style={{ display: 'block', fontWeight: 600, marginBottom: 'var(--space-2)', fontSize: 14 }}>
-                Select Class or Students
+                Select Class
               </label>
-              <select className="input" style={{ width: '100%' }}>
+              <select 
+                className="input" 
+                style={{ width: '100%' }}
+                value={selectedClass}
+                onChange={(e) => setSelectedClass(e.target.value)}
+              >
                 <option value="">Choose a class...</option>
-                <option value="grade-9a">Grade 9A (24 students)</option>
-                <option value="grade-9b">Grade 9B (22 students)</option>
-                <option value="all">All My Students</option>
+                {classes.map(cls => (
+                  <option key={cls.id} value={cls.id}>
+                    {cls.name} - Grade {cls.grade_level} ({cls.student_count || 0} students)
+                  </option>
+                ))}
               </select>
+              {classes.length === 0 && (
+                <p className="muted" style={{ fontSize: 12, marginTop: 'var(--space-1)' }}>
+                  No classes found. Create a class first.
+                </p>
+              )}
             </div>
 
             <div style={{ marginBottom: 'var(--space-4)' }}>
@@ -150,7 +266,8 @@ export default function TeacherExamsPage() {
                 type="datetime-local" 
                 className="input" 
                 style={{ width: '100%' }}
-                defaultValue={new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16)}
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
               />
             </div>
 
@@ -163,12 +280,11 @@ export default function TeacherExamsPage() {
               </button>
               <button
                 className="btn btnPrimary"
-                onClick={() => {
-                  alert('✅ Assignment feature coming soon!\n\nThis will:\n• Notify selected students\n• Track completion\n• Show results dashboard');
-                  setAssigningExam(null);
-                }}
+                onClick={handleAssignExamSubmit}
+                disabled={!selectedClass || assigning}
+                style={{ opacity: !selectedClass || assigning ? 0.6 : 1 }}
               >
-                Assign Exam
+                {assigning ? 'Assigning...' : 'Assign Exam'}
               </button>
             </div>
           </div>
