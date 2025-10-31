@@ -127,6 +127,7 @@ END $$;
 DO $$
 DECLARE
   free_plan_id UUID;
+  updated_count INTEGER;
 BEGIN
   SELECT id INTO free_plan_id
   FROM subscription_plans
@@ -145,7 +146,11 @@ BEGIN
       AND trial_end_date IS NULL
       AND status IN ('active', 'unpaid');
     
-    RAISE NOTICE 'Updated % free tier subscriptions to trial', ROW_COUNT;
+    -- Capture the row count
+    GET DIAGNOSTICS updated_count = ROW_COUNT;
+    RAISE NOTICE 'Updated % free tier subscriptions to trial', updated_count;
+  ELSE
+    RAISE NOTICE 'No free plan found, skipping free tier upgrades';
   END IF;
 END $$;
 
