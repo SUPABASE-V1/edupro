@@ -402,7 +402,7 @@ export const EnhancedPrincipalDashboard: React.FC = () => {
   const allMetrics = [reportsMetric, ...metrics, ...pettyCashCards];
 
   return (
-    <View style={[styles.container, Platform.OS === 'web' && { minHeight: '100vh' }]}>
+    <View style={styles.container}>
       {/* Fixed top header to match enhanced dashboard - Hidden on web */}
       {Platform.OS !== 'web' && (
       <View style={[styles.appHeader, { paddingTop: insets.top + 12 }]}>
@@ -460,7 +460,7 @@ export const EnhancedPrincipalDashboard: React.FC = () => {
 
       <ScrollView
         style={styles.scrollContainer}
-        contentContainerStyle={Platform.OS === 'web' ? { minHeight: '100vh', paddingBottom: 40 } : undefined}
+        contentContainerStyle={Platform.OS === 'web' ? { paddingBottom: 40 } : undefined}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={loading} onRefresh={refresh} />
