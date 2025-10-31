@@ -65,23 +65,34 @@ export async function POST(request: NextRequest) {
     if (payment_status === 'COMPLETE') {
       const amount_cents = Math.round(amount_gross * 100);
 
-      // Update the fee assignment (this will trigger the auto-update trigger)
-      const { error: assignError } = await supabase
+      // Fetch current assignment to get current paid amount
+      const { data: assignment } = await supabase
         .from('student_fee_assignments')
-        .update({
-          paid_amount_cents: supabase.raw(`paid_amount_cents + ${amount_cents}`),
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', fee_assignment_id);
+        .select('paid_amount_cents')
+        .eq('id', fee_assignment_id)
+        .single();
 
-      if (assignError) {
-        console.error('[PayFast Webhook] Failed to update assignment:', assignError);
+      if (assignment) {
+        const new_paid_amount = (assignment.paid_amount_cents || 0) + amount_cents;
+
+        // Update the fee assignment (this will trigger the auto-update trigger for balance)
+        const { error: assignError } = await supabase
+          .from('student_fee_assignments')
+          .update({
+            paid_amount_cents: new_paid_amount,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', fee_assignment_id);
+
+        if (assignError) {
+          console.error('[PayFast Webhook] Failed to update assignment:', assignError);
+        } else {
+          console.log('[PayFast Webhook] Payment processed successfully:', m_payment_id);
+        }
       }
 
       // TODO: Send confirmation email to parent
       // TODO: Notify school of payment received
-
-      console.log('[PayFast Webhook] Payment processed successfully:', m_payment_id);
     }
 
     return NextResponse.json({ success: true });
