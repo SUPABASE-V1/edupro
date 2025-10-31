@@ -97,23 +97,42 @@ export default function ParentDashboard() {
       const sb = createClient();
       const storageKey = userId ? `EDUDASH_CAPS_FREE_USED_${userId}` : null;
 
-      let planTier: string | null = trialStatus?.plan_tier ? trialStatus.plan_tier.toLowerCase() : null;
-      let isTrialActive = Boolean(trialStatus?.is_trial);
+      let planTier: string | null = null;
+      let isTrialActive = false;
 
-      // 1. If we have no cached tier info, fetch fresh trial status
-      if (!planTier && !isTrialActive) {
-        try {
-          const { data: trialData, error: trialError } = await sb.rpc('get_my_trial_status');
-          if (trialError) {
-            console.warn('[ParentDashboard] Failed to fetch trial status on demand:', trialError);
-          } else if (trialData) {
-            const typed = (trialData || null) as TrialStatusResponse | null;
-            setTrialStatus(typed);
-            planTier = typed?.plan_tier ? typed.plan_tier.toLowerCase() : null;
-            isTrialActive = Boolean(typed?.is_trial);
+      // 1. Try new subscription registry via RPC (handles trial state)
+      try {
+        const { data: trialData, error: trialError } = await sb.rpc('get_my_trial_status');
+        if (trialError) {
+          console.warn('[ParentDashboard] Failed to fetch trial status:', trialError);
+        } else if (trialData) {
+          const tier = (trialData as any).plan_tier as string | null;
+          planTier = tier ? tier.toLowerCase() : null;
+          isTrialActive = Boolean((trialData as any).is_trial);
+        }
+      } catch (err) {
+        console.warn('[ParentDashboard] get_my_trial_status threw an error:', err);
+      }
+
+      // 2. Fallback to legacy school column if tier still unknown
+      if (!planTier) {
+        const schoolId = profile?.preschoolId;
+        if (schoolId) {
+          try {
+            const { data, error } = await sb
+              .from('preschools')
+              .select('subscription_plan, subscription_tier')
+              .eq('id', schoolId)
+              .maybeSingle();
+            if (error) {
+              console.warn('[ParentDashboard] Failed to fetch school subscription info:', error);
+            } else if (data) {
+              const rawTier = (data.subscription_tier || data.subscription_plan) as string | null;
+              planTier = rawTier ? rawTier.toLowerCase() : null;
+            }
+          } catch (err) {
+            console.warn('[ParentDashboard] Error loading legacy subscription tier:', err);
           }
-        } catch (err) {
-          console.warn('[ParentDashboard] get_my_trial_status threw an error:', err);
         }
       }
 
@@ -389,13 +408,34 @@ export default function ParentDashboard() {
 
   const activeChild = childrenCards.find((c) => c.id === activeChildId);
 
-  // Right Sidebar Content
-  const rightSidebar = (
-    <div style={{ overflowY: 'auto', height: '100%', display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-      <div className="card">
-        <div className="sectionTitle">
-          <Clock className="w-4 h-4 text-purple-400" />
-          At a Glance
+  return (
+    <div className="app">
+      <header className="topbar">
+        <div className="topbarRow topbarEdge">
+          <div className="leftGroup">
+            {preschoolName ? (
+              <div className="chip" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ fontSize: 16 }}>??</span>
+                <span style={{ fontWeight: 600 }}>{preschoolName}</span>
+              </div>
+            ) : profile?.preschoolId ? (
+              <div className="chip" style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--warning-bg)', color: 'var(--warning)' }}>
+                <span style={{ fontSize: 16 }}>??</span>
+                <span style={{ fontWeight: 600 }}>School Info Loading...</span>
+              </div>
+            ) : (
+              <div className="chip" style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--warning-bg)', color: 'var(--warning)' }}>
+                <span style={{ fontSize: 16 }}>??</span>
+                <span style={{ fontWeight: 600 }}>No School Linked</span>
+              </div>
+            )}
+          </div>
+          <div className="rightGroup">
+            <button className="iconBtn" aria-label="Notifications">
+              <Bell className="icon20" />
+            </button>
+            <div className="avatar">{avatarLetter}</div>
+          </div>
         </div>
         <ul style={{ display: 'grid', gap: 8 }}>
           <li className="listItem"><span>Upcoming events</span><span className="badge">{activeChild ? metrics.upcomingEvents : 0}</span></li>
@@ -532,6 +572,7 @@ export default function ParentDashboard() {
                   textAlign: 'center'
                 }}>
                   <div style={{ fontSize: 48, marginBottom: 16 }}>??</div>
+                  <div style={{ fontSize: 48, marginBottom: 16 }}>??</div>
                   <h2 style={{ margin: 0, marginBottom: 8, fontSize: 20, fontWeight: 700 }}>
                     Registration Pending
                   </h2>
@@ -550,10 +591,12 @@ export default function ParentDashboard() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                     <span style={{ fontSize: 24 }}>??</span>
+                    <span style={{ fontSize: 24 }}>??</span>
                     <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>{preschoolName}</h2>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', paddingLeft: 32 }}>
                     <p style={{ margin: 0, fontSize: 14, opacity: 0.9 }}>{roleDisplay}</p>
+                    <span style={{ opacity: 0.7 }}>?</span>
                     <span style={{ opacity: 0.7 }}>?</span>
                     <TierBadge userId={userId} size="sm" showUpgrade />
                   </div>
@@ -630,6 +673,7 @@ export default function ParentDashboard() {
                           {child.firstName} {child.lastName}
                         </div>
                         <div style={{ fontSize: 12, color: 'var(--muted)' }}>
+                          {child.grade}{child.className ? ` ? ${child.className}` : ''}
                           {child.grade}{child.className ? ` ? ${child.className}` : ''}
                         </div>
                       </div>
