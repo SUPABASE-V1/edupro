@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Plus, FileText, Users, Calendar, Download, Eye, Trash2 } from 'lucide-react';
-import { assertSupabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
 import { ExamPrepWidget } from '@/components/dashboard/exam-prep/ExamPrepWidget';
 
 interface Exam {
@@ -28,7 +28,7 @@ export default function TeacherExamsPage() {
   const loadExams = async () => {
     setLoading(true);
     try {
-      const supabase = assertSupabase();
+      const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) return;
@@ -56,7 +56,7 @@ export default function TeacherExamsPage() {
     if (!confirm('Are you sure you want to delete this exam?')) return;
 
     try {
-      const supabase = assertSupabase();
+      const supabase = createClient();
       const { error } = await supabase
         .from('exam_generations')
         .delete()
