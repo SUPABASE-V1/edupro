@@ -68,10 +68,10 @@ CREATE TABLE IF NOT EXISTS public.school_fee_structures (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_school_fees_preschool ON public.school_fee_structures(preschool_id);
-CREATE INDEX idx_school_fees_age_group ON public.school_fee_structures(age_group);
-CREATE INDEX idx_school_fees_active ON public.school_fee_structures(is_active) WHERE is_active = true;
-CREATE INDEX idx_school_fees_category ON public.school_fee_structures(fee_category);
+CREATE INDEX IF NOT EXISTS idx_school_fees_preschool ON public.school_fee_structures(preschool_id);
+CREATE INDEX IF NOT EXISTS idx_school_fees_age_group ON public.school_fee_structures(age_group);
+CREATE INDEX IF NOT EXISTS idx_school_fees_active ON public.school_fee_structures(is_active) WHERE is_active = true;
+CREATE INDEX IF NOT EXISTS idx_school_fees_category ON public.school_fee_structures(fee_category);
 
 COMMENT ON TABLE public.school_fee_structures IS 'School fee configurations set by principals/admins';
 
@@ -115,11 +115,11 @@ CREATE TABLE IF NOT EXISTS public.student_fee_assignments (
   UNIQUE(student_id, fee_structure_id, assigned_date)
 );
 
-CREATE INDEX idx_student_fees_student ON public.student_fee_assignments(student_id);
-CREATE INDEX idx_student_fees_structure ON public.student_fee_assignments(fee_structure_id);
-CREATE INDEX idx_student_fees_preschool ON public.student_fee_assignments(preschool_id);
-CREATE INDEX idx_student_fees_status ON public.student_fee_assignments(status);
-CREATE INDEX idx_student_fees_due_date ON public.student_fee_assignments(due_date) WHERE status != 'paid';
+CREATE INDEX IF NOT EXISTS idx_student_fees_student ON public.student_fee_assignments(student_id);
+CREATE INDEX IF NOT EXISTS idx_student_fees_structure ON public.student_fee_assignments(fee_structure_id);
+CREATE INDEX IF NOT EXISTS idx_student_fees_preschool ON public.student_fee_assignments(preschool_id);
+CREATE INDEX IF NOT EXISTS idx_student_fees_status ON public.student_fee_assignments(status);
+CREATE INDEX IF NOT EXISTS idx_student_fees_due_date ON public.student_fee_assignments(due_date) WHERE status != 'paid';
 
 COMMENT ON TABLE public.student_fee_assignments IS 'Individual student fee assignments and payment tracking';
 
@@ -166,12 +166,12 @@ CREATE TABLE IF NOT EXISTS public.fee_payments (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_fee_payments_assignment ON public.fee_payments(student_fee_assignment_id);
-CREATE INDEX idx_fee_payments_student ON public.fee_payments(student_id);
-CREATE INDEX idx_fee_payments_preschool ON public.fee_payments(preschool_id);
-CREATE INDEX idx_fee_payments_payfast_id ON public.fee_payments(payfast_payment_id) WHERE payfast_payment_id IS NOT NULL;
-CREATE INDEX idx_fee_payments_status ON public.fee_payments(status);
-CREATE INDEX idx_fee_payments_date ON public.fee_payments(payment_date DESC);
+CREATE INDEX IF NOT EXISTS idx_fee_payments_assignment ON public.fee_payments(student_fee_assignment_id);
+CREATE INDEX IF NOT EXISTS idx_fee_payments_student ON public.fee_payments(student_id);
+CREATE INDEX IF NOT EXISTS idx_fee_payments_preschool ON public.fee_payments(preschool_id);
+CREATE INDEX IF NOT EXISTS idx_fee_payments_payfast_id ON public.fee_payments(payfast_payment_id) WHERE payfast_payment_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_fee_payments_status ON public.fee_payments(status);
+CREATE INDEX IF NOT EXISTS idx_fee_payments_date ON public.fee_payments(payment_date DESC);
 
 COMMENT ON TABLE public.fee_payments IS 'Individual fee payment transactions';
 
@@ -184,6 +184,7 @@ ALTER TABLE public.student_fee_assignments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.fee_payments ENABLE ROW LEVEL SECURITY;
 
 -- Principals can manage their school's fees
+DROP POLICY IF EXISTS "Principals can manage fee structures" ON public.school_fee_structures;
 CREATE POLICY "Principals can manage fee structures"
   ON public.school_fee_structures
   FOR ALL
@@ -195,6 +196,7 @@ CREATE POLICY "Principals can manage fee structures"
   );
 
 -- Parents can view fees for their children
+DROP POLICY IF EXISTS "Parents can view their children's fees" ON public.student_fee_assignments;
 CREATE POLICY "Parents can view their children's fees"
   ON public.student_fee_assignments
   FOR SELECT
@@ -210,6 +212,7 @@ CREATE POLICY "Parents can view their children's fees"
   );
 
 -- School staff can manage fee assignments
+DROP POLICY IF EXISTS "School staff can manage fee assignments" ON public.student_fee_assignments;
 CREATE POLICY "School staff can manage fee assignments"
   ON public.student_fee_assignments
   FOR ALL
@@ -221,6 +224,7 @@ CREATE POLICY "School staff can manage fee assignments"
   );
 
 -- Parents can view their payment history
+DROP POLICY IF EXISTS "Parents can view their payments" ON public.fee_payments;
 CREATE POLICY "Parents can view their payments"
   ON public.fee_payments
   FOR SELECT
@@ -235,6 +239,7 @@ CREATE POLICY "Parents can view their payments"
   );
 
 -- School staff can manage payments
+DROP POLICY IF EXISTS "School staff can manage payments" ON public.fee_payments;
 CREATE POLICY "School staff can manage payments"
   ON public.fee_payments
   FOR ALL
@@ -396,16 +401,19 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS update_school_fee_structures_updated_at ON public.school_fee_structures;
 CREATE TRIGGER update_school_fee_structures_updated_at
   BEFORE UPDATE ON public.school_fee_structures
   FOR EACH ROW
   EXECUTE FUNCTION public.update_fee_updated_at();
 
+DROP TRIGGER IF EXISTS update_student_fee_assignments_updated_at ON public.student_fee_assignments;
 CREATE TRIGGER update_student_fee_assignments_updated_at
   BEFORE UPDATE ON public.student_fee_assignments
   FOR EACH ROW
   EXECUTE FUNCTION public.update_fee_updated_at();
 
+DROP TRIGGER IF EXISTS update_fee_payments_updated_at ON public.fee_payments;
 CREATE TRIGGER update_fee_payments_updated_at
   BEFORE UPDATE ON public.fee_payments
   FOR EACH ROW
@@ -436,6 +444,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS update_assignment_on_payment ON public.fee_payments;
 CREATE TRIGGER update_assignment_on_payment
   AFTER INSERT OR UPDATE ON public.fee_payments
   FOR EACH ROW
