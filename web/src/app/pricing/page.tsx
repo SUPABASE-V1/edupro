@@ -34,7 +34,7 @@ export default function PricingPage() {
         "Child-safe explanations",
         "Progress tracking",
         "Email support",
-        "14-day free trial"
+        "7-day free trial"
       ]
     },
     {
@@ -79,7 +79,7 @@ export default function PricingPage() {
         "Parent portal",
         "WhatsApp notifications",
         "Email support",
-        "14-day free trial"
+        "7-day free trial"
       ]
     },
     {
