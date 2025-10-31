@@ -32,6 +32,7 @@ import { CAPSActivitiesWidget } from '@/components/dashboard/parent/CAPSActiviti
 import { ExamPrepWidget } from '@/components/dashboard/exam-prep/ExamPrepWidget';
 import { ParentOnboarding } from '@/components/dashboard/parent/ParentOnboarding';
 import { PendingRequestsWidget } from '@/components/dashboard/parent/PendingRequestsWidget';
+import { ParentShell } from '@/components/dashboard/parent/ParentShell';
 
 export default function ParentDashboard() {
   const router = useRouter();
@@ -291,76 +292,35 @@ export default function ParentDashboard() {
 
   const activeChild = childrenCards.find((c) => c.id === activeChildId);
 
-  return (
-    <div className="app">
-      <header className="topbar">
-        <div className="topbarRow topbarEdge">
-          <div className="leftGroup">
-            {preschoolName ? (
-              <div className="chip" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ fontSize: 16 }}>🎓</span>
-                <span style={{ fontWeight: 600 }}>{preschoolName}</span>
-              </div>
-            ) : profile?.preschoolId ? (
-              <div className="chip" style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--warning-bg)', color: 'var(--warning)' }}>
-                <span style={{ fontSize: 16 }}>⚠️</span>
-                <span style={{ fontWeight: 600 }}>School Info Loading...</span>
-              </div>
-            ) : (
-              <div className="chip" style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--warning-bg)', color: 'var(--warning)' }}>
-                <span style={{ fontSize: 16 }}>⚠️</span>
-                <span style={{ fontWeight: 600 }}>No School Linked</span>
-              </div>
-            )}
-          </div>
-          <div className="rightGroup">
-            <button className="iconBtn" aria-label="Notifications">
-              <Bell className="icon20" />
-            </button>
-            <div className="avatar">{avatarLetter}</div>
-          </div>
+  // Right Sidebar Content
+  const rightSidebar = (
+    <div style={{ overflowY: 'auto', height: '100%', display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+      <div className="card">
+        <div className="sectionTitle">
+          <Clock className="w-4 h-4 text-purple-400" />
+          At a Glance
         </div>
-      </header>
+        <ul style={{ display: 'grid', gap: 8 }}>
+          <li className="listItem"><span>Upcoming events</span><span className="badge">{activeChild ? metrics.upcomingEvents : 0}</span></li>
+          <li className="listItem"><span>Unread messages</span><span className="badge">{unreadCount}</span></li>
+          <li className="listItem"><span>Fees due</span><span className="badge">{activeChild && metrics.feesDue ? 'R ' + metrics.feesDue.amount.toLocaleString() : 'None'}</span></li>
+        </ul>
+      </div>
+      <AskAIWidget inline />
+    </div>
+  );
 
-      <div className="frame">
-        {/* Left sidebar (desktop/tablet) */}
-        <aside className="sidenav sticky" aria-label="Sidebar">
-            <div className="sidenavCol">
-              <nav className="nav">
-              {[
-                { href: '/dashboard/parent', label: 'Dashboard', icon: LayoutDashboard },
-                { href: '/dashboard/parent/messages', label: 'Messages', icon: MessageCircle, badge: unreadCount },
-                { href: '/dashboard/parent/children', label: 'My Children', icon: Users },
-                { href: '/dashboard/parent/settings', label: 'Settings', icon: SettingsIcon },
-              ].map((it) => {
-                const Icon = it.icon as any;
-                const active = pathname === it.href || pathname?.startsWith(it.href + '/');
-                return (
-                  <Link key={it.href} href={it.href} className={`navItem ${active ? 'navItemActive' : ''}`} aria-current={active ? 'page' : undefined}>
-                    <Icon className="navIcon" />
-                    <span>{it.label}</span>
-                    {typeof it.badge === 'number' && it.badge > 0 && (
-                      <span className="navItemBadge badgeNumber">{it.badge}</span>
-                    )}
-                  </Link>
-                );
-              })}
-            </nav>
-            <div className="sidenavFooter">
-              <button
-                className="navItem"
-                onClick={async () => { const sb = createClient(); await sb.auth.signOut(); router.push('/sign-in'); }}
-              >
-                <LogOut className="navIcon" />
-                <span>Sign out</span>
-              </button>
-              <div className="brandPill w-full text-center">Powered by EduDash Pro</div>
-            </div>
-            </div>
-          </aside>
-
-        {/* Main column */}
-        <main className="content">
+  return (
+    <>
+      <ParentShell
+        tenantSlug={tenantSlug || undefined}
+        userEmail={userEmail}
+        userName={userName}
+        preschoolName={preschoolName || undefined}
+        unreadCount={unreadCount}
+        rightSidebar={rightSidebar}
+        onOpenDashAI={() => setShowAskAI(true)}
+      >
           {/* Search Bar */}
           <div style={{ marginTop: 0, marginBottom: 'var(--space-3)' }}>
             <div style={{ position: 'relative' }}>
@@ -635,25 +595,7 @@ export default function ParentDashboard() {
                 </div>
               </div>
             )}
-        </main>
-
-        <aside className="right sticky" aria-label="At a glance">
-          <div style={{ overflowY: 'auto', height: '100%', display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-            <div className="card">
-                <div className="sectionTitle">
-                  <Clock className="w-4 h-4 text-purple-400" />
-                  At a Glance
-                </div>
-                <ul style={{ display: 'grid', gap: 8 }}>
-                  <li className="listItem"><span>Upcoming events</span><span className="badge">{activeChild ? metrics.upcomingEvents : 0}</span></li>
-                  <li className="listItem"><span>Unread messages</span><span className="badge">{unreadCount}</span></li>
-                  <li className="listItem"><span>Fees due</span><span className="badge">{activeChild && metrics.feesDue ? 'R ' + metrics.feesDue.amount.toLocaleString() : 'None'}</span></li>
-                </ul>
-            </div>
-            <AskAIWidget inline />
-          </div>
-        </aside>
-      </div>
+      </ParentShell>
 
       {/* Ask AI Modal - Fullscreen */}
       {showAskAI && (
@@ -701,22 +643,6 @@ export default function ParentDashboard() {
           </div>
         </div>
       )}
-
-      <nav className="bottomNav" aria-label="Primary">
-        <div className="bottomNavInner">
-          <div className="bottomGrid">
-            {[{href:'/dashboard/parent',label:'Home',icon:MessageCircle},{href:'/dashboard/parent/messages',label:'Messages',icon:MessageCircle},{href:'/dashboard/parent/calendar',label:'Calendar',icon:Calendar},{href:'/dashboard/parent/payments',label:'Fees',icon:DollarSign},{href:'/dashboard/parent/settings',label:'Settings',icon:Calendar}].map((it, i) => {
-              const Icon = it.icon; const active = pathname === it.href;
-              return (
-                <Link key={i} href={it.href} className={`bnItem ${active ? 'bnItemActive' : ''}`} aria-current={active ? 'page' : undefined}>
-                  <Icon className="icon20" />
-                  <span style={{ fontSize: 12 }}>{it.label}</span>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-      </nav>
-    </div>
+    </>
   );
 }

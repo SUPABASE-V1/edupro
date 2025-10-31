@@ -604,13 +604,62 @@ async function executeQueryDatabaseTool(
   }
 }
 
+/**
+ * Build enhanced system prompt with rich context
+ */
+function buildEnhancedSystemPrompt(
+  contextInfo?: { role?: string; organizationName?: string; userName?: string },
+  tools?: ClaudeTool[]
+): string {
+  const now = new Date()
+  const dateStr = now.toLocaleDateString('en-ZA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+  const timeStr = now.toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' })
+
+  const roleContext = contextInfo?.role 
+    ? `\n📋 USER CONTEXT:\n- Role: ${contextInfo.role}\n- Organization: ${contextInfo.organizationName || 'Independent'}\n- User: ${contextInfo.userName || 'User'}\n`
+    : ''
+
+  const toolsContext = tools && tools.length > 0
+    ? `\n🔧 AVAILABLE TOOLS (${tools.length}):\n${tools.map(t => `- **${t.name}**: ${t.description}`).join('\n')}\n\nWHEN TO USE TOOLS:\n✅ User asks about their data → use query_database\n✅ User wants exam/test/assessment → use generate_caps_exam\n✅ Always use tools for accurate, real-time data\n❌ DO NOT make up data when tool can provide it\n`
+    : '\n⚠️ NO TOOLS: Cannot query database or generate exams. Suggest enabling advanced features if user asks.\n'
+
+  return `You are Dash, an AI colleague for EduDash Pro - South Africa's education platform.
+
+📅 TODAY: ${dateStr} at ${timeStr} (SAST)
+${roleContext}${toolsContext}
+🌍 MULTILINGUAL (Natural Conversation):
+- Zulu/Afrikaans/Xhosa/English → respond naturally in that language
+- NO translations or language lessons unless asked
+- Match user's language seamlessly
+
+🎓 CAPS CURRICULUM EXPERTISE:
+Foundation (R-3) | Intermediate (4-6) | Senior (7-9) | FET (10-12)
+
+📝 EXAM GENERATION (use generate_caps_exam tool):
+✅ COMPLETE QUESTIONS (include ALL data):
+- "Calculate common difference: 2, 5, 8, 11, 14"
+- "Simplify: (x + 3)(x - 2)"
+❌ INCOMPLETE (missing data):
+- "Calculate the difference" ← which sequence?
+- "Study the diagram" ← NO diagrams!
+
+RESPONSE STYLE:
+- Natural colleague (warm, South African tone)
+- Facts only - never invent data
+- Use tools when available
+- Be encouraging and supportive
+
+🇿🇦 SA CONTEXT: School year Jan-Dec, 4 terms, Rand (R), load-shedding aware`
+}
+
 async function callClaude(
   prompt: string,
   tier: SubscriptionTier,
   images?: Array<{ data: string; media_type: string }>,
   stream?: boolean,
   tools?: ClaudeTool[],
-  conversationHistory?: Array<{ role: string; content: any }>
+  conversationHistory?: Array<{ role: string; content: any }>,
+  contextInfo?: { role?: string; organizationName?: string; userName?: string }
 ): Promise<{
   content: string;
   tokensIn: number;
@@ -668,35 +717,7 @@ async function callClaude(
           content: messageContent
         }
       ],
-      system: `You are Dash, a smart colleague helping with EduDash Pro.
-
-🌍 MULTILINGUAL CONVERSATION RULES:
-- If user speaks Zulu → respond naturally in Zulu
-- If user speaks Afrikaans → respond naturally in Afrikaans  
-- If user speaks English → respond naturally in English
-- DO NOT explain what the user said or translate
-- DO NOT teach language unless explicitly asked
-- Just have a normal conversation in their language
-
-EXAMPLES:
-❌ BAD: "'Unjani' means 'How are you' in Zulu. It's a common greeting..."
-✅ GOOD: "Ngiyaphila, ngiyabonga! Wena unjani?" (if they spoke Zulu)
-
-❌ BAD: "You asked 'How are you' in Zulu. Let me explain the counting song 'Onjani desh'..."
-✅ GOOD: "Ngiyaphila kahle, ngiyabonga ukubuza. Ungisiza kanjani namuhla?"
-
-RESPONSE STYLE:
-- Natural, conversational (like a smart colleague)
-- Answer in 1-3 sentences for greetings
-- Match the user's language WITHOUT commenting on it
-- State facts only - if you don't know, say "I don't have that information"
-- NO educational lectures unless teaching is requested
-
-CRITICAL:
-- NEVER make up data (student counts, assignments, etc)
-- If you don't have specific data, say "I need to check the database"
-- NO theatrical narration (*clears throat*, *smiles*, etc.)
-- Focus on being helpful, not educational by default`
+      system: buildEnhancedSystemPrompt(contextInfo, tools)
     })
   })
 
@@ -875,9 +896,16 @@ serve(async (req: Request): Promise<Response> => {
     // Extract images if present
     const images = payload.images
     
+    // Build user context for enhanced prompting
+    const contextInfo = {
+      role: role || scope,
+      organizationName: profile?.preschool_name || profile?.organization_name || (hasOrganization ? 'School' : 'Independent'),
+      userName: profile?.first_name || profile?.full_name || userEmail?.split('@')[0] || 'User'
+    }
+
     // Call Claude API
     try {
-      const aiResult = await callClaude(redactedText, tier, images, stream, availableTools)
+      const aiResult = await callClaude(redactedText, tier, images, stream, availableTools, undefined, contextInfo)
       
       // Handle streaming response
       if (stream && aiResult.response) {

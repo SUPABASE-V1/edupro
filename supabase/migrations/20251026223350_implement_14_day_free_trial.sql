@@ -1,7 +1,7 @@
 -- =====================================================================
--- 14-Day Free Trial Implementation
+-- 7-Day Free Trial Implementation
 -- =====================================================================
--- This migration implements automatic 14-day free trials for new schools
+-- This migration implements automatic 7-day free trials for new schools
 -- with soft downgrade to free tier after expiration.
 --
 -- Features:
@@ -105,13 +105,13 @@ BEGIN
       COALESCE(starter_plan_id, free_plan_id), -- Use starter or fallback to free
       'trialing',
       NOW(),
-      NOW() + INTERVAL '14 days', -- 14-day trial
-      NOW() + INTERVAL '15 days', -- Billing starts after trial
+      NOW() + INTERVAL '7 days', -- 7-day trial
+      NOW() + INTERVAL '8 days', -- Billing starts after trial
       10, -- Default seat allocation
       0
     );
     
-    RAISE NOTICE 'Created 14-day trial subscription for school %', NEW.id;
+    RAISE NOTICE 'Created 7-day trial subscription for school %', NEW.id;
   END IF;
   
   RETURN NEW;
