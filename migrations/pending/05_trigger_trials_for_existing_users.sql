@@ -120,17 +120,34 @@ BEGIN
 END $$;
 
 -- ================================================================
--- Update existing free users to trial
+-- Update existing active/unpaid users on free tier to trial
 -- ================================================================
 
-UPDATE public.subscriptions
-SET 
-  status = 'trialing',
-  trial_end_date = NOW() + INTERVAL '7 days',
-  next_billing_date = NOW() + INTERVAL '8 days',
-  updated_at = NOW()
-WHERE status = 'free'
-  AND trial_end_date IS NULL;
+-- Get the free plan ID
+DO $$
+DECLARE
+  free_plan_id UUID;
+BEGIN
+  SELECT id INTO free_plan_id
+  FROM subscription_plans
+  WHERE tier = 'free'
+  LIMIT 1;
+
+  IF free_plan_id IS NOT NULL THEN
+    -- Update subscriptions that are on free plan to trialing
+    UPDATE public.subscriptions
+    SET 
+      status = 'trialing',
+      trial_end_date = NOW() + INTERVAL '7 days',
+      next_billing_date = NOW() + INTERVAL '8 days',
+      updated_at = NOW()
+    WHERE plan_id = free_plan_id
+      AND trial_end_date IS NULL
+      AND status IN ('active', 'unpaid');
+    
+    RAISE NOTICE 'Updated % free tier subscriptions to trial', ROW_COUNT;
+  END IF;
+END $$;
 
 -- ================================================================
 -- Verification
