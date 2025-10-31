@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useUserProfile } from '@/lib/hooks/useUserProfile';
 import { PrincipalShell } from '@/components/dashboard/principal/PrincipalShell';
-import { Plus, Edit, Trash2, DollarSign, Users, TrendingUp, AlertCircle, ArrowLeft, Calendar } from 'lucide-react';
+import { Plus, Edit, Trash2, DollarSign, Users, TrendingUp, TrendingDown, AlertCircle, ArrowLeft, Calendar } from 'lucide-react';
 
 interface FeeStructure {
   id: string;
