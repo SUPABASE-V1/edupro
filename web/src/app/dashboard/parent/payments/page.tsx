@@ -137,17 +137,17 @@ export default function PaymentsPage() {
 
       // Fetch fee structures (to show what fees exist)
       if (childIds.length > 0) {
-        const { data: profile } = await supabase
-          .from('profiles')
+        const { data: student } = await supabase
+          .from('students')
           .select('preschool_id')
           .eq('id', childIds[0])
           .single();
 
-        if (profile?.preschool_id) {
+        if (student?.preschool_id) {
           const { data: structures } = await supabase
             .from('school_fee_structures')
             .select('*')
-            .eq('preschool_id', profile.preschool_id)
+            .eq('preschool_id', student.preschool_id)
             .eq('is_active', true);
 
           const formatted = (structures || []).map((s: any) => ({
@@ -166,11 +166,9 @@ export default function PaymentsPage() {
     }
   };
 
+  // Fix hydration error: use consistent formatting (not locale-dependent)
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-ZA', {
-      style: 'currency',
-      currency: 'ZAR',
-    }).format(amount);
+    return `R ${amount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}`;
   };
 
   const formatDate = (dateString: string) => {
