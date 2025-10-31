@@ -112,10 +112,3 @@ function generatePayFastSignature(data: Record<string, string>, passphrase?: str
   
   return crypto.createHash('md5').update(paramString).digest('hex');
 }
-
-// Disable body parsing (PayFast sends form data)
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
