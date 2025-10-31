@@ -5,6 +5,9 @@
 -- Created: 2025-10-31
 -- ================================================================
 
+-- PREREQUISITE: This migration requires exam_generations table
+-- Run migration: 20251030141353_add_exam_prep_tables.sql first!
+
 -- ================================================================
 -- 1. EXAM ASSIGNMENTS TABLE
 -- ================================================================
