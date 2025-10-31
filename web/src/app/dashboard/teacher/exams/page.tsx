@@ -110,30 +110,54 @@ export default function TeacherExamsPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Get classes taught by this teacher
+      // Get classes taught by this teacher (simplified query - no count for now)
       const { data, error } = await supabase
         .from('classes')
-        .select(`
-          id,
-          name,
-          grade_level,
-          enrollments:students_classes(count)
-        `)
-        .eq('teacher_id', user.id);
+        .select('id, name, grade_level')
+        .eq('teacher_id', user.id)
+        .eq('is_active', true);
 
       if (error) {
         console.error('Error loading classes:', error);
+        // Show friendly message if no classes exist
+        if (error.code === 'PGRST116') {
+          console.log('No classes found for this teacher');
+        }
       } else {
-        const formattedClasses = (data || []).map(c => ({
-          id: c.id,
-          name: c.name,
-          grade_level: c.grade_level,
-          student_count: c.enrollments?.[0]?.count || 0
-        }));
-        setClasses(formattedClasses);
+        // For each class, get student count separately
+        const classesWithCounts = await Promise.all(
+          (data || []).map(async (cls) => {
+            // Try to get student count - handle if students table doesn't exist
+            try {
+              const { count } = await supabase
+                .from('students')
+                .select('*', { count: 'exact', head: true })
+                .eq('class_id', cls.id);
+              
+              return {
+                id: cls.id,
+                name: cls.name,
+                grade_level: cls.grade_level,
+                student_count: count || 0
+              };
+            } catch {
+              // If students query fails, just return class without count
+              return {
+                id: cls.id,
+                name: cls.name,
+                grade_level: cls.grade_level,
+                student_count: 0
+              };
+            }
+          })
+        );
+        
+        setClasses(classesWithCounts);
       }
     } catch (err) {
       console.error('Error loading classes:', err);
+      // Set empty array so UI doesn't break
+      setClasses([]);
     }
   };
 
