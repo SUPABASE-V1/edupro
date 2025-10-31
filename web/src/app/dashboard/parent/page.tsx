@@ -203,15 +203,18 @@ export default function ParentDashboard() {
   }, [router, supabase]);
 
   // Start parent trial on first dashboard visit
+  // This works for ALL parents, even those without a school/organization
   useEffect(() => {
     const startTrialIfNeeded = async () => {
-      if (!userId || !profile) return;
+      if (!userId) return;
       
-      // Only for parents
-      if (profile.role !== 'parent') return;
+      // Wait a bit for profile to load, but don't block on it
+      // This ensures trial starts even if profile hasn't fully loaded
+      await new Promise(resolve => setTimeout(resolve, 500));
       
       try {
         // Call start_parent_trial RPC - it's idempotent so safe to call multiple times
+        // Works for parents with OR without a linked school/organization
         const { data, error } = await supabase.rpc('start_parent_trial');
         
         if (error) {
@@ -220,7 +223,10 @@ export default function ParentDashboard() {
         }
         
         if (data?.success && !data?.already_exists) {
-          console.log('Parent trial started successfully:', data);
+          console.log('?? Parent trial started successfully:', data);
+          // Optionally show a success notification to the user
+        } else if (data?.already_exists) {
+          console.log('? Parent trial already active');
         }
       } catch (err) {
         console.error('Failed to start parent trial:', err);
@@ -228,7 +234,7 @@ export default function ParentDashboard() {
     };
 
     startTrialIfNeeded();
-  }, [userId, profile, supabase]);
+  }, [userId, supabase]);
 
   // Load link requests (parent's own and incoming to approve)
   useEffect(() => {
@@ -404,9 +410,9 @@ export default function ParentDashboard() {
                 <span style={{ fontWeight: 600 }}>School Info Loading...</span>
               </div>
             ) : (
-              <div className="chip" style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--warning-bg)', color: 'var(--warning)' }}>
+              <div className="chip" style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white' }}>
                 <span style={{ fontSize: 16 }}>??</span>
-                <span style={{ fontWeight: 600 }}>No School Linked</span>
+                <span style={{ fontWeight: 600 }}>Independent Parent</span>
               </div>
             )}
           </div>
@@ -480,9 +486,29 @@ export default function ParentDashboard() {
               <h1 className="h1" style={{ margin: 0 }}>{greeting}, {userName}</h1>
             </div>
 
-            {/* Show onboarding if no preschool linked */}
+            {/* Show onboarding if no preschool linked - but now it's optional! */}
             {!preschoolName && !profile?.preschoolId && (
-              <ParentOnboarding userName={userName} />
+              <div className="card" style={{ 
+                background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%)', 
+                border: '1px solid rgba(102, 126, 234, 0.3)',
+                padding: 'var(--space-4)',
+                marginBottom: 'var(--space-4)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-3)' }}>
+                  <span style={{ fontSize: 32 }}>??</span>
+                  <div style={{ flex: 1 }}>
+                    <h3 style={{ margin: 0, marginBottom: 8, fontSize: 16, fontWeight: 700 }}>
+                      Welcome to Your 7-Day Free Trial!
+                    </h3>
+                    <p style={{ margin: 0, fontSize: 14, color: 'var(--muted)', marginBottom: 12 }}>
+                      You're all set to explore EduDash Pro. {childrenCards.length > 0 ? 'Track your children\'s progress' : 'Link a child to get started'}, generate learning activities, and more!
+                    </p>
+                    <p style={{ margin: 0, fontSize: 13, color: 'var(--muted)' }}>
+                      ?? <strong>Tip:</strong> You can link to a school anytime from Settings if your child joins a preschool.
+                    </p>
+                  </div>
+                </div>
+              </div>
             )}
 
             {/* Trial banner / upsell */}
