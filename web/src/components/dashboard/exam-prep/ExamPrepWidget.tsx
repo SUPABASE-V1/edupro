@@ -190,22 +190,39 @@ export function ExamPrepWidget({ onAskDashAI, guestMode = false }: ExamPrepWidge
   const gradeInfo = GRADES.find(g => g.value === selectedGrade);
   const examType = EXAM_TYPES.find(e => e.id === selectedExamType);
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     if (!onAskDashAI) return;
 
-    // Check guest mode limit
+    // Check guest mode limit (backend validation)
     if (guestMode) {
-      const key = 'EDUDASH_EXAM_PREP_FREE_USED';
-      const today = new Date().toDateString();
-      const stored = typeof window !== 'undefined' ? localStorage.getItem(key) : null;
-      
-      if (stored === today) {
-        alert('Free limit reached for today. Upgrade to Parent Starter (R49.99/month) for unlimited exam generation.');
-        return;
-      }
-      
-      if (typeof window !== 'undefined') {
-        localStorage.setItem(key, today);
+      try {
+        const { assertSupabase } = await import('@/lib/supabase');
+        
+        // Check backend rate limit
+        const { data: limitCheck, error } = await assertSupabase().rpc('check_guest_limit', {
+          p_ip_address: 'CLIENT_IP', // Backend replaces with real IP
+          p_resource_type: 'exam_prep',
+          p_daily_limit: 1
+        });
+
+        if (error) {
+          console.error('Rate limit check failed:', error);
+          // Fail open - allow access on error
+        } else if (!limitCheck.allowed) {
+          alert(`${limitCheck.message}\n\nUpgrade to Parent Starter (R49.99/month) for unlimited exam generation.`);
+          return;
+        }
+
+        // Log usage
+        await assertSupabase().rpc('log_guest_usage', {
+          p_ip_address: 'CLIENT_IP',
+          p_user_agent: navigator.userAgent,
+          p_resource_type: 'exam_prep',
+          p_metadata: { grade: selectedGrade, subject: selectedSubject, examType: selectedExamType }
+        });
+      } catch (err) {
+        console.error('Guest validation error:', err);
+        // Fail open - continue on error
       }
     }
 

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { ExamPrepWidget } from '@/components/dashboard/exam-prep/ExamPrepWidget';
 import { AskAIWidget } from '@/components/dashboard/AskAIWidget';
+import { ExamGenerationProgress } from '@/components/dashboard/exam-prep/ExamGenerationProgress';
 import { X, GraduationCap, Target, Award, CheckCircle, ArrowRight, Sparkles } from 'lucide-react';
 
 export default function ExamPrepPage() {
@@ -12,6 +13,8 @@ export default function ExamPrepPage() {
   const [aiDisplay, setAIDisplay] = useState('');
   const [aiLanguage, setAiLanguage] = useState<string>('en-ZA');
   const [aiInteractive, setAiInteractive] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [examType, setExamType] = useState('Practice Test');
 
   const handleAskFromExamPrep = (prompt: string, display: string, language?: string, enableInteractive?: boolean) => {
     console.log('[ExamPrepPage] handleAskFromExamPrep called with enableInteractive:', enableInteractive);
@@ -19,8 +22,13 @@ export default function ExamPrepPage() {
     setAIDisplay(display);
     setAiLanguage(language || 'en-ZA');
     setAiInteractive(enableInteractive || false);
+    setExamType(display.split(':')[0] || 'Practice Test');
+    setIsGenerating(true); // Show progress
     setShowAskAI(true);
     console.log('[ExamPrepPage] State set. aiInteractive will be:', enableInteractive || false);
+    
+    // Hide progress after 60 seconds (timeout)
+    setTimeout(() => setIsGenerating(false), 60000);
   };
 
   return (
