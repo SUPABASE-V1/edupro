@@ -20,6 +20,8 @@ export default function TeacherExamsPage() {
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [selectedTab, setSelectedTab] = useState<'my-exams' | 'create-new'>('my-exams');
+  const [viewingExam, setViewingExam] = useState<string | null>(null);
+  const [assigningExam, setAssigningExam] = useState<Exam | null>(null);
 
   useEffect(() => {
     loadExams();
@@ -74,23 +76,115 @@ export default function TeacherExamsPage() {
   };
 
   const handleCreateExam = (prompt: string, display: string) => {
-    // TODO: Integrate with AI generation
     console.log('Creating exam:', { prompt, display });
     setShowCreate(false);
     setTimeout(loadExams, 2000); // Reload after generation
   };
 
+  const handleViewExam = (examId: string) => {
+    // Navigate to exam view page
+    window.location.href = `/exam-prep?id=${examId}`;
+  };
+
+  const handleAssignExam = (exam: Exam) => {
+    setAssigningExam(exam);
+  };
+
+  const handleDownloadPDF = async (exam: Exam) => {
+    alert('📄 PDF export coming soon!\n\nThis will generate a downloadable PDF of the exam.');
+  };
+
   return (
-    <div style={{ padding: 'var(--space-4)', maxWidth: '1200px', margin: '0 auto' }}>
-      {/* Header */}
-      <div style={{ marginBottom: 'var(--space-6)' }}>
-        <h1 style={{ fontSize: 32, fontWeight: 'bold', marginBottom: 'var(--space-2)' }}>
-          📝 My Exams
-        </h1>
-        <p className="muted" style={{ fontSize: 14 }}>
-          Create, manage, and assign exams to your students
-        </p>
-      </div>
+    <>
+      {/* Assignment Modal */}
+      {assigningExam && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div className="card" style={{
+            width: '90%',
+            maxWidth: '500px',
+            padding: 'var(--space-6)',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--radius-2)',
+            background: 'var(--surface)'
+          }}>
+            <h2 style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 'var(--space-4)' }}>
+              📤 Assign Exam
+            </h2>
+            <div style={{ marginBottom: 'var(--space-4)' }}>
+              <p style={{ fontSize: 16, marginBottom: 'var(--space-2)' }}>
+                <strong>{assigningExam.title || `${assigningExam.grade} ${assigningExam.subject}`}</strong>
+              </p>
+              <p className="muted" style={{ fontSize: 14 }}>
+                Duration: {assigningExam.duration || 60} minutes
+              </p>
+            </div>
+            
+            <div style={{ marginBottom: 'var(--space-4)' }}>
+              <label style={{ display: 'block', fontWeight: 600, marginBottom: 'var(--space-2)', fontSize: 14 }}>
+                Select Class or Students
+              </label>
+              <select className="input" style={{ width: '100%' }}>
+                <option value="">Choose a class...</option>
+                <option value="grade-9a">Grade 9A (24 students)</option>
+                <option value="grade-9b">Grade 9B (22 students)</option>
+                <option value="all">All My Students</option>
+              </select>
+            </div>
+
+            <div style={{ marginBottom: 'var(--space-4)' }}>
+              <label style={{ display: 'block', fontWeight: 600, marginBottom: 'var(--space-2)', fontSize: 14 }}>
+                Due Date
+              </label>
+              <input 
+                type="datetime-local" 
+                className="input" 
+                style={{ width: '100%' }}
+                defaultValue={new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16)}
+              />
+            </div>
+
+            <div style={{ display: 'flex', gap: 'var(--space-2)', justifyContent: 'flex-end' }}>
+              <button
+                className="btn btnSecondary"
+                onClick={() => setAssigningExam(null)}
+              >
+                Cancel
+              </button>
+              <button
+                className="btn btnPrimary"
+                onClick={() => {
+                  alert('✅ Assignment feature coming soon!\n\nThis will:\n• Notify selected students\n• Track completion\n• Show results dashboard');
+                  setAssigningExam(null);
+                }}
+              >
+                Assign Exam
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div style={{ padding: 'var(--space-4)', maxWidth: '1200px', margin: '0 auto' }}>
+        {/* Header */}
+        <div style={{ marginBottom: 'var(--space-6)' }}>
+          <h1 style={{ fontSize: 32, fontWeight: 'bold', marginBottom: 'var(--space-2)' }}>
+            📝 My Exams
+          </h1>
+          <p className="muted" style={{ fontSize: 14 }}>
+            Create, manage, and assign exams to your students
+          </p>
+        </div>
 
       {/* Tabs */}
       <div style={{ display: 'flex', gap: 'var(--space-2)', marginBottom: 'var(--space-4)', borderBottom: '1px solid var(--border)' }}>
@@ -205,8 +299,18 @@ export default function TeacherExamsPage() {
                   {/* Actions */}
                   <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
                     <button
+                      className="btn btnPrimary"
+                      style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', fontSize: 13 }}
+                      onClick={() => handleAssignExam(exam)}
+                      title="Assign to students"
+                    >
+                      <Users className="w-4 h-4" />
+                      Assign
+                    </button>
+                    <button
                       className="btn btnSecondary"
                       style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', fontSize: 13 }}
+                      onClick={() => handleViewExam(exam.id)}
                       title="View exam"
                     >
                       <Eye className="w-4 h-4" />
@@ -215,6 +319,7 @@ export default function TeacherExamsPage() {
                     <button
                       className="btn btnSecondary"
                       style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', fontSize: 13 }}
+                      onClick={() => handleDownloadPDF(exam)}
                       title="Download PDF"
                     >
                       <Download className="w-4 h-4" />
@@ -245,6 +350,7 @@ export default function TeacherExamsPage() {
           />
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 }
