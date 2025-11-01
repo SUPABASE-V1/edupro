@@ -84,13 +84,15 @@ export default function ParentDashboard() {
   const { metrics } = useChildMetrics(activeChildId);
   const { unreadCount } = useUnreadMessages(userId, activeChildId);
   
-  // Derived values (not hooks)
+  // ========================================
+  // Derived values (not hooks) - IMPORTANT: All variables declared here
+  // ========================================
   const userEmail = profile?.email;
   const userName = profile?.firstName || userEmail?.split('@')[0] || 'User';
   const preschoolName = profile?.preschoolName;
   const userRole = profile?.role;
-  const usageType = profile?.usageType;
-  const hasOrganization = !!profile?.preschoolId;
+  const usageType = profile?.usageType; // Usage type for personalization
+  const hasOrganization = !!profile?.preschoolId; // Check if linked to organization
   const roleDisplay = userRole ? userRole.charAt(0).toUpperCase() + userRole.slice(1) : 'User';
   const avatarLetter = (userName[0] || 'U').toUpperCase();
 
