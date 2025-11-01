@@ -73,9 +73,26 @@ export default function SignInPage() {
           overflow-x: hidden;
           max-width: 100vw;
         }
+        
+        /* Mobile full screen styles */
+        @media (max-width: 768px) {
+          .sign-in-container {
+            padding: 0 !important;
+            align-items: stretch !important;
+          }
+          .sign-in-card {
+            max-width: 100% !important;
+            border-radius: 0 !important;
+            border: none !important;
+            min-height: 100vh !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: center !important;
+          }
+        }
       `}</style>
-      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#0a0a0f", fontFamily: "system-ui, sans-serif", overflowX: "hidden", padding: "20px" }}>
-        <div style={{ width: "100%", maxWidth: "500px", background: "#111113", padding: "40px", border: "1px solid #1f1f23", boxSizing: "border-box", borderRadius: "12px" }}>
+      <div className="sign-in-container" style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#0a0a0f", fontFamily: "system-ui, sans-serif", overflowX: "hidden", padding: "20px" }}>
+        <div className="sign-in-card" style={{ width: "100%", maxWidth: "500px", background: "#111113", padding: "40px", border: "1px solid #1f1f23", boxSizing: "border-box", borderRadius: "12px" }}>
         {/* Header with icon */}
         <div style={{ textAlign: "center", marginBottom: 32 }}>
           <div style={{ width: 64, height: 64, background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", fontSize: 32 }}>

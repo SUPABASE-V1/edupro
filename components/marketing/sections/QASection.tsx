@@ -21,7 +21,7 @@ const faqs = [
   },
   {
     question: 'Can I try before committing?',
-    answer: 'Absolutely! We offer a 14-day free trial with full access to all Pro features. No credit card required to start, and you can cancel anytime.',
+    answer: 'Absolutely! We offer a 7-day free trial with full access to all features. No credit card required to start, and you can cancel anytime.',
   },
 ];
 

@@ -500,6 +500,11 @@ export function useTheme() {
   return context;
 }
 
+// Safe helper hook that returns undefined when ThemeProvider is missing
+export function useOptionalTheme() {
+  return useContext(ThemeContext);
+}
+
 // Utility function to get theme colors (for use outside of components)
 export function getThemeColors(isDark: boolean): ThemeColors {
   return isDark ? darkTheme : lightTheme;

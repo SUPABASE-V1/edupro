@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
@@ -33,6 +33,16 @@ import { ExamPrepWidget } from '@/components/dashboard/exam-prep/ExamPrepWidget'
 import { ParentOnboarding } from '@/components/dashboard/parent/ParentOnboarding';
 import { PendingRequestsWidget } from '@/components/dashboard/parent/PendingRequestsWidget';
 
+type TrialStatusResponse = {
+  is_trial: boolean;
+  trial_end_date: string | null;
+  days_remaining: number | null;
+  plan_tier: string | null;
+  plan_name: string | null;
+  owner_type?: string | null;
+  message?: string | null;
+};
+
 export default function ParentDashboard() {
   const router = useRouter();
   const pathname = usePathname();
@@ -45,33 +55,85 @@ export default function ParentDashboard() {
   const [aiDisplay, setAIDisplay] = useState('');
   const [aiLanguage, setAiLanguage] = useState<string>('en-ZA');
   const [aiInteractive, setAiInteractive] = useState(false);
+  const [trialStatus, setTrialStatus] = useState<TrialStatusResponse | null>(null);
+  const [trialStatusLoading, setTrialStatusLoading] = useState(false);
+
+  useEffect(() => {
+    if (!userId) return;
+
+    let cancelled = false;
+
+    const loadTrialStatus = async () => {
+      try {
+        setTrialStatusLoading(true);
+        const { data, error } = await supabase.rpc('get_my_trial_status');
+        if (cancelled) return;
+        if (error) {
+          console.warn('[ParentDashboard] Failed to load trial status:', error);
+          setTrialStatus(null);
+        } else {
+          setTrialStatus((data || null) as TrialStatusResponse | null);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          console.warn('[ParentDashboard] Unexpected error loading trial status:', err);
+          setTrialStatus(null);
+        }
+      } finally {
+        if (!cancelled) setTrialStatusLoading(false);
+      }
+    };
+
+    loadTrialStatus();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
 
   const handleAskFromActivity = async (prompt: string, display: string, language?: string, enableInteractive?: boolean) => {
     try {
       const sb = createClient();
-      // Determine school plan
-      let plan = 'free';
-      const schoolId = profile?.preschoolId;
-      if (schoolId) {
-        const { data } = await sb
-          .from('preschools')
-          .select('subscription_plan')
-          .eq('id', schoolId)
-          .maybeSingle();
-        plan = (data?.subscription_plan as string | null) || 'free';
+      const storageKey = userId ? `EDUDASH_CAPS_FREE_USED_${userId}` : null;
+
+      let planTier: string | null = trialStatus?.plan_tier ? trialStatus.plan_tier.toLowerCase() : null;
+      let isTrialActive = Boolean(trialStatus?.is_trial);
+
+      // 1. If we have no cached tier info, fetch fresh trial status
+      if (!planTier && !isTrialActive) {
+        try {
+          const { data: trialData, error: trialError } = await sb.rpc('get_my_trial_status');
+          if (trialError) {
+            console.warn('[ParentDashboard] Failed to fetch trial status on demand:', trialError);
+          } else if (trialData) {
+            const typed = (trialData || null) as TrialStatusResponse | null;
+            setTrialStatus(typed);
+            planTier = typed?.plan_tier ? typed.plan_tier.toLowerCase() : null;
+            isTrialActive = Boolean(typed?.is_trial);
+          }
+        } catch (err) {
+          console.warn('[ParentDashboard] get_my_trial_status threw an error:', err);
+        }
       }
 
-      const isFree = String(plan || 'free').toLowerCase() === 'free';
-      const key = `EDUDASH_CAPS_FREE_USED_${userId}`;
+      const normalizedTier = planTier ?? null;
+      const isFreeTier = !normalizedTier || normalizedTier === 'free' || normalizedTier === 'parent-free';
 
-      if (isFree) {
-        const used = typeof window !== 'undefined' ? localStorage.getItem(key) : null;
-        if (used === '1') {
-          alert('Free tier limit reached. Upgrade to generate more activities.');
+      if (!isTrialActive && isFreeTier && storageKey) {
+        const today = new Date().toDateString();
+        const used = typeof window !== 'undefined' ? localStorage.getItem(storageKey) : null;
+
+        if (used === today) {
+          alert('Free tier daily limit reached. Upgrade to generate more activities.');
           return;
         }
-        // Mark as used immediately to prevent spamming
-        if (typeof window !== 'undefined') localStorage.setItem(key, '1');
+
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(storageKey, today);
+        }
+      } else if (!isFreeTier && storageKey && typeof window !== 'undefined') {
+        // Clear legacy free-tier flag once user is on trial/paid tier
+        localStorage.removeItem(storageKey);
       }
 
       setAIPrompt(prompt);
@@ -79,7 +141,8 @@ export default function ParentDashboard() {
       setAiLanguage(language || 'en-ZA');
       setAiInteractive(enableInteractive || false);
       setShowAskAI(true);
-    } catch {
+    } catch (error) {
+      console.warn('[ParentDashboard] handleAskFromActivity fallback path triggered:', error);
       // Fallback: allow one
       setAIPrompt(prompt);
       setAIDisplay(display);
@@ -291,6 +354,12 @@ export default function ParentDashboard() {
 
   const activeChild = childrenCards.find((c) => c.id === activeChildId);
 
+  const normalizedTier = useMemo(() => trialStatus?.plan_tier?.toLowerCase() ?? null, [trialStatus?.plan_tier]);
+  const isTrialActive = Boolean(trialStatus?.is_trial);
+  const isParentFreeTier = !normalizedTier || normalizedTier === 'free' || normalizedTier === 'parent-free';
+  const trialDaysRemaining = typeof trialStatus?.days_remaining === 'number' ? trialStatus?.days_remaining : null;
+  const trialEndDateDisplay = trialStatus?.trial_end_date ? new Date(trialStatus.trial_end_date) : null;
+
   return (
     <div className="app">
       <header className="topbar">
@@ -298,17 +367,17 @@ export default function ParentDashboard() {
           <div className="leftGroup">
             {preschoolName ? (
               <div className="chip" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ fontSize: 16 }}>🎓</span>
+                <span style={{ fontSize: 16 }}>??</span>
                 <span style={{ fontWeight: 600 }}>{preschoolName}</span>
               </div>
             ) : profile?.preschoolId ? (
               <div className="chip" style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--warning-bg)', color: 'var(--warning)' }}>
-                <span style={{ fontSize: 16 }}>⚠️</span>
+                <span style={{ fontSize: 16 }}>??</span>
                 <span style={{ fontWeight: 600 }}>School Info Loading...</span>
               </div>
             ) : (
               <div className="chip" style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--warning-bg)', color: 'var(--warning)' }}>
-                <span style={{ fontSize: 16 }}>⚠️</span>
+                <span style={{ fontSize: 16 }}>??</span>
                 <span style={{ fontWeight: 600 }}>No School Linked</span>
               </div>
             )}
@@ -388,6 +457,60 @@ export default function ParentDashboard() {
               <ParentOnboarding userName={userName} />
             )}
 
+            {/* Trial banner / upsell */}
+            {trialStatusLoading && (
+              <div className="card" style={{ marginBottom: 16, background: 'rgba(99, 102, 241, 0.08)', border: '1px dashed rgba(99, 102, 241, 0.4)' }}>
+                <p style={{ margin: 0, fontSize: 14, color: 'rgba(255, 255, 255, 0.6)' }}>Checking your trial benefits?</p>
+              </div>
+            )}
+
+            {!trialStatusLoading && (isTrialActive || isParentFreeTier) && (
+              <div
+                className="card"
+                style={{
+                  marginBottom: 16,
+                  background: isTrialActive
+                    ? 'linear-gradient(135deg, rgba(134, 239, 172, 0.2) 0%, rgba(74, 222, 128, 0.15) 100%)'
+                    : 'linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(168, 85, 247, 0.15) 100%)',
+                  border: '1px solid rgba(99, 102, 241, 0.4)'
+                }}
+              >
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: 20 }}>??</span>
+                    <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>7-Day Free Trial</h2>
+                    {isTrialActive && trialDaysRemaining !== null && (
+                      <span className="badge" style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#22c55e' }}>
+                        {trialDaysRemaining > 0 ? `${trialDaysRemaining} day${trialDaysRemaining === 1 ? '' : 's'} left` : 'Ends today'}
+                      </span>
+                    )}
+                  </div>
+                  <p style={{ margin: 0, fontSize: 14, color: 'rgba(255, 255, 255, 0.8)' }}>
+                    {isTrialActive
+                      ? 'Enjoy unlimited practice tests, study guides, and flashcards during your trial.'
+                      : 'Unlock unlimited exam resources for 7 days. No credit card required.'}
+                  </p>
+                  {isTrialActive && trialEndDateDisplay && (
+                    <p style={{ margin: 0, fontSize: 12, color: 'rgba(255, 255, 255, 0.6)' }}>
+                      Trial ends on {trialEndDateDisplay.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+                    </p>
+                  )}
+                  {!isTrialActive && (
+                    <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 4 }}>
+                      <Link
+                        href="/pricing"
+                        className="btn btnCyan"
+                        style={{ padding: '8px 20px', borderRadius: 999, fontSize: 14, fontWeight: 600 }}
+                      >
+                        Start Free Trial
+                      </Link>
+                      <span style={{ fontSize: 12, color: 'rgba(255, 255, 255, 0.5)' }}>Cancel anytime ? No credit card required</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Show pending requests widget */}
             <PendingRequestsWidget userId={userId} />
 
@@ -400,7 +523,7 @@ export default function ParentDashboard() {
                   padding: 'var(--space-5)',
                   textAlign: 'center'
                 }}>
-                  <div style={{ fontSize: 48, marginBottom: 16 }}>🕒</div>
+                  <div style={{ fontSize: 48, marginBottom: 16 }}>??</div>
                   <h2 style={{ margin: 0, marginBottom: 8, fontSize: 20, fontWeight: 700 }}>
                     Registration Pending
                   </h2>
@@ -418,12 +541,12 @@ export default function ParentDashboard() {
               <div className="card" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white', marginBottom: 16, cursor: 'pointer' }} onClick={() => router.push('/dashboard/parent/preschool')}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: 24 }}>🎓</span>
+                    <span style={{ fontSize: 24 }}>??</span>
                     <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>{preschoolName}</h2>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', paddingLeft: 32 }}>
                     <p style={{ margin: 0, fontSize: 14, opacity: 0.9 }}>{roleDisplay}</p>
-                    <span style={{ opacity: 0.7 }}>•</span>
+                    <span style={{ opacity: 0.7 }}>?</span>
                     <TierBadge userId={userId} size="sm" showUpgrade />
                   </div>
                 </div>
@@ -499,7 +622,7 @@ export default function ParentDashboard() {
                           {child.firstName} {child.lastName}
                         </div>
                         <div style={{ fontSize: 12, color: 'var(--muted)' }}>
-                          {child.grade}{child.className ? ` • ${child.className}` : ''}
+                          {child.grade}{child.className ? ` ? ${child.className}` : ''}
                         </div>
                       </div>
                       {activeChildId === child.id && (

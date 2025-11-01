@@ -175,6 +175,7 @@ export function ExamPrepWidget({ onAskDashAI, guestMode = false }: ExamPrepWidge
   const [selectedSubject, setSelectedSubject] = useState<string>('Mathematics');
   const [selectedExamType, setSelectedExamType] = useState<string>('practice_test');
   const [selectedLanguage, setSelectedLanguage] = useState<SouthAfricanLanguage>('en-ZA');
+  const [customDuration, setCustomDuration] = useState<number | null>(null); // null means use default
 
   const getPhase = (grade: string): keyof typeof SUBJECTS_BY_PHASE => {
     if (grade === 'grade_r' || grade === 'grade_1' || grade === 'grade_2' || grade === 'grade_3') return 'foundation';
@@ -189,22 +190,40 @@ export function ExamPrepWidget({ onAskDashAI, guestMode = false }: ExamPrepWidge
   const gradeInfo = GRADES.find(g => g.value === selectedGrade);
   const examType = EXAM_TYPES.find(e => e.id === selectedExamType);
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     if (!onAskDashAI) return;
 
-    // Check guest mode limit
+    // Check guest mode limit (backend validation)
     if (guestMode) {
-      const key = 'EDUDASH_EXAM_PREP_FREE_USED';
-      const today = new Date().toDateString();
-      const stored = typeof window !== 'undefined' ? localStorage.getItem(key) : null;
-      
-      if (stored === today) {
-        alert('Free limit reached for today. Upgrade to Parent Starter (R49.99/month) for unlimited exam generation.');
-        return;
-      }
-      
-      if (typeof window !== 'undefined') {
-        localStorage.setItem(key, today);
+      try {
+        const { createClient } = await import('@/lib/supabase/client');
+        const supabase = createClient();
+        
+        // Check backend rate limit
+        const { data: limitCheck, error } = await supabase.rpc('check_guest_limit', {
+          p_ip_address: 'CLIENT_IP', // Backend replaces with real IP
+          p_resource_type: 'exam_prep',
+          p_daily_limit: 1
+        });
+
+        if (error) {
+          console.error('Rate limit check failed:', error);
+          // Fail open - allow access on error
+        } else if (!limitCheck.allowed) {
+          alert(`${limitCheck.message}\n\nUpgrade to Parent Starter (R49.99/month) for unlimited exam generation.`);
+          return;
+        }
+
+        // Log usage
+        await supabase.rpc('log_guest_usage', {
+          p_ip_address: 'CLIENT_IP',
+          p_user_agent: navigator.userAgent,
+          p_resource_type: 'exam_prep',
+          p_metadata: { grade: selectedGrade, subject: selectedSubject, examType: selectedExamType }
+        });
+      } catch (err) {
+        console.error('Guest validation error:', err);
+        // Fail open - continue on error
       }
     }
 
@@ -216,6 +235,9 @@ export function ExamPrepWidget({ onAskDashAI, guestMode = false }: ExamPrepWidge
     const complexity = GRADE_COMPLEXITY[selectedGrade as keyof typeof GRADE_COMPLEXITY];
     const isAdditionalLanguage = selectedSubject.includes('Additional');
     const isFoundationPhase = phase === 'foundation';
+    
+    // Use custom duration if set, otherwise use grade default
+    const actualDuration = customDuration ? `${customDuration} minutes` : complexity.duration;
 
     if (selectedExamType === 'practice_test') {
       // NEW: Use tool-based generation for structured output
@@ -225,10 +247,11 @@ IMPORTANT: You MUST use the 'generate_caps_exam' tool to create this exam. Do NO
 
 Key requirements:
 - Student age: ${gradeInfo?.age} years old
-- Duration: ${complexity.duration}
+- Duration: ${actualDuration}
 - Total marks: ${complexity.marks}
 - Language: ${languageName} (${selectedLanguage})
 - Question types: ${complexity.questionTypes}
+- IMPORTANT: This is a PRACTICE EXAM - include model answers and explanations for ALL questions
 
 Every question MUST:
 1. Start with a clear action verb (${isFoundationPhase ? 'Circle, Count, Match, Choose' : phase === 'intermediate' ? 'List, Calculate, Identify, Describe' : phase === 'senior' ? 'Analyze, Evaluate, Explain, Compare' : 'Critically analyze, Evaluate, Justify, Synthesize'})
@@ -245,7 +268,7 @@ Use the generate_caps_exam tool now.`;
 
 **CRITICAL AGE-APPROPRIATE REQUIREMENTS:**
 - **Student Age**: ${gradeInfo?.age} years old
-- **Exam Duration**: ${complexity.duration} (STRICTLY ENFORCE - this is the attention span for this age group)
+- **Exam Duration**: ${actualDuration} (${customDuration ? 'CUSTOM DURATION' : 'STRICTLY ENFORCE - this is the attention span for this age group'})
 - **Total Marks**: ${complexity.marks} MAXIMUM (do not exceed)
 - **Question Types**: ${complexity.questionTypes}
 - **Vocabulary Level**: ${complexity.vocabulary}
@@ -253,6 +276,7 @@ Use the generate_caps_exam tool now.`;
 - **Special Instructions**: ${complexity.instructions}
 - **Calculator Use**: ${complexity.calculator ? 'Allowed' : 'NOT ALLOWED - too young for calculator'}
 - **Decimal Places**: ${complexity.decimals ? 'Use 2 decimal places where needed' : 'NO DECIMALS - too advanced for this grade'}
+- **EXAM TYPE**: PRACTICE EXAM - Students need immediate feedback with model answers and explanations
 
 ${isFoundationPhase ? `
 **FOUNDATION PHASE SPECIFIC REQUIREMENTS:**
@@ -298,7 +322,7 @@ ${isFoundationPhase ? `
 4. Write neatly and clearly
 `}
 
-**TIME:** ${complexity.duration}
+**TIME:** ${actualDuration}
 **MARKS:** ${complexity.marks}
 
 ---
@@ -373,10 +397,11 @@ phase === 'senior' ? `
 
 ## SECTION A
 **Question 1:** (X marks)
-- Correct answer: [simple, clear answer] ✓
+- **Model Answer:** [simple, clear answer] ✓
+- **Explanation:** [Why this is correct / Key concept being tested]
 ${isFoundationPhase ? '- Accept phonetic spelling for Foundation Phase' : '- Award marks for method and answer'}
 
-[Complete memo for all questions]
+[Complete memo for all questions - MUST include model answers and explanations for PRACTICE MODE]
 
 ---
 
@@ -777,6 +802,43 @@ Generate 30 flashcards for ${gradeInfo?.label} ${selectedSubject} covering essen
           Subjects available for {phase === 'foundation' ? 'Foundation Phase' : phase === 'intermediate' ? 'Intermediate Phase' : phase === 'senior' ? 'Senior Phase' : 'FET Phase'}
         </p>
       </div>
+
+      {/* Duration Selector (only for practice tests) */}
+      {selectedExamType === 'practice_test' && (
+        <div style={{ marginBottom: 'var(--space-4)' }}>
+          <label style={{ display: 'block', fontWeight: 600, marginBottom: 'var(--space-2)', fontSize: 14 }}>
+            <Clock className="w-4 h-4" style={{ display: 'inline', verticalAlign: 'middle', marginRight: 6 }} />
+            Exam Duration
+          </label>
+          <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center' }}>
+            <select
+              value={customDuration || 'default'}
+              onChange={(e) => setCustomDuration(e.target.value === 'default' ? null : parseInt(e.target.value))}
+              style={{
+                flex: 1,
+                padding: 'var(--space-3)',
+                borderRadius: 'var(--radius-2)',
+                border: '1px solid var(--border)',
+                background: 'var(--surface)',
+                color: 'var(--text)',
+                fontSize: 14
+              }}
+            >
+              <option value="default">Default ({GRADE_COMPLEXITY[selectedGrade as keyof typeof GRADE_COMPLEXITY].duration})</option>
+              <option value="15">Quick Test - 15 minutes</option>
+              <option value="30">Short - 30 minutes</option>
+              <option value="45">Medium - 45 minutes</option>
+              <option value="60">Standard - 60 minutes</option>
+              <option value="90">Extended - 90 minutes</option>
+              <option value="120">Full Exam - 2 hours</option>
+              <option value="180">Comprehensive - 3 hours</option>
+            </select>
+          </div>
+          <p className="muted" style={{ fontSize: 11, marginTop: 'var(--space-2)' }}>
+            ⏱️ Choose how long you want the exam to be. Shorter exams have fewer questions.
+          </p>
+        </div>
+      )}
 
       {/* Exam Type Selector */}
       <div style={{ marginBottom: 'var(--space-4)' }}>

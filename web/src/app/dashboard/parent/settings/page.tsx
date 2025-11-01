@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useTenantSlug } from '@/lib/tenant/useTenantSlug';
 import { ParentShell } from '@/components/dashboard/parent/ParentShell';
-import { Settings, User, Bell, Lock, Globe, Moon, Sun, Upload, LogOut, Camera } from 'lucide-react';
+import { Settings, User, Bell, Lock, Globe, Moon, Sun, Upload, LogOut, Camera, AlertTriangle } from 'lucide-react';
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -17,6 +17,8 @@ export default function SettingsPage() {
   const [darkMode, setDarkMode] = useState(true);
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [signingOut, setSigningOut] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -33,6 +35,36 @@ export default function SettingsPage() {
     setSigningOut(true);
     await supabase.auth.signOut();
     router.push('/sign-in');
+  };
+
+  const handleDeleteAccount = async () => {
+    const confirmed = typeof window !== 'undefined'
+      ? window.confirm('Are you sure you want to permanently delete your EduDash Pro account? This action cannot be undone and will remove access immediately.')
+      : false;
+
+    if (!confirmed) return;
+
+    try {
+      setDeletingAccount(true);
+      setDeleteError(null);
+
+      const { data, error } = await supabase.functions.invoke('delete-account', {
+        method: 'POST',
+        body: { confirm: true },
+      });
+
+      if (error || !data?.success) {
+        throw error ?? new Error('Failed to delete account');
+      }
+
+      await supabase.auth.signOut();
+      router.push('/sign-in?accountDeleted=1');
+    } catch (err) {
+      console.error('[ParentSettings] delete account failed', err);
+      setDeleteError('We could not delete your account right now. Please try again or contact support.');
+    } finally {
+      setDeletingAccount(false);
+    }
   };
 
   useEffect(() => {
@@ -234,6 +266,35 @@ export default function SettingsPage() {
               >
                 <LogOut className="w-4 h-4" />
                 {signingOut ? 'Signing out...' : 'Sign Out'}
+              </button>
+            </div>
+
+            {/* Delete Account */}
+            <div className="card p-md border-2 border-red-800/40 bg-red-950/20">
+              <div className="flex items-center gap-3 mb-6">
+                <AlertTriangle className="w-5 h-5 text-red-400" />
+                <h2 className="text-lg font-semibold text-red-200">Delete Account</h2>
+              </div>
+              <p className="text-sm text-red-200/80 mb-3">
+                Permanently delete your EduDash Pro account, remove access to all Dash AI features, and end your subscription. This cannot be undone.
+              </p>
+              <ul className="text-xs text-red-100/70 mb-4 space-y-1 list-disc list-inside">
+                <li>All devices will be signed out immediately</li>
+                <li>Your subscription and trial benefits will stop</li>
+                <li>Some records may be retained for regulatory requirements</li>
+              </ul>
+              {deleteError && (
+                <div className="mb-3 rounded-md border border-red-500/50 bg-red-900/40 px-3 py-2 text-xs text-red-100">
+                  {deleteError}
+                </div>
+              )}
+              <button
+                onClick={handleDeleteAccount}
+                disabled={deletingAccount}
+                className="w-full px-4 py-3 bg-gradient-to-r from-red-700 to-red-800 hover:from-red-800 hover:to-red-900 disabled:from-gray-700 disabled:to-gray-700 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 disabled:cursor-not-allowed shadow-lg hover:shadow-red-700/40"
+              >
+                <AlertTriangle className="w-4 h-4" />
+                {deletingAccount ? 'Deleting account?' : 'Delete My Account'}
               </button>
             </div>
           </div>

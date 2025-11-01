@@ -44,11 +44,45 @@ export function TierBadge({ userId, preschoolId, size = 'md', showUpgrade = fals
   const router = useRouter();
 
   useEffect(() => {
-    if (!userId && !preschoolId) return;
+    let cancelled = false;
 
     const loadTier = async () => {
       try {
-        // Prefer direct school lookup
+        // PRIORITY 1: Use get_my_trial_status RPC for accurate user/school subscription info
+        // This handles parents with user-level trials and those without schools
+        if (userId) {
+          try {
+            const { data: trialStatus, error: rpcError } = await supabase.rpc('get_my_trial_status');
+            
+            if (!rpcError && trialStatus) {
+              const planTier = trialStatus.plan_tier || 'free';
+              const subscriptionType = trialStatus.subscription_type || 'none';
+              
+              // User has their own subscription (parent trial) - use that tier
+              if (subscriptionType === 'user') {
+                setTier(planTier);
+                setLoading(false);
+                return;
+              }
+              
+              // User has school subscription - use that tier
+              if (subscriptionType === 'school') {
+                setTier(planTier);
+                setLoading(false);
+                return;
+              }
+              
+              // No subscription found - free tier
+              setTier('free');
+              setLoading(false);
+              return;
+            }
+          } catch (rpcErr) {
+            console.log('RPC get_my_trial_status not available, falling back to direct lookup');
+          }
+        }
+
+        // FALLBACK: Direct school lookup (for backward compatibility or if RPC fails)
         let schoolId = preschoolId;
 
         if (!schoolId && userId) {
@@ -61,27 +95,46 @@ export function TierBadge({ userId, preschoolId, size = 'md', showUpgrade = fals
         }
 
         if (!schoolId) {
+          // No school ID and no user subscription - default to free
           setTier('free');
           return;
         }
 
-        // Fetch plan info from preschools (more stable across schemas)
-        const { data: school } = await supabase
-          .from('preschools')
-          .select('subscription_plan')
-          .eq('id', schoolId)
-          .maybeSingle();
+        if (preschoolId) {
+          const { data: school, error: schoolError } = await supabase
+            .from('preschools')
+            .select('subscription_plan')
+            .eq('id', preschoolId)
+            .maybeSingle();
 
-        const plan = (school?.subscription_plan as string | null) || 'free';
-        setTier(plan);
+          if (cancelled) return;
+          if (schoolError) {
+            console.warn('[TierBadge] Failed to load school tier:', schoolError);
+            setTier('free');
+          } else {
+            const plan = (school?.subscription_plan as string | null) || 'free';
+            setTier(plan.toLowerCase());
+          }
+          return;
+        }
+
+        setTier('free');
       } catch (error) {
         console.error('Error loading tier:', error);
+        // Default to free on error
+        setTier('free');
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     };
 
     loadTier();
+
+    return () => {
+      cancelled = true;
+    };
   }, [userId, preschoolId, supabase]);
 
   const meta = getTierMeta(tier);
