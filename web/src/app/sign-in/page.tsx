@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 
-export default function SignInPage() {
+// Separate component for search params handling
+function SignInFormWithParams() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
@@ -214,5 +215,18 @@ export default function SignInPage() {
       </div>
     </div>
     </>
+  );
+}
+
+// Main export with Suspense boundary
+export default function SignInPage() {
+  return (
+    <Suspense fallback={
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#0a0a0f" }}>
+        <div style={{ color: "#fff" }}>Loading...</div>
+      </div>
+    }>
+      <SignInFormWithParams />
+    </Suspense>
   );
 }
