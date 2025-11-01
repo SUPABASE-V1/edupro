@@ -118,11 +118,28 @@ export function AskAIWidget({
           console.error('[DashAI] Edge Function Error:', error);
           console.error('[DashAI] Error details:', JSON.stringify(error, null, 2));
           
+          // Try to get detailed error from response
+          let errorDetails = 'Unknown error';
+          if (data?.error) {
+            errorDetails = data.error;
+            if (data.details) errorDetails += `\n\nDetails: ${data.details}`;
+          }
+          
           // Handle function not found
           if (error.name === 'FunctionsFetchError') {
             setMessages((m) => [...m, { 
               role: 'assistant', 
               text: `❌ **AI Service Not Deployed**\n\nThe \`ai-proxy-simple\` Edge Function is not deployed yet.\n\n**To fix this:**\n\n1. Open a terminal in your project\n2. Run:\n   \`\`\`bash\n   cd supabase/functions\n   supabase functions deploy ai-proxy-simple\n   \`\`\`\n\n3. Or deploy via Supabase Dashboard:\n   - Go to **Functions** → **Create Function**\n   - Name: \`ai-proxy-simple\`\n   - Copy code from \`/workspace/supabase/functions/ai-proxy-simple/index.ts\`\n   - Click **Deploy**\n\nOnce deployed, refresh this page and try again!` 
+            }]);
+            setLoading(false);
+            return;
+          }
+          
+          // Handle 500 errors (function crashed)
+          if (error.name === 'FunctionsHttpError') {
+            setMessages((m) => [...m, { 
+              role: 'assistant', 
+              text: `❌ **AI Service Error (500)**\n\nThe Edge Function is deployed but crashed.\n\n**Error:** ${errorDetails}\n\n**Most Common Causes:**\n\n1. **Missing ANTHROPIC_API_KEY** (most likely)\n   - Go to Supabase Dashboard\n   - Settings → Edge Functions → Environment Variables\n   - Add: \`ANTHROPIC_API_KEY\` = \`sk-ant-api03-...\`\n   - Redeploy function\n\n2. **Invalid API Key**\n   - Get new key from: https://console.anthropic.com/settings/keys\n   - Update environment variable\n\n3. **Check Function Logs:**\n   - Supabase Dashboard → Edge Functions → ai-proxy-simple → Logs\n   - Look for the actual error message\n\n**Need help?** Copy the logs and I can help debug!` 
             }]);
             setLoading(false);
             return;
