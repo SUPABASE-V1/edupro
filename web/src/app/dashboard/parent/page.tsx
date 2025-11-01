@@ -34,7 +34,9 @@ import { ParentOnboarding } from '@/components/dashboard/parent/ParentOnboarding
 import { PendingRequestsWidget } from '@/components/dashboard/parent/PendingRequestsWidget';
 
 export default function ParentDashboard() {
-  // All hooks must be called at the top in consistent order
+  // ========================================
+  // HOOKS - Must be called at the top in consistent order
+  // ========================================
   const router = useRouter();
   const pathname = usePathname();
   const supabase = createClient();
