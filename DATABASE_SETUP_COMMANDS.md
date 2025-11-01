@@ -24,12 +24,28 @@ Or find it here: `/workspace/migrations/20251101_add_usage_type_and_fix_currency
 
 ---
 
-## 🏫 Step 2: Approve Your Schools (REQUIRED)
+## 🏫 Step 2: Approve Organizations (REQUIRED)
 
-After the migration, run this to make schools visible in signup:
+### **Option A: Via Superadmin Dashboard** (Recommended)
+
+1. Login with a superadmin account
+2. Navigate to: **/dashboard/admin/organizations**
+3. Review each organization
+4. Click **"Approve"** for valid organizations
+5. Click **"Revoke"** to remove approval
+
+**Benefits:**
+- ✅ Audit trail (approved_by, approved_at tracked)
+- ✅ Visual interface
+- ✅ Search and filter capabilities
+- ✅ One-click approval/rejection
+
+### **Option B: Via SQL** (Quick for Development)
+
+If you want to approve ALL organizations at once:
 
 ```sql
--- Approve ALL existing schools
+-- Approve ALL existing organizations
 UPDATE preschools 
 SET 
   approved = TRUE, 
@@ -37,10 +53,10 @@ SET
 WHERE is_active = TRUE;
 ```
 
-Or approve specific schools only:
+Or approve specific organizations:
 
 ```sql
--- See all schools first
+-- See all organizations first
 SELECT id, name, type, city, approved, verified 
 FROM preschools 
 ORDER BY name;
@@ -49,8 +65,8 @@ ORDER BY name;
 UPDATE preschools 
 SET approved = TRUE, verified = TRUE
 WHERE id IN (
-  'school-id-1',
-  'school-id-2'
+  'org-id-1',
+  'org-id-2'
 );
 ```
 

@@ -17,9 +17,14 @@ Go to: **Supabase Dashboard** → **SQL Editor** → **New Query**
 ### **3. Paste & Run**
 Click **Run** button (bottom right) ▶️
 
-### **4. Approve Schools**
-After step 3 succeeds, run this:
+### **4. Approve Organizations**
 
+**Option A: Via Superadmin Dashboard** (Recommended)
+1. Login as superadmin
+2. Go to: `/dashboard/admin/organizations`
+3. Click **Approve** on each organization
+
+**Option B: Via SQL** (Quick for development)
 ```sql
 UPDATE preschools 
 SET approved = TRUE, verified = TRUE 

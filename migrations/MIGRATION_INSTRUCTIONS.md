@@ -129,9 +129,24 @@ SELECT * FROM get_approved_organizations() LIMIT 5;
 
 ## 🔧 Post-Migration Tasks
 
-### **1. Approve Existing Organizations**
+### **1. Approve Organizations**
 
-You'll need to manually approve organizations that should appear in parent searches:
+**Option A: Via Superadmin Dashboard** (Recommended)
+
+1. Login with a superadmin account
+2. Navigate to: `/dashboard/admin/organizations`
+3. Review each organization in the list
+4. Click **"Approve"** for legitimate organizations
+5. Click **"Revoke"** to remove approval from organizations
+
+**Features:**
+- ✅ Search and filter organizations
+- ✅ View pending vs approved status
+- ✅ Audit trail (who approved, when)
+- ✅ One-click approval/rejection
+- ✅ Real-time stats dashboard
+
+**Option B: Via SQL** (Quick for Development)
 
 ```sql
 -- View all organizations

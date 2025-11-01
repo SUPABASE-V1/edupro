@@ -75,57 +75,19 @@ COMMENT ON COLUMN students.grade_level IS
   'Current grade level (e.g., "Grade R", "Grade 1", "Grade 12")';
 
 -- ============================================
--- PART 4: Fix currency to South African Rand (ZAR)
+-- PART 4: Fix currency to South African Rand (ZAR) - Only if tables exist
 -- ============================================
 
--- Ensure fees table uses ZAR
-ALTER TABLE fees 
-ADD COLUMN IF NOT EXISTS currency TEXT DEFAULT 'ZAR' 
-CHECK (currency IN ('ZAR', 'USD', 'EUR', 'GBP')); -- Allow multiple but default to ZAR
+-- Note: Currency handling is application-level (display R symbol for Rand)
+-- If you have fees/payments tables in the future, add currency columns like:
+-- ALTER TABLE fees ADD COLUMN IF NOT EXISTS currency TEXT DEFAULT 'ZAR';
+-- ALTER TABLE payments ADD COLUMN IF NOT EXISTS currency TEXT DEFAULT 'ZAR';
 
--- Update existing fees to ZAR if currency is null or different
-UPDATE fees 
-SET currency = 'ZAR' 
-WHERE currency IS NULL OR currency != 'ZAR';
-
--- Add comment
-COMMENT ON COLUMN fees.currency IS 
-  'Fee currency code. Default: ZAR (South African Rand)';
-
--- Ensure payments table uses ZAR
-ALTER TABLE payments 
-ADD COLUMN IF NOT EXISTS currency TEXT DEFAULT 'ZAR'
-CHECK (currency IN ('ZAR', 'USD', 'EUR', 'GBP'));
-
--- Update existing payments to ZAR
-UPDATE payments 
-SET currency = 'ZAR' 
-WHERE currency IS NULL OR currency != 'ZAR';
-
--- Add comment
-COMMENT ON COLUMN payments.currency IS 
-  'Payment currency code. Default: ZAR (South African Rand)';
+-- For now, we'll handle ZAR in the application layer
+-- All amounts should be displayed with R prefix (e.g., R99.99)
 
 -- ============================================
--- PART 5: Update subscriptions for ZAR pricing
--- ============================================
-
--- Ensure subscription_plans uses ZAR
-ALTER TABLE subscription_plans 
-ADD COLUMN IF NOT EXISTS currency TEXT DEFAULT 'ZAR'
-CHECK (currency IN ('ZAR', 'USD', 'EUR', 'GBP'));
-
--- Update existing plans to ZAR
-UPDATE subscription_plans 
-SET currency = 'ZAR' 
-WHERE currency IS NULL;
-
--- Add comment
-COMMENT ON COLUMN subscription_plans.currency IS 
-  'Subscription pricing currency. Default: ZAR (South African Rand)';
-
--- ============================================
--- PART 6: Update preschools table for approval
+-- PART 5: Update preschools table for approval
 -- ============================================
 
 -- Ensure preschools have approval status
@@ -134,6 +96,12 @@ ADD COLUMN IF NOT EXISTS approved BOOLEAN DEFAULT FALSE;
 
 ALTER TABLE preschools 
 ADD COLUMN IF NOT EXISTS verified BOOLEAN DEFAULT FALSE;
+
+ALTER TABLE preschools
+ADD COLUMN IF NOT EXISTS approved_by UUID REFERENCES profiles(id);
+
+ALTER TABLE preschools
+ADD COLUMN IF NOT EXISTS approved_at TIMESTAMP WITH TIME ZONE;
 
 -- Add indexes for approved/verified queries
 CREATE INDEX IF NOT EXISTS idx_preschools_approved 
@@ -146,12 +114,16 @@ WHERE verified = TRUE;
 
 -- Add comments
 COMMENT ON COLUMN preschools.approved IS 
-  'Whether the preschool has been approved to appear in parent searches';
+  'Whether the organization has been approved to appear in parent searches (set via superadmin dashboard)';
 COMMENT ON COLUMN preschools.verified IS 
-  'Whether the preschool has been verified by admin';
+  'Whether the organization has been verified by admin (set via superadmin dashboard)';
+COMMENT ON COLUMN preschools.approved_by IS
+  'Superadmin user who approved this organization';
+COMMENT ON COLUMN preschools.approved_at IS
+  'When the organization was approved';
 
 -- ============================================
--- PART 7: Create helper functions
+-- PART 6: Create helper functions
 -- ============================================
 
 -- Function to check if user has school-dependent features
@@ -198,7 +170,7 @@ COMMENT ON FUNCTION get_approved_organizations IS
   'Get list of approved organizations for parent signup search';
 
 -- ============================================
--- PART 8: Update RLS policies (if needed)
+-- PART 7: Update RLS policies (if needed)
 -- ============================================
 
 -- Ensure parents can read approved preschools
@@ -213,7 +185,7 @@ USING (
 );
 
 -- ============================================
--- PART 9: Create audit log (optional)
+-- PART 8: Create audit log (optional)
 -- ============================================
 
 -- Create migration_logs table if it doesn't exist
@@ -246,10 +218,7 @@ INSERT INTO migration_logs (
 -- GROUP BY usage_type 
 -- ORDER BY count DESC;
 
--- Check currency consistency
--- SELECT currency, COUNT(*) as count FROM fees GROUP BY currency;
--- SELECT currency, COUNT(*) as count FROM payments GROUP BY currency;
--- SELECT currency, COUNT(*) as count FROM subscription_plans GROUP BY currency;
+-- Note: Currency is handled in application layer (display R symbol)
 
 -- Check approved organizations
 -- SELECT COUNT(*) as total, 
