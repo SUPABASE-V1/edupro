@@ -82,7 +82,7 @@ export function TierBadge({ userId, preschoolId, size = 'md', showUpgrade = fals
           }
         }
 
-        // FALLBACK: Direct school lookup (for backward compatibility or if RPC fails)
+        // FALLBACK: Read directly from subscriptions table (source of truth)
         let schoolId = preschoolId;
 
         if (!schoolId && userId) {
@@ -100,25 +100,35 @@ export function TierBadge({ userId, preschoolId, size = 'md', showUpgrade = fals
           return;
         }
 
-        if (preschoolId) {
-          const { data: school, error: schoolError } = await supabase
+        // Read directly from subscriptions table (source of truth)
+        // This is more accurate than the preschools.subscription_plan column
+        const { data: subscription } = await supabase
+          .from('subscriptions')
+          .select(`
+            status,
+            subscription_plans!inner (
+              tier,
+              name
+            )
+          `)
+          .eq('school_id', schoolId)
+          .eq('owner_type', 'school')
+          .in('status', ['active', 'trialing'])
+          .maybeSingle();
+
+        if (subscription?.subscription_plans) {
+          const planData = subscription.subscription_plans as { tier: string; name: string };
+          setTier(planData.tier || 'free');
+        } else {
+          // Fallback to preschools table if no subscription found
+          const { data: school } = await supabase
             .from('preschools')
             .select('subscription_plan')
-            .eq('id', preschoolId)
+            .eq('id', schoolId)
             .maybeSingle();
-
-          if (cancelled) return;
-          if (schoolError) {
-            console.warn('[TierBadge] Failed to load school tier:', schoolError);
-            setTier('free');
-          } else {
-            const plan = (school?.subscription_plan as string | null) || 'free';
-            setTier(plan.toLowerCase());
-          }
-          return;
+          
+          setTier((school?.subscription_plan as string | null) || 'free');
         }
-
-        setTier('free');
       } catch (error) {
         console.error('Error loading tier:', error);
         // Default to free on error
