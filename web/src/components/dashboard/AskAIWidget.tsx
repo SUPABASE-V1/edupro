@@ -7,6 +7,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { parseExamMarkdown } from '@/lib/examParser';
 import { ExamInteractiveView } from './exam-prep/ExamInteractiveView';
+import { useAIConversation } from '@/lib/hooks/useAIConversation';
 
 const TRUTHY_ENV_VALUES = new Set(['true', '1', 'yes', 'y', 'on', 'enabled']);
 const FALSY_ENV_VALUES = new Set(['false', '0', 'no', 'n', 'off', 'disabled']);
@@ -41,6 +42,7 @@ interface AskAIWidgetProps {
   fullscreen?: boolean;
   language?: string;
   enableInteractive?: boolean;
+  conversationId?: string; // NEW: For persistence
   onClose?: () => void;
 }
 
@@ -51,6 +53,7 @@ export function AskAIWidget({
   fullscreen = false, 
   language = 'en-ZA', 
   enableInteractive = false,
+  conversationId, // NEW
   onClose 
 }: AskAIWidgetProps) {
   const [open, setOpen] = useState(inline);
@@ -61,6 +64,12 @@ export function AskAIWidget({
   const [interactiveExam, setInteractiveExam] = useState<any>(null);
   const scrollerRef = useRef<HTMLDivElement>(null);
   const examSetRef = useRef(false);
+  
+  // NEW: Conversation persistence
+  const { 
+    messages: persistedMessages, 
+    saveMessages 
+  } = useAIConversation(conversationId || null);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
