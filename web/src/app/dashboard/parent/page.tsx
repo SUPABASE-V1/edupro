@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
@@ -35,15 +35,6 @@ import { PendingRequestsWidget } from '@/components/dashboard/parent/PendingRequ
 import { EmptyChildrenState } from '@/components/dashboard/parent/EmptyChildrenState';
 import { QuickActionsGrid } from '@/components/dashboard/parent/QuickActionsGrid';
 
-type TrialStatusResponse = {
-  is_trial: boolean;
-  trial_end_date: string | null;
-  days_remaining: number | null;
-  plan_tier: string | null;
-  plan_name: string | null;
-  message?: string | null;
-};
-
 export default function ParentDashboard() {
   // ========================================
   // HOOKS - Must be called at the top in consistent order
@@ -67,107 +58,66 @@ export default function ParentDashboard() {
   const [aiDisplay, setAIDisplay] = useState('');
   const [aiLanguage, setAiLanguage] = useState<string>('en-ZA');
   const [aiInteractive, setAiInteractive] = useState(false);
-  const [trialStatus, setTrialStatus] = useState<TrialStatusResponse | null>(null);
-  const [trialStatusLoading, setTrialStatusLoading] = useState(false);
+  const [pendingRequests, setPendingRequests] = useState<{
+    childName: string;
+    requestedDate: string;
+    status: string;
+  }[]>([]);
+  const [, setParentLinkRequests] = useState<{
+    id: string;
+    parentName: string;
+    childName: string;
+    relationship?: string;
+    requestedDate: string;
+  }[]>([]);
 
-  useEffect(() => {
-    if (!userId) return;
-
-    let cancelled = false;
-
-    const loadTrialStatus = async () => {
-      try {
-        setTrialStatusLoading(true);
-        const { data, error } = await supabase.rpc('get_my_trial_status');
-        if (cancelled) return;
-        if (error) {
-          console.warn('[ParentDashboard] Failed to load trial status:', error);
-          setTrialStatus(null);
-        } else {
-          setTrialStatus((data || null) as TrialStatusResponse | null);
-        }
-      } catch (err) {
-        if (!cancelled) {
-          console.warn('[ParentDashboard] Unexpected error loading trial status:', err);
-          setTrialStatus(null);
-        }
-      } finally {
-        if (!cancelled) setTrialStatusLoading(false);
-      }
-    };
-
-    loadTrialStatus();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [userId]);
+  // All custom hooks together (must be called in consistent order)
+  const { profile, loading: profileLoading } = useUserProfile(userId);
+  const { slug: tenantSlug } = useTenantSlug(userId);
+  const {
+    childrenCards,
+    activeChildId,
+    setActiveChildId,
+    loading: childrenLoading,
+    refetch: refetchChildren,
+  } = useChildrenData(userId);
+  const { metrics } = useChildMetrics(activeChildId);
+  const { unreadCount } = useUnreadMessages(userId, activeChildId);
+  
+  // Derived values (not hooks)
+  const userEmail = profile?.email;
+  const userName = profile?.firstName || userEmail?.split('@')[0] || 'User';
+  const preschoolName = profile?.preschoolName;
+  const userRole = profile?.role;
+  const roleDisplay = userRole ? userRole.charAt(0).toUpperCase() + userRole.slice(1) : 'User';
+  const avatarLetter = (userName[0] || 'U').toUpperCase();
 
   const handleAskFromActivity = async (prompt: string, display: string, language?: string, enableInteractive?: boolean) => {
     try {
       const sb = createClient();
-      const storageKey = userId ? `EDUDASH_CAPS_FREE_USED_${userId}` : null;
-
-      let planTier: string | null = trialStatus?.plan_tier ? trialStatus.plan_tier.toLowerCase() : null;
-      let isTrialActive = Boolean(trialStatus?.is_trial);
-
-      // 1. If we have no cached tier info, fetch fresh trial status
-      if (!planTier && !isTrialActive) {
-        try {
-          const { data: trialData, error: trialError } = await sb.rpc('get_my_trial_status');
-          if (trialError) {
-            console.warn('[ParentDashboard] Failed to fetch trial status on demand:', trialError);
-          } else if (trialData) {
-            const typed = (trialData || null) as TrialStatusResponse | null;
-            setTrialStatus(typed);
-            planTier = typed?.plan_tier ? typed.plan_tier.toLowerCase() : null;
-            isTrialActive = Boolean(typed?.is_trial);
-          }
-        } catch (err) {
-          console.warn('[ParentDashboard] get_my_trial_status threw an error:', err);
-        }
+      // Determine school plan
+      let plan = 'free';
+      const schoolId = profile?.preschoolId;
+      if (schoolId) {
+        const { data } = await sb
+          .from('preschools')
+          .select('subscription_plan')
+          .eq('id', schoolId)
+          .maybeSingle();
+        plan = (data?.subscription_plan as string | null) || 'free';
       }
 
-      // 2. Fallback to legacy school column if tier still unknown
-      if (!planTier) {
-        const schoolId = profile?.preschoolId;
-        if (schoolId) {
-          try {
-            const { data, error } = await sb
-              .from('preschools')
-              .select('subscription_plan, subscription_tier')
-              .eq('id', schoolId)
-              .maybeSingle();
-            if (error) {
-              console.warn('[ParentDashboard] Failed to fetch school subscription info:', error);
-            } else if (data) {
-              const rawTier = (data.subscription_tier || data.subscription_plan) as string | null;
-              planTier = rawTier ? rawTier.toLowerCase() : null;
-            }
-          } catch (err) {
-            console.warn('[ParentDashboard] Error loading legacy subscription tier:', err);
-          }
-        }
-      }
+      const isFree = String(plan || 'free').toLowerCase() === 'free';
+      const key = `EDUDASH_CAPS_FREE_USED_${userId}`;
 
-      const normalizedTier = planTier ?? null;
-      const isFreeTier = !normalizedTier || normalizedTier === 'free' || normalizedTier === 'parent-free';
-
-      if (!isTrialActive && isFreeTier && storageKey) {
-        const today = new Date().toDateString();
-        const used = typeof window !== 'undefined' ? localStorage.getItem(storageKey) : null;
-
-        if (used === today) {
-          alert('Free tier daily limit reached. Upgrade to generate more activities.');
+      if (isFree) {
+        const used = typeof window !== 'undefined' ? localStorage.getItem(key) : null;
+        if (used === '1') {
+          alert('Free tier limit reached. Upgrade to generate more activities.');
           return;
         }
-
-        if (typeof window !== 'undefined') {
-          localStorage.setItem(storageKey, today);
-        }
-      } else if (!isFreeTier && storageKey && typeof window !== 'undefined') {
-        // Clear legacy free-tier flag once user is on trial/paid tier
-        localStorage.removeItem(storageKey);
+        // Mark as used immediately to prevent spamming
+        if (typeof window !== 'undefined') localStorage.setItem(key, '1');
       }
 
       setAIPrompt(prompt);
@@ -175,8 +125,7 @@ export default function ParentDashboard() {
       setAiLanguage(language || 'en-ZA');
       setAiInteractive(enableInteractive || false);
       setShowAskAI(true);
-    } catch (error) {
-      console.warn('[ParentDashboard] handleAskFromActivity fallback path triggered:', error);
+    } catch {
       // Fallback: allow one
       setAIPrompt(prompt);
       setAIDisplay(display);
@@ -378,12 +327,6 @@ export default function ParentDashboard() {
 
   const activeChild = childrenCards.find((c) => c.id === activeChildId);
 
-  const normalizedTier = useMemo(() => trialStatus?.plan_tier?.toLowerCase() ?? null, [trialStatus?.plan_tier]);
-  const isTrialActive = Boolean(trialStatus?.is_trial);
-  const isParentFreeTier = !normalizedTier || normalizedTier === 'free' || normalizedTier === 'parent-free';
-  const trialDaysRemaining = typeof trialStatus?.days_remaining === 'number' ? trialStatus?.days_remaining : null;
-  const trialEndDateDisplay = trialStatus?.trial_end_date ? new Date(trialStatus.trial_end_date) : null;
-
   return (
     <div className="app">
       <header className="topbar">
@@ -533,60 +476,6 @@ export default function ParentDashboard() {
             {/* Show onboarding if no preschool linked */}
             {!preschoolName && !profile?.preschoolId && (
               <ParentOnboarding userName={userName} />
-            )}
-
-            {/* Trial banner / upsell */}
-            {trialStatusLoading && (
-              <div className="card" style={{ marginBottom: 16, background: 'rgba(99, 102, 241, 0.08)', border: '1px dashed rgba(99, 102, 241, 0.4)' }}>
-                <p style={{ margin: 0, fontSize: 14, color: 'rgba(255, 255, 255, 0.6)' }}>Checking your trial benefits?</p>
-              </div>
-            )}
-
-            {!trialStatusLoading && (isTrialActive || isParentFreeTier) && (
-              <div
-                className="card"
-                style={{
-                  marginBottom: 16,
-                  background: isTrialActive
-                    ? 'linear-gradient(135deg, rgba(134, 239, 172, 0.2) 0%, rgba(74, 222, 128, 0.15) 100%)'
-                    : 'linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(168, 85, 247, 0.15) 100%)',
-                  border: '1px solid rgba(99, 102, 241, 0.4)'
-                }}
-              >
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: 20 }}>??</span>
-                    <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>7-Day Free Trial</h2>
-                    {isTrialActive && trialDaysRemaining !== null && (
-                      <span className="badge" style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#22c55e' }}>
-                        {trialDaysRemaining > 0 ? `${trialDaysRemaining} day${trialDaysRemaining === 1 ? '' : 's'} left` : 'Ends today'}
-                      </span>
-                    )}
-                  </div>
-                  <p style={{ margin: 0, fontSize: 14, color: 'rgba(255, 255, 255, 0.8)' }}>
-                    {isTrialActive
-                      ? 'Enjoy unlimited practice tests, study guides, and flashcards during your trial.'
-                      : 'Unlock unlimited exam resources for 7 days. No credit card required.'}
-                  </p>
-                  {isTrialActive && trialEndDateDisplay && (
-                    <p style={{ margin: 0, fontSize: 12, color: 'rgba(255, 255, 255, 0.6)' }}>
-                      Trial ends on {trialEndDateDisplay.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
-                    </p>
-                  )}
-                  {!isTrialActive && (
-                    <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 4 }}>
-                      <Link
-                        href="/pricing"
-                        className="btn btnCyan"
-                        style={{ padding: '8px 20px', borderRadius: 999, fontSize: 14, fontWeight: 600 }}
-                      >
-                        Start Free Trial
-                      </Link>
-                      <span style={{ fontSize: 12, color: 'rgba(255, 255, 255, 0.5)' }}>Cancel anytime ? No credit card required</span>
-                    </div>
-                  )}
-                </div>
-              </div>
             )}
 
             {/* Show pending requests widget */}
