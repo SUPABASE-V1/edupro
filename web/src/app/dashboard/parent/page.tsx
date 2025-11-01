@@ -445,9 +445,9 @@ export default function ParentDashboard() {
                   <Clock size={18} style={{ flexShrink: 0 }} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <span style={{ fontWeight: 600, fontSize: 14 }}>
-                      {trialStatus.days_remaining === 0 ? '🎉 Trial Ends Today!' : 
-                       trialStatus.days_remaining === 1 ? '⏰ Last Day of Trial' :
-                       `✨ ${trialStatus.days_remaining} Days Left • ${trialStatus.plan_name} Trial`}
+                      {trialStatus.days_remaining === 0 ? '?? Trial Ends Today!' : 
+                       trialStatus.days_remaining === 1 ? '? Last Day of Trial' :
+                       `? ${trialStatus.days_remaining} Days Left ? ${trialStatus.plan_name} Trial`}
                     </span>
                 </div>
                 </div>
@@ -510,38 +510,28 @@ export default function ParentDashboard() {
                 style={{ 
                   background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', 
                   color: 'white', 
-                  marginBottom: 16, 
+                  marginBottom: 12, 
                   cursor: 'pointer',
-                  padding: '12px 16px',
+                  padding: '8px 12px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  gap: 12,
+                  gap: 10,
                   flexWrap: 'wrap'
                 }} 
                 onClick={() => router.push('/dashboard/parent/preschool')}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
-                  <span style={{ fontSize: 20, flexShrink: 0 }}>🏫</span>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ 
-                      margin: 0, 
-                      fontSize: 15, 
-                      fontWeight: 600,
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis'
-                    }}>
-                      {preschoolName}
-                    </div>
-                    <div style={{ 
-                      fontSize: 12, 
-                      opacity: 0.85,
-                      marginTop: 2
-                    }}>
-                      {roleDisplay}
-                    </div>
-                  </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
+                  <span style={{ fontSize: 16, flexShrink: 0 }}>??</span>
+                  <span style={{ 
+                    fontSize: 13, 
+                    fontWeight: 600,
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis'
+                  }}>
+                    {preschoolName}
+                  </span>
                 </div>
                 <div style={{ flexShrink: 0 }}>
                   <TierBadge userId={userId} size="sm" showUpgrade />
