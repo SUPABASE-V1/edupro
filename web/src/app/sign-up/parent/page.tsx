@@ -168,11 +168,11 @@ function ParentSignUpForm() {
       }
     }
 
-    // Start 7-day Premium trial for independent users
+    // Start 7-day Premium trial for ALL independent users (no organization selected)
     const isIndependentUser = !selectedOrganization && !invitationCode;
-    const independentUsageTypes = ['independent', 'homeschool', 'supplemental', 'exploring'];
     
-    if (isIndependentUser && usageType && independentUsageTypes.includes(usageType)) {
+    // Give trial to ALL independent users regardless of usage type
+    if (isIndependentUser) {
       try {
         const { data: trialData, error: trialError } = await supabase.rpc('start_user_trial', {
           target_user_id: authData.user.id,
@@ -267,12 +267,12 @@ function ParentSignUpForm() {
               </label>
               <div style={{ display: "grid", gap: 10 }}>
                 {[
-                  { value: 'preschool', icon: '🎨', label: 'My child attends a preschool', desc: 'Connect to your child\'s preschool' },
-                  { value: 'k12_school', icon: '🏫', label: 'My child attends a K-12 school', desc: 'Link with primary or high school' },
+                  { value: 'preschool', icon: '🎨', label: 'Preschool age (3-5 years)', desc: 'Age-appropriate activities for preschoolers' },
+                  { value: 'k12_school', icon: '🏫', label: 'School age (6-18 years)', desc: 'Content for primary and high school' },
                   { value: 'homeschool', icon: '🏠', label: 'Homeschooling', desc: 'Teaching at home full-time' },
-                  { value: 'aftercare', icon: '⭐', label: 'Aftercare/Extracurricular program', desc: 'After school care or activities' },
-                  { value: 'supplemental', icon: '📚', label: 'Supplemental learning at home', desc: 'Extra support alongside school' },
-                  { value: 'exploring', icon: '🔍', label: 'Just exploring the app', desc: 'Want to see what\'s available' },
+                  { value: 'aftercare', icon: '⭐', label: 'Aftercare/Extracurricular', desc: 'After school care or activities' },
+                  { value: 'supplemental', icon: '📚', label: 'Supplemental learning', desc: 'Extra support alongside school' },
+                  { value: 'exploring', icon: '🔍', label: 'Just exploring', desc: 'Want to see what\'s available' },
                 ].map((option) => (
                   <button
                     key={option.value}
@@ -305,27 +305,32 @@ function ParentSignUpForm() {
               </div>
             </div>
 
-            {/* Organization Selection (shown only for preschool/k12/aftercare, hidden if has invitation) */}
-            {!hasInvitation && usageType && ['preschool', 'k12_school', 'aftercare'].includes(usageType) && (
+            {/* Organization Selection - NOW SHOWN FOR ALL TYPES (but clearly optional) */}
+            {!hasInvitation && usageType && (
               <div>
-                <div style={{ marginBottom: 12, padding: 12, background: "rgba(0, 245, 255, 0.05)", border: "1px solid rgba(0, 245, 255, 0.2)", borderRadius: 8 }}>
-                  <p style={{ color: "#00f5ff", fontSize: 13, margin: 0 }}>
-                    💡 <strong>Optional:</strong> You can search for your organization below or skip this step and add it later in settings.
+                <div style={{ marginBottom: 12, padding: 12, background: "rgba(99, 102, 241, 0.1)", border: "1px solid rgba(99, 102, 241, 0.3)", borderRadius: 8 }}>
+                  <p style={{ color: "#a5b4fc", fontSize: 13, margin: 0, lineHeight: 1.5 }}>
+                    💡 <strong>Link to School (Optional):</strong> Only select an organization if your child is enrolled and you want features like attendance tracking, fees, and teacher communication. 
+                    <strong style={{ display: 'block', marginTop: 6 }}>⚠️ Skip this step if you're homeschooling or using the app independently.</strong>
                   </p>
                 </div>
+                <label style={{ display: "block", color: "#fff", fontSize: 14, fontWeight: 500, marginBottom: 8 }}>
+                  Search for Organization <span style={{ color: "#9CA3AF", fontWeight: 400 }}>(Optional - Leave blank if not enrolled)</span>
+                </label>
                 <OrganizationSelector
                   onSelect={setSelectedOrganization}
                   selectedOrganizationId={selectedOrganization?.id || null}
                 />
-              </div>
-            )}
-
-            {/* Info for independent users */}
-            {usageType && ['homeschool', 'supplemental', 'exploring'].includes(usageType) && (
-              <div style={{ padding: 16, background: "rgba(103, 232, 249, 0.05)", border: "1px solid rgba(103, 232, 249, 0.2)", borderRadius: 10 }}>
-                <p style={{ color: "#67e8f9", fontSize: 14, margin: 0, lineHeight: 1.6 }}>
-                  ✨ <strong>Great choice!</strong> You'll have full access to age-appropriate content and activities. You can add your children's profiles after signup.
-                </p>
+                {selectedOrganization && (
+                  <div style={{ marginTop: 12, padding: 12, background: "rgba(34, 197, 94, 0.1)", border: "1px solid rgba(34, 197, 94, 0.3)", borderRadius: 8 }}>
+                    <p style={{ color: "#86efac", fontSize: 13, margin: 0 }}>
+                      ✓ You've selected: <strong>{selectedOrganization.name}</strong>
+                      <span style={{ display: 'block', marginTop: 4, fontSize: 12 }}>
+                        A join request will be sent for approval.
+                      </span>
+                    </p>
+                  </div>
+                )}
               </div>
             )}
 
