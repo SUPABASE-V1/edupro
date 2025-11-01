@@ -114,7 +114,14 @@ export function AskAIWidget({
           headers: token ? { Authorization: `Bearer ${token}` } : undefined,
         });
 
-        if (error) throw error;
+        if (error) {
+          console.error('[DashAI] Edge Function Error:', error);
+          console.error('[DashAI] Error details:', JSON.stringify(error, null, 2));
+          throw error;
+        }
+        
+        // Log response for debugging
+        console.log('[DashAI] Edge Function Response:', data);
         
         // Handle tool execution
         if (data?.tool_use && data?.tool_results) {
@@ -171,9 +178,11 @@ export function AskAIWidget({
         }
       } catch (err: any) {
         console.error('[DashAI] Error:', err);
+        const errorMessage = err?.message || 'Unknown error';
+        const errorContext = err?.context || '';
         setMessages((m) => [...m, { 
           role: 'assistant', 
-          text: '❌ Sorry, I encountered an error. Please try again in a moment.' 
+          text: `❌ **AI Service Error**\n\n${errorMessage}\n\n${errorContext}\n\n**Troubleshooting:**\n1. Check if ANTHROPIC_API_KEY is set in Supabase\n2. Check Edge Function logs in Supabase Dashboard\n3. Verify ai-proxy function is deployed\n4. Check database connection` 
         }]);
       } finally {
         setLoading(false);
@@ -224,7 +233,10 @@ export function AskAIWidget({
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('[DashAI] Send Error:', error);
+        throw error;
+      }
       
       // Handle tool execution
       if (data?.tool_use && data?.tool_results) {
@@ -250,9 +262,10 @@ export function AskAIWidget({
       }
     } catch (err: any) {
       console.error('[DashAI] Error:', err);
+      const errorMessage = err?.message || 'Unknown error';
       setMessages((m) => [...m, { 
         role: 'assistant', 
-        text: '❌ Sorry, I could not process that right now. Please try again.' 
+        text: `❌ **Error:** ${errorMessage}\n\nPlease check the browser console for details.` 
       }]);
     } finally {
       setLoading(false);
