@@ -12,6 +12,8 @@ import { ExamWeekBanner } from '@/components/dashboard/parent/ExamWeekBanner';
 import { EmergencyExamHelp } from '@/components/dashboard/parent/EmergencyExamHelp';
 import { QuickSubjectPractice } from '@/components/dashboard/parent/QuickSubjectPractice';
 import { ExamTips } from '@/components/dashboard/parent/ExamTips';
+import { CAPSExamCalendar } from '@/components/dashboard/parent/CAPSExamCalendar';
+import { AllGradesAllSubjects } from '@/components/dashboard/parent/AllGradesAllSubjects';
 import { PendingRequestsWidget } from '@/components/dashboard/parent/PendingRequestsWidget';
 import { EmptyChildrenState } from '@/components/dashboard/parent/EmptyChildrenState';
 import { QuickActionsGrid } from '@/components/dashboard/parent/QuickActionsGrid';
@@ -85,9 +87,10 @@ export default function ParentDashboard() {
     setShowAskAI(true);
   };
 
-  const handleSubjectPractice = (subject: string) => {
-    setAIPrompt(`Generate a practice test for ${subject}. Include questions with a memorandum.`);
-    setAIDisplay(`${subject} Practice Test`);
+  const handleSubjectPractice = (subject: string, grade?: string) => {
+    const gradeInfo = grade ? ` for ${grade}` : '';
+    setAIPrompt(`Generate a CAPS-aligned practice test for ${subject}${gradeInfo}. Include questions with a detailed memorandum. Make it exam-standard quality.`);
+    setAIDisplay(`${subject} Practice Test${gradeInfo}`);
     setShowAskAI(true);
   };
 
@@ -119,10 +122,8 @@ export default function ParentDashboard() {
         {/* Trial Banner */}
         <TrialBanner trialStatus={trialStatus} />
 
-        {/* Exam Week Banner - Show for all parents with children */}
-        {childrenCards.length > 0 && (
-          <ExamWeekBanner onStartExamPrep={handleStartExamPrep} />
-        )}
+        {/* CRITICAL: Exam Banner - ALWAYS SHOW (Exams in Progress!) */}
+        <ExamWeekBanner onStartExamPrep={handleStartExamPrep} />
 
         {/* Organization Banner (ONLY if has organization) */}
         <OrganizationBanner
@@ -200,9 +201,10 @@ export default function ParentDashboard() {
         <QuickActionsGrid usageType={usageType} hasOrganization={hasOrganization} />
 
         {/* Emergency Exam Help - Priority Access to AI Tutor */}
-        {childrenCards.length > 0 && (
-          <EmergencyExamHelp onClick={handleStartExamPrep} />
-        )}
+        <EmergencyExamHelp onClick={handleStartExamPrep} />
+
+        {/* CAPS Exam Calendar - Real Exam Schedule */}
+        <CAPSExamCalendar childGrade={activeChild ? `Grade ${Math.floor(10 + (activeChild.progressScore / 20))}` : undefined} />
 
         {/* Quick Subject Practice - One-Click Practice Tests */}
         {activeChild && (
@@ -212,8 +214,11 @@ export default function ParentDashboard() {
           />
         )}
 
+        {/* All Grades & Subjects - Complete CAPS Coverage */}
+        <AllGradesAllSubjects onSelectSubject={handleSubjectPractice} />
+
         {/* Exam Tips - Study Best Practices */}
-        {childrenCards.length > 0 && <ExamTips />}
+        <ExamTips />
 
         {/* Overview Section (ONLY for organization-linked parents) */}
         {hasOrganization && (
