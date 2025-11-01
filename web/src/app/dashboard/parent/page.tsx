@@ -676,55 +676,33 @@ export default function ParentDashboard() {
               hasOrganization={hasOrganization}
             />
 
-            <div className="section">
-              <div className="sectionTitle">
-                <BarChart3 className="icon16" style={{ color: '#60a5fa' }} />
-                Overview
-              </div>
-              <div className="grid2">
-                <div className="card tile">
-                  <div className="metricValue">{unreadCount}</div>
-                  <div className="metricLabel">Unread Messages</div>
+            {/* Overview Section - Only for Organization-Linked Parents */}
+            {hasOrganization && (
+              <div className="section">
+                <div className="sectionTitle">
+                  <BarChart3 className="icon16" style={{ color: '#60a5fa' }} />
+                  Overview
                 </div>
-                <div className="card tile">
-                  <div className="metricValue">{activeChild ? metrics.pendingHomework : 0}</div>
-                  <div className="metricLabel">Homework Pending</div>
-                </div>
-                <div className="card tile">
-                  <div className="metricValue">0%</div>
-                  <div className="metricLabel">Attendance Rate</div>
-                </div>
-                <div className="card tile">
-                  <div className="metricValue">{childrenCards.length}</div>
-                  <div className="metricLabel">Total Children</div>
+                <div className="grid2">
+                  <div className="card tile">
+                    <div className="metricValue">{unreadCount}</div>
+                    <div className="metricLabel">Unread Messages</div>
+                  </div>
+                  <div className="card tile">
+                    <div className="metricValue">{activeChild ? metrics.pendingHomework : 0}</div>
+                    <div className="metricLabel">Homework Pending</div>
+                  </div>
+                  <div className="card tile">
+                    <div className="metricValue">0%</div>
+                    <div className="metricLabel">Attendance Rate</div>
+                  </div>
+                  <div className="card tile">
+                    <div className="metricValue">{childrenCards.length}</div>
+                    <div className="metricLabel">Total Children</div>
+                  </div>
                 </div>
               </div>
-            </div>
-
-            <div className="section">
-              <div className="sectionTitle">
-                <Zap className="icon16" style={{ color: '#facc15' }} />
-                Quick Actions
-              </div>
-              <div className="grid2">
-                <button className="qa" onClick={() => router.push('/dashboard/parent/homework')}>
-                  <FileText className="icon20" />
-                  <span>View Homework</span>
-                </button>
-                <button className="qa" onClick={() => router.push('/dashboard/parent/attendance')}>
-                  <Calendar className="icon20" />
-                  <span>Check Attendance</span>
-                </button>
-                <button className="qa" onClick={() => router.push('/dashboard/parent/messages')}>
-                  <MessageCircle className="icon20" />
-                  <span>Messages</span>
-                </button>
-                <button className="qa" onClick={() => router.push('/dashboard/parent/payments')}>
-                  <DollarSign className="icon20" />
-                  <span>Fees</span>
-                </button>
-              </div>
-            </div>
+            )}
 
             {/* CAPS Curriculum Activities */}
             {activeChild && (
