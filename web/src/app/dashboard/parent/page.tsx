@@ -94,6 +94,19 @@ export default function ParentDashboard() {
   const usageType = (profile as any)?.usage_type as 'preschool' | 'k12_school' | 'homeschool' | 'aftercare' | 'supplemental' | 'exploring' | 'independent' | undefined;
   const hasOrganization = !!profile?.preschoolId;
 
+  // Debug logging for purple banner issue
+  useEffect(() => {
+    if (profile) {
+      console.log('?? [ParentDashboard] Profile Debug:', {
+        preschoolId: profile.preschoolId,
+        preschoolName: profile.preschoolName,
+        hasOrganization: hasOrganization,
+        usageType: usageType,
+        shouldShowBanner: hasOrganization && !!preschoolName
+      });
+    }
+  }, [profile, hasOrganization, preschoolName, usageType]);
+
   const handleAskFromActivity = async (prompt: string, display: string, language?: string, enableInteractive?: boolean) => {
     try {
       const sb = createClient();
