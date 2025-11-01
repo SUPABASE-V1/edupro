@@ -91,6 +91,8 @@ export default function ParentDashboard() {
   const userRole = profile?.role;
   const roleDisplay = userRole ? userRole.charAt(0).toUpperCase() + userRole.slice(1) : 'User';
   const avatarLetter = (userName[0] || 'U').toUpperCase();
+  const usageType = (profile as any)?.usage_type as 'preschool' | 'k12_school' | 'homeschool' | 'aftercare' | 'supplemental' | 'exploring' | 'independent' | undefined;
+  const hasOrganization = !!profile?.preschoolId;
 
   const handleAskFromActivity = async (prompt: string, display: string, language?: string, enableInteractive?: boolean) => {
     try {
