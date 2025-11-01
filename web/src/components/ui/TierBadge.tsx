@@ -48,91 +48,45 @@ export function TierBadge({ userId, preschoolId, size = 'md', showUpgrade = fals
 
     const loadTier = async () => {
       try {
-        // PRIORITY 1: Use get_my_trial_status RPC for accurate user/school subscription info
-        // This handles parents with user-level trials and those without schools
+        setLoading(true);
+
         if (userId) {
-          try {
-            const { data: trialStatus, error: rpcError } = await supabase.rpc('get_my_trial_status');
-            
-            if (!rpcError && trialStatus) {
-              const planTier = trialStatus.plan_tier || 'free';
-              const subscriptionType = trialStatus.subscription_type || 'none';
-              
-              // User has their own subscription (parent trial) - use that tier
-              if (subscriptionType === 'user') {
-                setTier(planTier);
-                setLoading(false);
-                return;
-              }
-              
-              // User has school subscription - use that tier
-              if (subscriptionType === 'school') {
-                setTier(planTier);
-                setLoading(false);
-                return;
-              }
-              
-              // No subscription found - free tier
-              setTier('free');
-              setLoading(false);
-              return;
-            }
-          } catch (rpcErr) {
-            console.log('RPC get_my_trial_status not available, falling back to direct lookup');
+          const { data, error } = await supabase.rpc('get_my_trial_status');
+          if (cancelled) return;
+          if (error) {
+            console.warn('[TierBadge] Failed to load user tier from trial status:', error);
+            setTier('free');
+          } else {
+            const response = (data || {}) as { plan_tier?: string | null };
+            setTier(response.plan_tier ? response.plan_tier.toLowerCase() : 'free');
           }
-        }
-
-        // FALLBACK: Read directly from subscriptions table (source of truth)
-        let schoolId = preschoolId;
-
-        if (!schoolId && userId) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('preschool_id')
-            .eq('id', userId)
-            .maybeSingle();
-          schoolId = profile?.preschool_id || undefined;
-        }
-
-        if (!schoolId) {
-          // No school ID and no user subscription - default to free
-          setTier('free');
           return;
         }
 
-        // Read directly from subscriptions table (source of truth)
-        // This is more accurate than the preschools.subscription_plan column
-        const { data: subscription } = await supabase
-          .from('subscriptions')
-          .select(`
-            status,
-            subscription_plans!inner (
-              tier,
-              name
-            )
-          `)
-          .eq('school_id', schoolId)
-          .eq('owner_type', 'school')
-          .in('status', ['active', 'trialing'])
-          .maybeSingle();
-
-        if (subscription?.subscription_plans) {
-          const planData = subscription.subscription_plans as { tier: string; name: string };
-          setTier(planData.tier || 'free');
-        } else {
-          // Fallback to preschools table if no subscription found
-          const { data: school } = await supabase
+        if (preschoolId) {
+          const { data: school, error: schoolError } = await supabase
             .from('preschools')
             .select('subscription_plan')
-            .eq('id', schoolId)
+            .eq('id', preschoolId)
             .maybeSingle();
-          
-          setTier((school?.subscription_plan as string | null) || 'free');
+
+          if (cancelled) return;
+          if (schoolError) {
+            console.warn('[TierBadge] Failed to load school tier:', schoolError);
+            setTier('free');
+          } else {
+            const plan = (school?.subscription_plan as string | null) || 'free';
+            setTier(plan.toLowerCase());
+          }
+          return;
         }
-      } catch (error) {
-        console.error('Error loading tier:', error);
-        // Default to free on error
+
         setTier('free');
+      } catch (error) {
+        if (!cancelled) {
+          console.error('[TierBadge] Error loading tier:', error);
+          setTier('free');
+        }
       } finally {
         if (!cancelled) {
           setLoading(false);
