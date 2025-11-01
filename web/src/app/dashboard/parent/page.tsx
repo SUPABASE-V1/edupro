@@ -115,28 +115,6 @@ export default function ParentDashboard() {
         }
       }
 
-      // 2. Fallback to legacy school column if tier still unknown
-      if (!planTier) {
-        const schoolId = profile?.preschoolId;
-        if (schoolId) {
-          try {
-            const { data, error } = await sb
-              .from('preschools')
-              .select('subscription_plan, subscription_tier')
-              .eq('id', schoolId)
-              .maybeSingle();
-            if (error) {
-              console.warn('[ParentDashboard] Failed to fetch school subscription info:', error);
-            } else if (data) {
-              const rawTier = (data.subscription_tier || data.subscription_plan) as string | null;
-              planTier = rawTier ? rawTier.toLowerCase() : null;
-            }
-          } catch (err) {
-            console.warn('[ParentDashboard] Error loading legacy subscription tier:', err);
-          }
-        }
-      }
-
       const normalizedTier = planTier ?? null;
       const isFreeTier = !normalizedTier || normalizedTier === 'free' || normalizedTier === 'parent-free';
 
