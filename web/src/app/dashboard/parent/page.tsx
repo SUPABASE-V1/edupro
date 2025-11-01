@@ -32,6 +32,8 @@ import { CAPSActivitiesWidget } from '@/components/dashboard/parent/CAPSActiviti
 import { ExamPrepWidget } from '@/components/dashboard/exam-prep/ExamPrepWidget';
 import { ParentOnboarding } from '@/components/dashboard/parent/ParentOnboarding';
 import { PendingRequestsWidget } from '@/components/dashboard/parent/PendingRequestsWidget';
+import { EmptyChildrenState } from '@/components/dashboard/parent/EmptyChildrenState';
+import { QuickActionsGrid } from '@/components/dashboard/parent/QuickActionsGrid';
 
 export default function ParentDashboard() {
   // ========================================
@@ -87,6 +89,8 @@ export default function ParentDashboard() {
   const userName = profile?.firstName || userEmail?.split('@')[0] || 'User';
   const preschoolName = profile?.preschoolName;
   const userRole = profile?.role;
+  const usageType = profile?.usageType;
+  const hasOrganization = !!profile?.preschoolId;
   const roleDisplay = userRole ? userRole.charAt(0).toUpperCase() + userRole.slice(1) : 'User';
   const avatarLetter = (userName[0] || 'U').toUpperCase();
 
@@ -517,6 +521,14 @@ export default function ParentDashboard() {
             )}
           </div>
 
+          {/* Children Section - Always show, with empty state if needed */}
+          {childrenCards.length === 0 && !childrenLoading && (
+            <EmptyChildrenState 
+              usageType={usageType}
+              onAddChild={() => router.push('/dashboard/parent/children/add')}
+            />
+          )}
+
           {/* Children Cards - Horizontal Scroll */}
           {childrenCards.length > 0 && (
             <div className="section">
@@ -637,6 +649,12 @@ export default function ParentDashboard() {
                 </div>
               </div>
             )}
+
+            {/* Quick Actions Grid - Personalized by Usage Type */}
+            <QuickActionsGrid 
+              usageType={usageType}
+              hasOrganization={hasOrganization}
+            />
 
             <div className="section">
               <div className="sectionTitle">
