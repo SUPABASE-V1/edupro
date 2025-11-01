@@ -122,6 +122,7 @@ export function useUserProfile(userId: string | undefined): UseUserProfileReturn
         preschoolSlug,
         organizationId,
         organizationName,
+        preferredLanguage: profileData?.preferred_language || 'en-ZA',
       };
       
       
