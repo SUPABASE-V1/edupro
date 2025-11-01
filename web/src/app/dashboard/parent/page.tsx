@@ -421,35 +421,34 @@ export default function ParentDashboard() {
               <h1 className="h1" style={{ margin: 0 }}>{greeting}, {userName}</h1>
             </div>
 
-            {/* Trial Status Banner */}
+            {/* Trial Status Banner - Compact */}
             {trialStatus?.is_trial && trialStatus.days_remaining !== undefined && (
-              <div className="card" style={{
-                background: trialStatus.days_remaining <= 3 
-                  ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' 
-                  : trialStatus.days_remaining <= 7
-                  ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'
-                  : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                color: 'white',
-                marginBottom: 16,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: 16,
-                flexWrap: 'wrap'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <Clock size={24} />
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 4 }}>
-                      {trialStatus.days_remaining === 0 ? '?? Trial Ends Today!' : 
-                       trialStatus.days_remaining === 1 ? '? Last Day of Trial' :
-                       `? ${trialStatus.days_remaining} Days Left in Your ${trialStatus.plan_name} Trial`}
-                    </div>
-                    <div style={{ fontSize: 13, opacity: 0.9 }}>
-                      {trialStatus.days_remaining === 0 
-                        ? 'Upgrade now to keep using premium features' 
-                        : trialStatus.days_remaining <= 3
-                        ? 'Your trial is ending soon - upgrade to continue with full access'
+              <div 
+                className="card" 
+                style={{
+                  background: trialStatus.days_remaining <= 3 
+                    ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' 
+                    : trialStatus.days_remaining <= 7
+                    ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'
+                    : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                  color: 'white',
+                  marginBottom: 16,
+                  padding: '10px 14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 12,
+                  flexWrap: 'wrap'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
+                  <Clock size={18} style={{ flexShrink: 0 }} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <span style={{ fontWeight: 600, fontSize: 14 }}>
+                      {trialStatus.days_remaining === 0 ? '🎉 Trial Ends Today!' : 
+                       trialStatus.days_remaining === 1 ? '⏰ Last Day of Trial' :
+                       `✨ ${trialStatus.days_remaining} Days Left • ${trialStatus.plan_name} Trial`}
+                    </span>
                         : 'Enjoying your trial? Upgrade anytime to unlock all features'}
                     </div>
                   </div>
@@ -461,15 +460,16 @@ export default function ParentDashboard() {
                     style={{
                       background: 'white',
                       color: trialStatus.days_remaining <= 3 ? '#dc2626' : '#d97706',
-                      fontWeight: 700,
+                      fontWeight: 600,
                       border: 'none',
-                      padding: '10px 20px',
-                      borderRadius: 8,
+                      padding: '6px 14px',
+                      borderRadius: 6,
                       cursor: 'pointer',
-                      fontSize: 14
+                      fontSize: 13,
+                      flexShrink: 0
                     }}
                   >
-                    Upgrade Now
+                    Upgrade
                   </button>
                 )}
               </div>
