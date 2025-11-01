@@ -168,6 +168,30 @@ function ParentSignUpForm() {
       }
     }
 
+    // Start 7-day Premium trial for independent users
+    const isIndependentUser = !selectedOrganization && !invitationCode;
+    const independentUsageTypes = ['independent', 'homeschool', 'supplemental', 'exploring'];
+    
+    if (isIndependentUser && usageType && independentUsageTypes.includes(usageType)) {
+      try {
+        const { data: trialData, error: trialError } = await supabase.rpc('start_user_trial', {
+          target_user_id: authData.user.id,
+          trial_days: 7,
+          plan_tier: 'premium'
+        });
+        
+        if (trialError) {
+          console.error('[Signup] Failed to start trial:', trialError);
+          // Don't fail signup - trial is a bonus feature
+        } else {
+          console.log('[Signup] ✅ 7-day Premium trial started for', authData.user.email);
+        }
+      } catch (err) {
+        console.error('[Signup] Trial start error:', err);
+        // Silent fail - don't block signup
+      }
+    }
+
     setLoading(false);
 
     // Success - redirect to email verification notice
