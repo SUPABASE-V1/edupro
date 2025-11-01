@@ -83,10 +83,8 @@ function ParentSignUpForm() {
       return;
     }
 
-    if (!selectedOrganization && !invitationCode) {
-      setError("Please select an organization or use an invitation code");
-      return;
-    }
+    // Organization is now optional - parents can sign up without linking to a school
+    // This allows homeschooling parents or parents with older children to use the platform
 
     setLoading(true);
 
@@ -227,12 +225,20 @@ function ParentSignUpForm() {
               />
             </div>
 
-            {/* Organization Selection (hidden if has invitation) */}
+            {/* Organization Selection (optional - hidden if has invitation) */}
             {!hasInvitation && (
-              <OrganizationSelector
-                onSelect={setSelectedOrganization}
-                selectedOrganizationId={selectedOrganization?.id || null}
-              />
+              <div>
+                <label style={{ display: "block", color: "#fff", fontSize: 14, fontWeight: 500, marginBottom: 8 }}>
+                  School / Organization (Optional)
+                </label>
+                <p style={{ color: "#9CA3AF", fontSize: 12, marginBottom: 8 }}>
+                  You can skip this if your child is not in preschool or you're homeschooling. You'll still get your 7-day free trial!
+                </p>
+                <OrganizationSelector
+                  onSelect={setSelectedOrganization}
+                  selectedOrganizationId={selectedOrganization?.id || null}
+                />
+              </div>
             )}
 
             <div>

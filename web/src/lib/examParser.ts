@@ -12,6 +12,7 @@ export interface ExamQuestion {
   marks: number;
   options?: string[]; // For multiple choice
   correctAnswer?: string | number; // For auto-grading
+  explanation?: string; // Explanation for practice mode
   sectionTitle?: string;
 }
 
@@ -24,6 +25,8 @@ export interface ParsedExam {
   }[];
   totalMarks: number;
   hasMemo: boolean;
+  isPractice?: boolean; // Distinguishes practice from regular exams
+  duration?: number; // Custom duration in minutes
 }
 
 /**
@@ -189,7 +192,8 @@ export function parseExamMarkdown(markdown: string): ParsedExam | null {
  */
 export function gradeAnswer(
   question: ExamQuestion,
-  studentAnswer: string
+  studentAnswer: string,
+  isPracticeMode: boolean = true
 ): { isCorrect: boolean; feedback: string; marks: number } {
   // For MVP, we'll do basic validation
   // In production, this would integrate with AI for grading
@@ -206,16 +210,26 @@ export function gradeAnswer(
     const isCorrect = studentAnswer.toLowerCase() === question.correctAnswer.toString().toLowerCase();
     return {
       isCorrect,
-      feedback: isCorrect ? 'Correct!' : `Incorrect. The correct answer is: ${question.correctAnswer}`,
+      feedback: isCorrect 
+        ? '✅ Correct! ' + (question.explanation || '')
+        : `❌ Incorrect. The correct answer is: ${question.correctAnswer}${question.explanation ? '\n\n' + question.explanation : ''}`,
       marks: isCorrect ? question.marks : 0,
     };
   }
   
-  // For other question types, provide neutral feedback
-  // (AI grading would happen here in production)
+  // For other question types in practice mode, show model answer
+  if (isPracticeMode && question.correctAnswer) {
+    return {
+      isCorrect: true, // Can't auto-grade open-ended questions
+      feedback: `✏️ Your answer recorded. Compare with model answer:\n\n${question.correctAnswer}${question.explanation ? '\n\n💡 ' + question.explanation : ''}`,
+      marks: question.marks, // Award full marks tentatively
+    };
+  }
+  
+  // For regular exams (non-practice), teacher will review
   return {
     isCorrect: true, // Assume correct for now
-    feedback: 'Answer recorded. Teacher will review your response.',
+    feedback: '📝 Answer recorded. Teacher will review your response.',
     marks: question.marks, // Award full marks tentatively
   };
 }
