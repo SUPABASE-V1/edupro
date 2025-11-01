@@ -116,7 +116,7 @@ export function PastPapersLibrary() {
           <input
             type="text"
             className="input"
-            placeholder="Search papers by title, subject, or topic..."
+            placeholder="?? Search papers by title, subject, or topic..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             style={{ paddingLeft: 36 }}
@@ -191,14 +191,7 @@ export function PastPapersLibrary() {
             background: 'var(--surface)'
           }}
         >
-          <FileText 
-            style={{ 
-              width: 48, 
-              height: 48, 
-              margin: '0 auto var(--space-3)', 
-              color: 'var(--muted)' 
-            }} 
-          />
+          <div style={{ fontSize: 48, marginBottom: 'var(--space-3)' }}>??</div>
           <div style={{ fontSize: 14, color: 'var(--muted)' }}>
             No past papers found for the selected filters.
             <br />
@@ -273,11 +266,11 @@ export function PastPapersLibrary() {
                       whiteSpace: 'nowrap',
                       display: 'flex',
                       alignItems: 'center',
+                      justifyContent: 'center',
                       gap: 6
                     }}
                   >
-                    <Download className="icon16" />
-                    Paper
+                    ?? Paper
                   </button>
                   
                   {paper.memo_file_url && (
@@ -292,11 +285,11 @@ export function PastPapersLibrary() {
                         whiteSpace: 'nowrap',
                         display: 'flex',
                         alignItems: 'center',
+                        justifyContent: 'center',
                         gap: 6
                       }}
                     >
-                      <FileCheck className="icon16" />
-                      Memo
+                      ?? Memo
                     </a>
                   )}
                 </div>

@@ -139,8 +139,8 @@ export default function MyExamsPage() {
             gap: 'var(--space-3)',
             marginBottom: 'var(--space-4)'
           }}>
-            <div className="card" style={{ textAlign: 'center' }}>
-              <FileText className="icon20" style={{ margin: '0 auto var(--space-2)', color: 'var(--primary)' }} />
+            <div className="card" style={{ textAlign: 'center', padding: 'var(--space-4)' }}>
+              <div style={{ fontSize: 32, marginBottom: 'var(--space-2)' }}>??</div>
               <div style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 4 }}>
                 {stats.totalExams}
               </div>
@@ -149,8 +149,8 @@ export default function MyExamsPage() {
               </div>
             </div>
             
-            <div className="card" style={{ textAlign: 'center' }}>
-              <TrendingUp className="icon20" style={{ margin: '0 auto var(--space-2)', color: 'var(--success)' }} />
+            <div className="card" style={{ textAlign: 'center', padding: 'var(--space-4)' }}>
+              <div style={{ fontSize: 32, marginBottom: 'var(--space-2)' }}>??</div>
               <div style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 4 }}>
                 {stats.averageScore.toFixed(1)}%
               </div>
@@ -159,8 +159,8 @@ export default function MyExamsPage() {
               </div>
             </div>
             
-            <div className="card" style={{ textAlign: 'center' }}>
-              <Trophy className="icon20" style={{ margin: '0 auto var(--space-2)', color: 'var(--warning)' }} />
+            <div className="card" style={{ textAlign: 'center', padding: 'var(--space-4)' }}>
+              <div style={{ fontSize: 32, marginBottom: 'var(--space-2)' }}>??</div>
               <div style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 4 }}>
                 {stats.bestScore.toFixed(1)}%
               </div>
@@ -185,14 +185,7 @@ export default function MyExamsPage() {
               background: 'var(--surface)'
             }}
           >
-            <FileText 
-              style={{ 
-                width: 64, 
-                height: 64, 
-                margin: '0 auto var(--space-3)', 
-                color: 'var(--muted)' 
-              }} 
-            />
+            <div style={{ fontSize: 64, marginBottom: 'var(--space-3)' }}>??</div>
             <h3 style={{ fontSize: 18, marginBottom: 'var(--space-2)' }}>
               No Practice Exams Yet
             </h3>
@@ -202,8 +195,9 @@ export default function MyExamsPage() {
             <button
               onClick={() => router.push('/dashboard/parent')}
               className="btn btnPrimary"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
             >
-              Go to Dashboard
+              ?? Go to Dashboard
             </button>
           </div>
         ) : (
@@ -241,8 +235,7 @@ export default function MyExamsPage() {
                         alignItems: 'center',
                         gap: 4
                       }}>
-                        <Calendar className="icon16" />
-                        {formatDistanceToNow(new Date(exam.created_at), { addSuffix: true })}
+                        ?? {formatDistanceToNow(new Date(exam.created_at), { addSuffix: true })}
                       </div>
                     </div>
                   </div>
@@ -269,9 +262,9 @@ export default function MyExamsPage() {
                         {latestProgress.percentage.toFixed(1)}%
                       </div>
                       <div style={{ fontSize: 13, color: 'var(--muted)' }}>
-                        Score: {latestProgress.score_obtained}/{latestProgress.score_total} marks
+                        ?? Score: {latestProgress.score_obtained}/{latestProgress.score_total} marks
                         {' ? '}
-                        {formatDistanceToNow(new Date(latestProgress.completed_at), { addSuffix: true })}
+                        ?? {formatDistanceToNow(new Date(latestProgress.completed_at), { addSuffix: true })}
                       </div>
                     </div>
                   )}
@@ -280,16 +273,16 @@ export default function MyExamsPage() {
                     <button 
                       className="btn btnPrimary"
                       onClick={() => handleOpenExam(exam)}
-                      style={{ flex: 1 }}
+                      style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
                     >
-                      <FileText className="icon16" />
-                      {hasProgress ? 'Review Exam' : 'Take Exam'}
+                      {hasProgress ? '?? Review Exam' : '?? Take Exam'}
                     </button>
                     
                     {hasProgress && (
                       <button 
                         className="btn"
                         onClick={() => handleOpenExam(exam)}
+                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
                       >
                         ?? Retake
                       </button>

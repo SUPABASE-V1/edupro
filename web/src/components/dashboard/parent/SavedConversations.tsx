@@ -34,14 +34,7 @@ export function SavedConversations({ onSelectConversation }: SavedConversationsP
             background: 'var(--surface)'
           }}
         >
-          <MessageSquare 
-            style={{ 
-              width: 48, 
-              height: 48, 
-              margin: '0 auto var(--space-3)', 
-              color: 'var(--muted)' 
-            }} 
-          />
+          <div style={{ fontSize: 48, marginBottom: 'var(--space-3)' }}>??</div>
           <div style={{ fontSize: 14, color: 'var(--muted)' }}>
             No saved conversations yet.
             <br />
@@ -80,14 +73,13 @@ export function SavedConversations({ onSelectConversation }: SavedConversationsP
               }}
             >
               <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'flex-start' }}>
-                <MessageSquare 
-                  className="icon20" 
-                  style={{ 
-                    marginTop: 2, 
-                    flexShrink: 0,
-                    color: 'var(--primary)' 
-                  }} 
-                />
+                <div style={{ 
+                  fontSize: 24, 
+                  flexShrink: 0,
+                  marginTop: 2
+                }}>
+                  ??
+                </div>
                 
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ 
@@ -124,9 +116,8 @@ export function SavedConversations({ onSelectConversation }: SavedConversationsP
                     <span>
                       ?? {messageCount} {messageCount === 1 ? 'message' : 'messages'}
                     </span>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <Clock className="icon16" />
-                      {formatDistanceToNow(new Date(conv.updatedAt), { addSuffix: true })}
+                    <span>
+                      ?? {formatDistanceToNow(new Date(conv.updatedAt), { addSuffix: true })}
                     </span>
                   </div>
                 </div>
