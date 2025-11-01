@@ -174,7 +174,8 @@ export default function ParentDashboard() {
         const { data, error } = await supabase.rpc('get_my_trial_status');
         
         if (error) {
-          console.error('[ParentDashboard] Error fetching trial status:', error);
+          // Silently fail if RPC doesn't exist - trial status is optional
+          console.debug('[ParentDashboard] Trial status not available:', error.message);
           return;
         }
         
@@ -182,7 +183,8 @@ export default function ParentDashboard() {
           setTrialStatus(data);
         }
       } catch (err) {
-        console.error('[ParentDashboard] Failed to load trial status:', err);
+        // Silently fail - trial status is optional feature
+        console.debug('[ParentDashboard] Trial status feature not available');
       }
     };
     
