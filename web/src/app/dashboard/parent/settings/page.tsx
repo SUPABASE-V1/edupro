@@ -300,18 +300,18 @@ export default function SettingsPage() {
 
             {/* Delete Account */}
             <div className="card" style={{ 
-              background: 'rgba(127, 29, 29, 0.2)',
-              border: '2px solid rgba(239, 68, 68, 0.4)',
-              boxShadow: '0 4px 12px rgba(239, 68, 68, 0.1)'
+              background: 'linear-gradient(135deg, rgba(153, 27, 27, 0.3) 0%, rgba(127, 29, 29, 0.25) 100%)',
+              border: '2px solid #dc2626',
+              boxShadow: '0 4px 16px rgba(220, 38, 38, 0.25)'
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>
-                <Trash2 className="icon20" style={{ color: '#ef4444' }} />
-                <h2 className="h2" style={{ margin: 0, color: '#ef4444' }}>Delete Account</h2>
+                <Trash2 className="icon20" style={{ color: '#fca5a5' }} />
+                <h2 className="h2" style={{ margin: 0, color: '#fca5a5', fontSize: 20 }}>Delete Account</h2>
               </div>
               
               {!showDeleteConfirm ? (
                 <>
-                  <p style={{ marginBottom: 'var(--space-3)', color: 'var(--text)', fontSize: 14, lineHeight: 1.6 }}>
+                  <p style={{ marginBottom: 'var(--space-3)', color: '#fca5a5', fontSize: 14, lineHeight: 1.6 }}>
                     Permanently delete your account and all associated data. This action cannot be undone.
                   </p>
                   <button
@@ -320,10 +320,19 @@ export default function SettingsPage() {
                     style={{
                       width: '100%',
                       background: 'transparent',
-                      border: '2px solid #ef4444',
-                      color: '#ef4444',
+                      border: '2px solid #dc2626',
+                      color: '#fca5a5',
                       fontWeight: 700,
-                      height: 44
+                      height: 44,
+                      transition: 'all 0.2s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = 'rgba(220, 38, 38, 0.15)';
+                      e.currentTarget.style.borderColor = '#ef4444';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'transparent';
+                      e.currentTarget.style.borderColor = '#dc2626';
                     }}
                   >
                     <Trash2 className="icon16" />
@@ -333,20 +342,20 @@ export default function SettingsPage() {
               ) : (
                 <div style={{ display: 'grid', gap: 'var(--space-4)' }}>
                   <div style={{
-                    background: 'rgba(239, 68, 68, 0.15)',
-                    border: '2px solid #ef4444',
+                    background: 'rgba(220, 38, 38, 0.25)',
+                    border: '2px solid #dc2626',
                     borderRadius: 10,
                     padding: 'var(--space-4)',
                     display: 'flex',
                     gap: 'var(--space-3)',
                     alignItems: 'flex-start'
                   }}>
-                    <AlertTriangle style={{ width: 24, height: 24, color: '#ef4444', flexShrink: 0, marginTop: 2 }} />
+                    <AlertTriangle style={{ width: 24, height: 24, color: '#fca5a5', flexShrink: 0, marginTop: 2 }} />
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 700, color: '#ef4444', marginBottom: 8, fontSize: 16 }}>
-                        Warning: This action is permanent
+                      <div style={{ fontWeight: 700, color: '#fca5a5', marginBottom: 8, fontSize: 16 }}>
+                        ?? Warning: This action is permanent
                       </div>
-                      <p style={{ fontSize: 14, margin: 0, lineHeight: 1.6, color: 'var(--text)' }}>
+                      <p style={{ fontSize: 14, margin: 0, lineHeight: 1.6, color: '#fca5a5' }}>
                         All your data, including children profiles, messages, and settings will be permanently deleted.
                         This action cannot be undone.
                       </p>
@@ -356,10 +365,10 @@ export default function SettingsPage() {
                   <div>
                     <label style={{ 
                       display: 'block', 
-                      fontWeight: 600, 
+                      fontWeight: 700, 
                       marginBottom: 8, 
-                      color: '#ef4444',
-                      fontSize: 14
+                      color: '#fca5a5',
+                      fontSize: 15
                     }}>
                       Type DELETE to confirm
                     </label>
@@ -370,11 +379,13 @@ export default function SettingsPage() {
                       placeholder="DELETE"
                       className="input"
                       style={{ 
-                        borderColor: '#ef4444',
+                        borderColor: '#dc2626',
                         borderWidth: 2,
                         fontSize: 16,
-                        fontWeight: 600,
-                        letterSpacing: '0.5px'
+                        fontWeight: 700,
+                        letterSpacing: '1px',
+                        textAlign: 'center',
+                        textTransform: 'uppercase'
                       }}
                     />
                   </div>
@@ -405,15 +416,16 @@ export default function SettingsPage() {
                         minWidth: 180,
                         height: 44,
                         background: deleteConfirmText === 'DELETE' && !deleting 
-                          ? 'linear-gradient(135deg, #dc2626 0%, #991b1b 100%)' 
-                          : 'rgba(239, 68, 68, 0.3)',
+                          ? 'linear-gradient(135deg, #dc2626 0%, #7f1d1d 100%)' 
+                          : 'rgba(127, 29, 29, 0.5)',
                         borderColor: 'transparent',
-                        color: 'white',
+                        color: '#ffffff',
                         fontWeight: 700,
-                        cursor: deleteConfirmText !== 'DELETE' || deleting ? 'not-allowed' : 'pointer'
+                        cursor: deleteConfirmText !== 'DELETE' || deleting ? 'not-allowed' : 'pointer',
+                        boxShadow: deleteConfirmText === 'DELETE' && !deleting ? '0 4px 12px rgba(220, 38, 38, 0.4)' : 'none'
                       }}
                     >
-                      {deleting ? 'Deleting...' : 'Permanently Delete Account'}
+                      {deleting ? 'Deleting...' : '??? Permanently Delete Account'}
                     </button>
                   </div>
                 </div>

@@ -149,7 +149,7 @@ export default function ParentDashboard() {
     };
 
     initAuth();
-  }, [router, supabase]);
+  }, [router]);
 
   // Load link requests (parent's own and incoming to approve)
   useEffect(() => {
