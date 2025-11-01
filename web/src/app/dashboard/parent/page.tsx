@@ -507,20 +507,50 @@ export default function ParentDashboard() {
             )}
 
             {preschoolName && (
-              <div className="card" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white', marginBottom: 16, cursor: 'pointer' }} onClick={() => router.push('/dashboard/parent/preschool')}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: 24 }}>??</span>
-                    <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>{preschoolName}</h2>
+              <div 
+                className="card" 
+                style={{ 
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', 
+                  color: 'white', 
+                  marginBottom: 16, 
+                  cursor: 'pointer',
+                  padding: '12px 16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 12,
+                  flexWrap: 'wrap'
+                }} 
+                onClick={() => router.push('/dashboard/parent/preschool')}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
+                  <span style={{ fontSize: 20, flexShrink: 0 }}>🏫</span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ 
+                      margin: 0, 
+                      fontSize: 15, 
+                      fontWeight: 600,
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis'
+                    }}>
+                      {preschoolName}
+                    </div>
+                    <div style={{ 
+                      fontSize: 12, 
+                      opacity: 0.85,
+                      marginTop: 2
+                    }}>
+                      {roleDisplay}
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', paddingLeft: 32 }}>
-                    <p style={{ margin: 0, fontSize: 14, opacity: 0.9 }}>{roleDisplay}</p>
-                    <span style={{ opacity: 0.7 }}>?</span>
-                    <TierBadge userId={userId} size="sm" showUpgrade />
-                  </div>
+                </div>
+                <div style={{ flexShrink: 0 }}>
+                  <TierBadge userId={userId} size="sm" showUpgrade />
                 </div>
               </div>
             )}
+
           </div>
 
           {/* Children Section - Always show, with empty state if needed */}
