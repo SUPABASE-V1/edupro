@@ -453,7 +453,7 @@ export default function ParentDashboard() {
                 </div>
                 {trialStatus.days_remaining <= 7 && (
                   <button
-                    onClick={() => router.push('/#pricing')}
+                    onClick={() => router.push('/pricing')}
                     className="btn"
                     style={{
                       background: 'white',
