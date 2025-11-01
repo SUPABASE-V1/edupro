@@ -449,9 +449,7 @@ export default function ParentDashboard() {
                        trialStatus.days_remaining === 1 ? '⏰ Last Day of Trial' :
                        `✨ ${trialStatus.days_remaining} Days Left • ${trialStatus.plan_name} Trial`}
                     </span>
-                        : 'Enjoying your trial? Upgrade anytime to unlock all features'}
-                    </div>
-                  </div>
+                </div>
                 </div>
                 {trialStatus.days_remaining <= 7 && (
                   <button
