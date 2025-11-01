@@ -16,7 +16,7 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { Text } from './Text';
-import { useTheme } from '@/contexts/ThemeContext';
+import { useOptionalTheme } from '@/contexts/ThemeContext';
 
 const { width, height } = Dimensions.get('window');
 
@@ -57,14 +57,9 @@ export function EduDashProLoader({
     isDark: true,
   };
 
-  // Try to use theme from context, fallback to default if not available
-  let themeContext;
-  try {
-    themeContext = useTheme();
-  } catch (error) {
-    themeContext = { theme: defaultTheme };
-  }
-  
+  // Use optional theme context, fallback to defaults if provider is unavailable
+  const themeContext = useOptionalTheme();
+
   const theme = themeContext?.theme || defaultTheme;
   
   const fadeAnim = useRef(new Animated.Value(0)).current;
