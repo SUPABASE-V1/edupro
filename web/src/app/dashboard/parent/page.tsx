@@ -354,7 +354,7 @@ export default function ParentDashboard() {
                 <LogOut className="navIcon" />
                 <span>Sign out</span>
               </button>
-              <div className="brandPill w-full text-center">Powered by EduDash Pro</div>
+              <div className="brandPill" style={{ width: '100%', textAlign: 'center' }}>Powered by EduDash Pro</div>
             </div>
             </div>
           </aside>
@@ -435,7 +435,7 @@ export default function ParentDashboard() {
           {childrenCards.length > 0 && (
             <div className="section">
               <div className="sectionTitle">
-                <Users className="w-4 h-4 text-purple-400" />
+                <Users className="icon16" style={{ color: '#a78bfa' }} />
                 My Children
               </div>
               <style>{`
@@ -534,7 +534,7 @@ export default function ParentDashboard() {
               <div className="section">
                 <div className="card">
                   <div className="sectionTitle">
-                    <Clock className="w-4 h-4 text-orange-400" />
+                    <Clock className="icon16" style={{ color: '#fb923c' }} />
                     Pending Child Link Requests ({pendingRequests.length})
                   </div>
                   <ul style={{ display: 'grid', gap: 8 }}>
@@ -554,7 +554,7 @@ export default function ParentDashboard() {
 
             <div className="section">
               <div className="sectionTitle">
-                <BarChart3 className="w-4 h-4 text-blue-400" />
+                <BarChart3 className="icon16" style={{ color: '#60a5fa' }} />
                 Overview
               </div>
               <div className="grid2">
@@ -579,7 +579,7 @@ export default function ParentDashboard() {
 
             <div className="section">
               <div className="sectionTitle">
-                <Zap className="w-4 h-4 text-yellow-400" />
+                <Zap className="icon16" style={{ color: '#facc15' }} />
                 Quick Actions
               </div>
               <div className="grid2">
@@ -641,7 +641,7 @@ export default function ParentDashboard() {
           <div style={{ overflowY: 'auto', height: '100%', display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
             <div className="card">
                 <div className="sectionTitle">
-                  <Clock className="w-4 h-4 text-purple-400" />
+                  <Clock className="icon16" style={{ color: '#c084fc' }} />
                   At a Glance
                 </div>
                 <ul style={{ display: 'grid', gap: 8 }}>
