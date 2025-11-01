@@ -61,7 +61,7 @@ export default function ParentDashboard() {
     requestedDate: string;
   }[]>([]);
 
-  // All custom hooks together
+  // All custom hooks together (must be called in consistent order)
   const { profile, loading: profileLoading } = useUserProfile(userId);
   const { slug: tenantSlug } = useTenantSlug(userId);
   const {
