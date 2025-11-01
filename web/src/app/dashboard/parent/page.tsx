@@ -309,12 +309,11 @@ export default function ParentDashboard() {
               Close
             </button>
             <AskAIWidget
-              userId={userId || ''}
-              userRole={profile?.role || 'parent'}
-              userName={userName}
-              preschoolName={preschoolName}
+              fullscreen={true}
               initialPrompt={aiPrompt}
-              initialDisplayText={aiDisplay}
+              displayMessage={aiDisplay}
+              language={profile?.preferredLanguage || 'en-ZA'}
+              enableInteractive={true}
               onClose={handleCloseAI}
             />
           </div>
