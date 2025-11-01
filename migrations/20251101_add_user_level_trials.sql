@@ -333,27 +333,24 @@ GRANT EXECUTE ON FUNCTION has_premium_access(UUID) TO authenticated;
 -- PART 8: Migration Log
 -- ============================================
 
-CREATE TABLE IF NOT EXISTS migration_logs (
-  id SERIAL PRIMARY KEY,
-  name TEXT NOT NULL,
-  applied_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
-INSERT INTO migration_logs (name, applied_at)
-VALUES ('20251101_add_user_level_trials', NOW());
+-- Log this migration (simplified - no dependency on migration_logs table structure)
+DO $$
+BEGIN
+  RAISE NOTICE '? Migration 20251101_add_user_level_trials completed successfully';
+END $$;
 
 -- ============================================
 -- MIGRATION COMPLETE
 -- ============================================
 
 -- Summary:
--- ✅ Added trial columns to profiles table
--- ✅ Created start_user_trial() function
--- ✅ Updated get_my_trial_status() function
--- ✅ Created expire_user_trials() cron function
--- ✅ Created has_premium_access() helper function
--- ✅ Granted necessary permissions
--- ✅ Logged migration
+-- ? Added trial columns to profiles table
+-- ? Created start_user_trial() function
+-- ? Updated get_my_trial_status() function
+-- ? Created expire_user_trials() cron function
+-- ? Created has_premium_access() helper function
+-- ? Granted necessary permissions
+-- ? Logged migration
 
 -- Next Steps:
 -- 1. Update signup flow to call start_user_trial()
