@@ -33,7 +33,7 @@ import { ExamPrepWidget } from '@/components/dashboard/exam-prep/ExamPrepWidget'
 import { ParentOnboarding } from '@/components/dashboard/parent/ParentOnboarding';
 import { PendingRequestsWidget } from '@/components/dashboard/parent/PendingRequestsWidget';
 import { ParentShell } from '@/components/dashboard/parent/ParentShell';
-import { ParentShell } from '@/components/dashboard/parent/ParentShell';
+
 
 type TrialStatusResponse = {
   is_trial: boolean;
@@ -771,7 +771,7 @@ export default function ParentDashboard() {
               </div>
             )}
       </ParentShell>
-      </ParentShell>
+
 
       {/* Ask AI Modal - Fullscreen */}
       {showAskAI && (
@@ -819,7 +819,6 @@ export default function ParentDashboard() {
           </div>
         </div>
       )}
-    </>
     </>
   );
 }
