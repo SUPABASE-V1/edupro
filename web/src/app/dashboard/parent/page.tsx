@@ -32,8 +32,6 @@ import { CAPSActivitiesWidget } from '@/components/dashboard/parent/CAPSActiviti
 import { ExamPrepWidget } from '@/components/dashboard/exam-prep/ExamPrepWidget';
 import { ParentOnboarding } from '@/components/dashboard/parent/ParentOnboarding';
 import { PendingRequestsWidget } from '@/components/dashboard/parent/PendingRequestsWidget';
-import { ParentShell } from '@/components/dashboard/parent/ParentShell';
-
 
 type TrialStatusResponse = {
   is_trial: boolean;
@@ -41,6 +39,7 @@ type TrialStatusResponse = {
   days_remaining: number | null;
   plan_tier: string | null;
   plan_name: string | null;
+  owner_type?: string | null;
   message?: string | null;
 };
 
@@ -203,40 +202,6 @@ export default function ParentDashboard() {
     initAuth();
   }, [router, supabase]);
 
-  // Start parent trial on first dashboard visit
-  // This works for ALL parents, even those without a school/organization
-  useEffect(() => {
-    const startTrialIfNeeded = async () => {
-      if (!userId) return;
-      
-      // Wait a bit for profile to load, but don't block on it
-      // This ensures trial starts even if profile hasn't fully loaded
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      try {
-        // Call start_parent_trial RPC - it's idempotent so safe to call multiple times
-        // Works for parents with OR without a linked school/organization
-        const { data, error } = await supabase.rpc('start_parent_trial');
-        
-        if (error) {
-          console.error('Error starting parent trial:', error);
-          return;
-        }
-        
-        if (data?.success && !data?.already_exists) {
-          console.log('?? Parent trial started successfully:', data);
-          // Optionally show a success notification to the user
-        } else if (data?.already_exists) {
-          console.log('? Parent trial already active');
-        }
-      } catch (err) {
-        console.error('Failed to start parent trial:', err);
-      }
-    };
-
-    startTrialIfNeeded();
-  }, [userId, supabase]);
-
   // Load link requests (parent's own and incoming to approve)
   useEffect(() => {
     const loadLinkRequests = async () => {
@@ -389,35 +354,82 @@ export default function ParentDashboard() {
 
   const activeChild = childrenCards.find((c) => c.id === activeChildId);
 
-  // Right Sidebar Content
-  const rightSidebar = (
-    <div style={{ overflowY: 'auto', height: '100%', display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-      <div className="card">
-        <div className="sectionTitle">
-          <Clock className="w-4 h-4 text-purple-400" />
-          At a Glance
-        </div>
-        <ul style={{ display: 'grid', gap: 8 }}>
-          <li className="listItem"><span>Upcoming events</span><span className="badge">{activeChild ? metrics.upcomingEvents : 0}</span></li>
-          <li className="listItem"><span>Unread messages</span><span className="badge">{unreadCount}</span></li>
-          <li className="listItem"><span>Fees due</span><span className="badge">{activeChild && metrics.feesDue ? 'R ' + metrics.feesDue.amount.toLocaleString() : 'None'}</span></li>
-        </ul>
-      </div>
-      <AskAIWidget inline />
-    </div>
-  );
+  const normalizedTier = useMemo(() => trialStatus?.plan_tier?.toLowerCase() ?? null, [trialStatus?.plan_tier]);
+  const isTrialActive = Boolean(trialStatus?.is_trial);
+  const isParentFreeTier = !normalizedTier || normalizedTier === 'free' || normalizedTier === 'parent-free';
+  const trialDaysRemaining = typeof trialStatus?.days_remaining === 'number' ? trialStatus?.days_remaining : null;
+  const trialEndDateDisplay = trialStatus?.trial_end_date ? new Date(trialStatus.trial_end_date) : null;
 
   return (
-    <>
-      <ParentShell
-        tenantSlug={tenantSlug || undefined}
-        userEmail={userEmail}
-        userName={userName}
-        preschoolName={preschoolName || undefined}
-        unreadCount={unreadCount}
-        rightSidebar={rightSidebar}
-        onOpenDashAI={() => setShowAskAI(true)}
-      >
+    <div className="app">
+      <header className="topbar">
+        <div className="topbarRow topbarEdge">
+          <div className="leftGroup">
+            {preschoolName ? (
+              <div className="chip" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ fontSize: 16 }}>??</span>
+                <span style={{ fontWeight: 600 }}>{preschoolName}</span>
+              </div>
+            ) : profile?.preschoolId ? (
+              <div className="chip" style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--warning-bg)', color: 'var(--warning)' }}>
+                <span style={{ fontSize: 16 }}>??</span>
+                <span style={{ fontWeight: 600 }}>School Info Loading...</span>
+              </div>
+            ) : (
+              <div className="chip" style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--warning-bg)', color: 'var(--warning)' }}>
+                <span style={{ fontSize: 16 }}>??</span>
+                <span style={{ fontWeight: 600 }}>No School Linked</span>
+              </div>
+            )}
+          </div>
+          <div className="rightGroup">
+            <button className="iconBtn" aria-label="Notifications">
+              <Bell className="icon20" />
+            </button>
+            <div className="avatar">{avatarLetter}</div>
+          </div>
+        </div>
+      </header>
+
+      <div className="frame">
+        {/* Left sidebar (desktop/tablet) */}
+        <aside className="sidenav sticky" aria-label="Sidebar">
+            <div className="sidenavCol">
+              <nav className="nav">
+              {[
+                { href: '/dashboard/parent', label: 'Dashboard', icon: LayoutDashboard },
+                { href: '/dashboard/parent/messages', label: 'Messages', icon: MessageCircle, badge: unreadCount },
+                { href: '/dashboard/parent/children', label: 'My Children', icon: Users },
+                { href: '/dashboard/parent/settings', label: 'Settings', icon: SettingsIcon },
+              ].map((it) => {
+                const Icon = it.icon as any;
+                const active = pathname === it.href || pathname?.startsWith(it.href + '/');
+                return (
+                  <Link key={it.href} href={it.href} className={`navItem ${active ? 'navItemActive' : ''}`} aria-current={active ? 'page' : undefined}>
+                    <Icon className="navIcon" />
+                    <span>{it.label}</span>
+                    {typeof it.badge === 'number' && it.badge > 0 && (
+                      <span className="navItemBadge badgeNumber">{it.badge}</span>
+                    )}
+                  </Link>
+                );
+              })}
+            </nav>
+            <div className="sidenavFooter">
+              <button
+                className="navItem"
+                onClick={async () => { const sb = createClient(); await sb.auth.signOut(); router.push('/sign-in'); }}
+              >
+                <LogOut className="navIcon" />
+                <span>Sign out</span>
+              </button>
+              <div className="brandPill w-full text-center">Powered by EduDash Pro</div>
+            </div>
+            </div>
+          </aside>
+
+        {/* Main column */}
+        <main className="content">
           {/* Search Bar */}
           <div style={{ marginTop: 0, marginBottom: 'var(--space-3)' }}>
             <div style={{ position: 'relative' }}>
@@ -440,29 +452,9 @@ export default function ParentDashboard() {
               <h1 className="h1" style={{ margin: 0 }}>{greeting}, {userName}</h1>
             </div>
 
-            {/* Show onboarding if no preschool linked - but now it's optional! */}
+            {/* Show onboarding if no preschool linked */}
             {!preschoolName && !profile?.preschoolId && (
-              <div className="card" style={{ 
-                background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%)', 
-                border: '1px solid rgba(102, 126, 234, 0.3)',
-                padding: 'var(--space-4)',
-                marginBottom: 'var(--space-4)'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-3)' }}>
-                  <span style={{ fontSize: 32 }}>??</span>
-                  <div style={{ flex: 1 }}>
-                    <h3 style={{ margin: 0, marginBottom: 8, fontSize: 16, fontWeight: 700 }}>
-                      Welcome to Your 7-Day Free Trial!
-                    </h3>
-                    <p style={{ margin: 0, fontSize: 14, color: 'var(--muted)', marginBottom: 12 }}>
-                      You're all set to explore EduDash Pro. {childrenCards.length > 0 ? 'Track your children\'s progress' : 'Link a child to get started'}, generate learning activities, and more!
-                    </p>
-                    <p style={{ margin: 0, fontSize: 13, color: 'var(--muted)' }}>
-                      ?? <strong>Tip:</strong> You can link to a school anytime from Settings if your child joins a preschool.
-                    </p>
-                  </div>
-                </div>
-              </div>
+              <ParentOnboarding userName={userName} />
             )}
 
             {/* Trial banner / upsell */}
@@ -532,7 +524,6 @@ export default function ParentDashboard() {
                   textAlign: 'center'
                 }}>
                   <div style={{ fontSize: 48, marginBottom: 16 }}>??</div>
-                  <div style={{ fontSize: 48, marginBottom: 16 }}>??</div>
                   <h2 style={{ margin: 0, marginBottom: 8, fontSize: 20, fontWeight: 700 }}>
                     Registration Pending
                   </h2>
@@ -551,12 +542,10 @@ export default function ParentDashboard() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                     <span style={{ fontSize: 24 }}>??</span>
-                    <span style={{ fontSize: 24 }}>??</span>
                     <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>{preschoolName}</h2>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', paddingLeft: 32 }}>
                     <p style={{ margin: 0, fontSize: 14, opacity: 0.9 }}>{roleDisplay}</p>
-                    <span style={{ opacity: 0.7 }}>?</span>
                     <span style={{ opacity: 0.7 }}>?</span>
                     <TierBadge userId={userId} size="sm" showUpgrade />
                   </div>
@@ -633,7 +622,6 @@ export default function ParentDashboard() {
                           {child.firstName} {child.lastName}
                         </div>
                         <div style={{ fontSize: 12, color: 'var(--muted)' }}>
-                          {child.grade}{child.className ? ` ? ${child.className}` : ''}
                           {child.grade}{child.className ? ` ? ${child.className}` : ''}
                         </div>
                       </div>
@@ -770,8 +758,25 @@ export default function ParentDashboard() {
                 </div>
               </div>
             )}
-      </ParentShell>
+        </main>
 
+        <aside className="right sticky" aria-label="At a glance">
+          <div style={{ overflowY: 'auto', height: '100%', display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+            <div className="card">
+                <div className="sectionTitle">
+                  <Clock className="w-4 h-4 text-purple-400" />
+                  At a Glance
+                </div>
+                <ul style={{ display: 'grid', gap: 8 }}>
+                  <li className="listItem"><span>Upcoming events</span><span className="badge">{activeChild ? metrics.upcomingEvents : 0}</span></li>
+                  <li className="listItem"><span>Unread messages</span><span className="badge">{unreadCount}</span></li>
+                  <li className="listItem"><span>Fees due</span><span className="badge">{activeChild && metrics.feesDue ? 'R ' + metrics.feesDue.amount.toLocaleString() : 'None'}</span></li>
+                </ul>
+            </div>
+            <AskAIWidget inline />
+          </div>
+        </aside>
+      </div>
 
       {/* Ask AI Modal - Fullscreen */}
       {showAskAI && (
@@ -819,6 +824,22 @@ export default function ParentDashboard() {
           </div>
         </div>
       )}
-    </>
+
+      <nav className="bottomNav" aria-label="Primary">
+        <div className="bottomNavInner">
+          <div className="bottomGrid">
+            {[{href:'/dashboard/parent',label:'Home',icon:MessageCircle},{href:'/dashboard/parent/messages',label:'Messages',icon:MessageCircle},{href:'/dashboard/parent/calendar',label:'Calendar',icon:Calendar},{href:'/dashboard/parent/payments',label:'Fees',icon:DollarSign},{href:'/dashboard/parent/settings',label:'Settings',icon:Calendar}].map((it, i) => {
+              const Icon = it.icon; const active = pathname === it.href;
+              return (
+                <Link key={i} href={it.href} className={`bnItem ${active ? 'bnItemActive' : ''}`} aria-current={active ? 'page' : undefined}>
+                  <Icon className="icon20" />
+                  <span style={{ fontSize: 12 }}>{it.label}</span>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      </nav>
+    </div>
   );
 }
