@@ -39,6 +39,7 @@ type TrialStatusResponse = {
   days_remaining: number | null;
   plan_tier: string | null;
   plan_name: string | null;
+  owner_type?: string | null;
   message?: string | null;
 };
 
