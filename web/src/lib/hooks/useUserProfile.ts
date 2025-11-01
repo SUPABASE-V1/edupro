@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
 export interface UserProfile {
+  preferredLanguage: string;
   id: string;
   email: string;
   firstName?: string;
