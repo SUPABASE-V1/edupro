@@ -21,6 +21,8 @@ function ParentSignUpForm() {
   const [invitationCode, setInvitationCode] = useState<string | null>(null);
   const [hasInvitation, setHasInvitation] = useState(false);
   const [invitationLoading, setInvitationLoading] = useState(false);
+  const [step, setStep] = useState(1); // 1: basic info, 2: usage type, 3: organization (optional)
+  const [usageType, setUsageType] = useState<string | null>(null);
 
   // Check for invitation code in URL
   useEffect(() => {
@@ -83,10 +85,16 @@ function ParentSignUpForm() {
       return;
     }
 
-    if (!selectedOrganization && !invitationCode) {
-      setError("Please select an organization or use an invitation code");
+    if (!usageType) {
+      setError("Please select how you'll be using EduDash Pro");
       return;
     }
+
+    // Organization is now optional - independent users don't need one
+    // if (!selectedOrganization && !invitationCode) {
+    //   setError("Please select an organization or use an invitation code");
+    //   return;
+    // }
 
     setLoading(true);
 
@@ -106,6 +114,7 @@ function ParentSignUpForm() {
           last_name: lastName,
           role: 'parent',
           phone: phoneNumber || null,
+          usage_type: usageType || 'independent', // Track how parent intends to use the app
         },
         emailRedirectTo: `${window.location.origin}/auth/callback`,
       }
@@ -227,12 +236,73 @@ function ParentSignUpForm() {
               />
             </div>
 
-            {/* Organization Selection (hidden if has invitation) */}
-            {!hasInvitation && (
-              <OrganizationSelector
-                onSelect={setSelectedOrganization}
-                selectedOrganizationId={selectedOrganization?.id || null}
-              />
+            {/* Usage Type Selection */}
+            <div>
+              <label style={{ display: "block", color: "#fff", fontSize: 14, fontWeight: 500, marginBottom: 12 }}>
+                How will you be using EduDash Pro? *
+              </label>
+              <div style={{ display: "grid", gap: 10 }}>
+                {[
+                  { value: 'preschool', icon: '🎨', label: 'My child attends a preschool', desc: 'Connect to your child\'s preschool' },
+                  { value: 'k12_school', icon: '🏫', label: 'My child attends a K-12 school', desc: 'Link with primary or high school' },
+                  { value: 'homeschool', icon: '🏠', label: 'Homeschooling', desc: 'Teaching at home full-time' },
+                  { value: 'aftercare', icon: '⭐', label: 'Aftercare/Extracurricular program', desc: 'After school care or activities' },
+                  { value: 'supplemental', icon: '📚', label: 'Supplemental learning at home', desc: 'Extra support alongside school' },
+                  { value: 'exploring', icon: '🔍', label: 'Just exploring the app', desc: 'Want to see what\'s available' },
+                ].map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => setUsageType(option.value)}
+                    style={{
+                      padding: "16px",
+                      background: usageType === option.value ? "rgba(0, 245, 255, 0.1)" : "#1a1a1f",
+                      border: usageType === option.value ? "2px solid #00f5ff" : "1px solid #2a2a2f",
+                      borderRadius: 10,
+                      color: "#fff",
+                      textAlign: "left",
+                      cursor: "pointer",
+                      transition: "all 0.2s",
+                      display: "flex",
+                      gap: 12,
+                      alignItems: "flex-start"
+                    }}
+                  >
+                    <span style={{ fontSize: 24, flexShrink: 0 }}>{option.icon}</span>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 600, marginBottom: 4 }}>{option.label}</div>
+                      <div style={{ fontSize: 12, color: "#9CA3AF" }}>{option.desc}</div>
+                    </div>
+                    {usageType === option.value && (
+                      <span style={{ fontSize: 20, color: "#00f5ff" }}>✓</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Organization Selection (shown only for preschool/k12/aftercare, hidden if has invitation) */}
+            {!hasInvitation && usageType && ['preschool', 'k12_school', 'aftercare'].includes(usageType) && (
+              <div>
+                <div style={{ marginBottom: 12, padding: 12, background: "rgba(0, 245, 255, 0.05)", border: "1px solid rgba(0, 245, 255, 0.2)", borderRadius: 8 }}>
+                  <p style={{ color: "#00f5ff", fontSize: 13, margin: 0 }}>
+                    💡 <strong>Optional:</strong> You can search for your organization below or skip this step and add it later in settings.
+                  </p>
+                </div>
+                <OrganizationSelector
+                  onSelect={setSelectedOrganization}
+                  selectedOrganizationId={selectedOrganization?.id || null}
+                />
+              </div>
+            )}
+
+            {/* Info for independent users */}
+            {usageType && ['homeschool', 'supplemental', 'exploring'].includes(usageType) && (
+              <div style={{ padding: 16, background: "rgba(103, 232, 249, 0.05)", border: "1px solid rgba(103, 232, 249, 0.2)", borderRadius: 10 }}>
+                <p style={{ color: "#67e8f9", fontSize: 14, margin: 0, lineHeight: 1.6 }}>
+                  ✨ <strong>Great choice!</strong> You'll have full access to age-appropriate content and activities. You can add your children's profiles after signup.
+                </p>
+              </div>
             )}
 
             <div>
