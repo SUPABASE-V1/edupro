@@ -103,6 +103,16 @@ ADD COLUMN IF NOT EXISTS approved_by UUID REFERENCES profiles(id);
 ALTER TABLE preschools
 ADD COLUMN IF NOT EXISTS approved_at TIMESTAMP WITH TIME ZONE;
 
+-- Ensure subscription_tier column exists (for TierBadge compatibility)
+ALTER TABLE preschools
+ADD COLUMN IF NOT EXISTS subscription_tier TEXT DEFAULT 'free'
+CHECK (subscription_tier IN ('free', 'starter', 'premium', 'professional', 'enterprise', 'parent-starter', 'parent-plus'));
+
+-- Sync subscription_plan to subscription_tier if tier is null
+UPDATE preschools
+SET subscription_tier = COALESCE(subscription_tier, subscription_plan, 'free')
+WHERE subscription_tier IS NULL;
+
 -- Add indexes for approved/verified queries
 CREATE INDEX IF NOT EXISTS idx_preschools_approved 
 ON preschools(approved) 
