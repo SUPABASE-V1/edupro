@@ -122,12 +122,15 @@ export function AskAIWidget({
         if (error) {
           console.error('[DashAI] Edge Function Error:', error);
           console.error('[DashAI] Error details:', JSON.stringify(error, null, 2));
+          console.error('[DashAI] Response data:', data);
           
           // Try to get detailed error from response
           let errorDetails = 'Unknown error';
           if (data?.error) {
             errorDetails = data.error;
             if (data.details) errorDetails += `\n\nDetails: ${data.details}`;
+          } else if (error.message) {
+            errorDetails = error.message;
           }
           
           // Handle function not found
@@ -246,7 +249,7 @@ export function AskAIWidget({
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData.session?.access_token;
       
-      const { data, error } = await supabase.functions.invoke('ai-proxy', {
+      const { data, error } = await supabase.functions.invoke('ai-proxy-simple', {
         body: {
           scope: 'parent',
           service_type: 'homework_help',

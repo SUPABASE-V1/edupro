@@ -5,7 +5,7 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 
-const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')
+const ANTHROPIC_API_KEY = Deno.env.get('SERVER_ANTHROPIC_API_KEY') || Deno.env.get('ANTHROPIC_API_KEY')
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -27,7 +27,7 @@ serve(async (req) => {
       console.error('[ai-proxy-simple] ANTHROPIC_API_KEY not set!')
       return new Response(
         JSON.stringify({
-          error: 'ANTHROPIC_API_KEY not configured. Please set it in Supabase Edge Function environment variables.'
+          error: 'SERVER_ANTHROPIC_API_KEY or ANTHROPIC_API_KEY not configured. Please set it in Supabase Edge Function environment variables.'
         }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
@@ -35,10 +35,13 @@ serve(async (req) => {
 
     // Parse request
     const body = await req.json()
-    const { payload } = body
+    console.log('[ai-proxy-simple] Request body:', JSON.stringify(body, null, 2))
+    
+    // Handle both simple and complex payload structures
+    const payload = body?.payload || body
     const prompt = payload?.prompt || 'Hello'
 
-    console.log('[ai-proxy-simple] Calling Claude API...')
+    console.log('[ai-proxy-simple] Calling Claude API with prompt:', prompt)
 
     // Call Claude API
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -49,7 +52,7 @@ serve(async (req) => {
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-3-5-sonnet-20240620',
+        model: 'claude-3-7-sonnet-20250219',
         max_tokens: 4096,
         messages: [{
           role: 'user',
@@ -88,10 +91,13 @@ Provide a clear, helpful response appropriate for the educational context.`
 
   } catch (error) {
     console.error('[ai-proxy-simple] Error:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Internal server error'
+    const errorDetails = String(error)
+    
     return new Response(
       JSON.stringify({
-        error: error.message || 'Internal server error',
-        details: String(error)
+        error: errorMessage,
+        details: errorDetails
       }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
