@@ -1,13 +1,39 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import { ArrowLeft } from "lucide-react";
 
 type UserType = "parents" | "schools";
 
 export default function PricingPage() {
+  const router = useRouter();
+  const supabase = createClient();
   const [userType, setUserType] = useState<UserType>("parents");
   const [billingPeriod, setBillingPeriod] = useState<"monthly" | "annual">("monthly");
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isOnTrial, setIsOnTrial] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const checkAuthAndTrial = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setIsLoggedIn(!!session);
+
+      if (session) {
+        try {
+          const { data: trialData } = await supabase.rpc('get_my_trial_status');
+          setIsOnTrial(trialData?.is_trial || false);
+        } catch (err) {
+          console.debug('Trial check failed:', err);
+        }
+      }
+      setLoading(false);
+    };
+    checkAuthAndTrial();
+  }, [supabase]);
 
   const parentPlans = [
     {
@@ -34,7 +60,7 @@ export default function PricingPage() {
         "Child-safe explanations",
         "Progress tracking",
         "Email support",
-        "7-day free trial"
+        ...(isOnTrial ? [] : ["7-day free trial"])
       ]
     },
     {
@@ -79,7 +105,7 @@ export default function PricingPage() {
         "Parent portal",
         "WhatsApp notifications",
         "Email support",
-        "7-day free trial"
+        ...(isOnTrial ? [] : ["7-day free trial"])
       ]
     },
     {
@@ -128,7 +154,29 @@ export default function PricingPage() {
         <header style={{ position: "sticky", top: 0, zIndex: 1000, background: "rgba(10, 10, 15, 0.95)", backdropFilter: "blur(12px)", borderBottom: "1px solid rgba(255, 255, 255, 0.1)" }}>
           <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "12px 20px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <Link href="/" style={{ fontSize: "18px", fontWeight: 700, textDecoration: "none", color: "#fff" }}>🎓 EduDash Pro</Link>
-            <Link href="/sign-in" style={{ color: "#00f5ff", textDecoration: "none", fontSize: "14px", fontWeight: 600 }}>Sign In</Link>
+            {isLoggedIn ? (
+              <button
+                onClick={() => router.push('/dashboard/parent')}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 8,
+                  color: "#00f5ff",
+                  background: "transparent",
+                  border: "1px solid #00f5ff",
+                  padding: "8px 16px",
+                  borderRadius: "8px",
+                  fontSize: "14px",
+                  fontWeight: 600,
+                  cursor: "pointer"
+                }}
+              >
+                <ArrowLeft size={16} />
+                Back to Dashboard
+              </button>
+            ) : (
+              <Link href="/sign-in" style={{ color: "#00f5ff", textDecoration: "none", fontSize: "14px", fontWeight: 600 }}>Sign In</Link>
+            )}
           </div>
         </header>
 
@@ -142,9 +190,11 @@ export default function PricingPage() {
             Transparent pricing for parents and schools across South Africa
           </p>
           
-          <div style={{ marginTop: "32px", marginBottom: "24px", display: "inline-block", background: "rgba(251, 191, 36, 0.15)", border: "2px solid #fbbf24", borderRadius: "12px", padding: "12px 24px" }}>
-            <p style={{ margin: 0, fontSize: "16px", fontWeight: 800, color: "#fbbf24", textTransform: "uppercase", letterSpacing: "0.05em" }}>🎉 7-Day Free Trial • No Credit Card Required</p>
-          </div>
+          {!isOnTrial && (
+            <div style={{ marginTop: "32px", marginBottom: "24px", display: "inline-block", background: "rgba(251, 191, 36, 0.15)", border: "2px solid #fbbf24", borderRadius: "12px", padding: "12px 24px" }}>
+              <p style={{ margin: 0, fontSize: "16px", fontWeight: 800, color: "#fbbf24", textTransform: "uppercase", letterSpacing: "0.05em" }}>🎉 7-Day Free Trial • No Credit Card Required</p>
+            </div>
+          )}
         </section>
 
         {/* User Type Toggle */}

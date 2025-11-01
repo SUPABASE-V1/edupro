@@ -8,6 +8,10 @@ import { ParentShell } from '@/components/dashboard/parent/ParentShell';
 import { DashboardHeader } from '@/components/dashboard/parent/DashboardHeader';
 import { TrialBanner } from '@/components/dashboard/parent/TrialBanner';
 import { OrganizationBanner } from '@/components/dashboard/parent/OrganizationBanner';
+import { ExamWeekBanner } from '@/components/dashboard/parent/ExamWeekBanner';
+import { EmergencyExamHelp } from '@/components/dashboard/parent/EmergencyExamHelp';
+import { QuickSubjectPractice } from '@/components/dashboard/parent/QuickSubjectPractice';
+import { ExamTips } from '@/components/dashboard/parent/ExamTips';
 import { PendingRequestsWidget } from '@/components/dashboard/parent/PendingRequestsWidget';
 import { EmptyChildrenState } from '@/components/dashboard/parent/EmptyChildrenState';
 import { QuickActionsGrid } from '@/components/dashboard/parent/QuickActionsGrid';
@@ -73,6 +77,20 @@ export default function ParentDashboard() {
     setAIDisplay('');
   };
 
+  // Handle exam prep navigation
+  const handleStartExamPrep = () => {
+    // Scroll to exam prep widget or show AI with exam context
+    setAIPrompt('I need help preparing for my exams next week. Can you help me create a study plan?');
+    setAIDisplay('Exam Preparation Assistant');
+    setShowAskAI(true);
+  };
+
+  const handleSubjectPractice = (subject: string) => {
+    setAIPrompt(`Generate a practice test for ${subject}. Include questions with a memorandum.`);
+    setAIDisplay(`${subject} Practice Test`);
+    setShowAskAI(true);
+  };
+
   // Loading state
   if (loading) {
     return (
@@ -100,6 +118,11 @@ export default function ParentDashboard() {
 
         {/* Trial Banner */}
         <TrialBanner trialStatus={trialStatus} />
+
+        {/* Exam Week Banner - Show for all parents with children */}
+        {childrenCards.length > 0 && (
+          <ExamWeekBanner onStartExamPrep={handleStartExamPrep} />
+        )}
 
         {/* Organization Banner (ONLY if has organization) */}
         <OrganizationBanner
@@ -175,6 +198,22 @@ export default function ParentDashboard() {
 
         {/* Quick Actions Grid */}
         <QuickActionsGrid usageType={usageType} hasOrganization={hasOrganization} />
+
+        {/* Emergency Exam Help - Priority Access to AI Tutor */}
+        {childrenCards.length > 0 && (
+          <EmergencyExamHelp onClick={handleStartExamPrep} />
+        )}
+
+        {/* Quick Subject Practice - One-Click Practice Tests */}
+        {activeChild && (
+          <QuickSubjectPractice
+            childAge={activeChild.progressScore > 80 ? 15 : 10}
+            onSelectSubject={handleSubjectPractice}
+          />
+        )}
+
+        {/* Exam Tips - Study Best Practices */}
+        {childrenCards.length > 0 && <ExamTips />}
 
         {/* Overview Section (ONLY for organization-linked parents) */}
         {hasOrganization && (
