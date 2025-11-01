@@ -34,9 +34,12 @@ import { ParentOnboarding } from '@/components/dashboard/parent/ParentOnboarding
 import { PendingRequestsWidget } from '@/components/dashboard/parent/PendingRequestsWidget';
 
 export default function ParentDashboard() {
+  // All hooks must be called at the top in consistent order
   const router = useRouter();
   const pathname = usePathname();
   const supabase = createClient();
+  
+  // All useState hooks together
   const [userId, setUserId] = useState<string>();
   const [authLoading, setAuthLoading] = useState(true);
   const [greeting, setGreeting] = useState('');
@@ -45,6 +48,39 @@ export default function ParentDashboard() {
   const [aiDisplay, setAIDisplay] = useState('');
   const [aiLanguage, setAiLanguage] = useState<string>('en-ZA');
   const [aiInteractive, setAiInteractive] = useState(false);
+  const [pendingRequests, setPendingRequests] = useState<{
+    childName: string;
+    requestedDate: string;
+    status: string;
+  }[]>([]);
+  const [, setParentLinkRequests] = useState<{
+    id: string;
+    parentName: string;
+    childName: string;
+    relationship?: string;
+    requestedDate: string;
+  }[]>([]);
+
+  // All custom hooks together
+  const { profile, loading: profileLoading } = useUserProfile(userId);
+  const { slug: tenantSlug } = useTenantSlug(userId);
+  const {
+    childrenCards,
+    activeChildId,
+    setActiveChildId,
+    loading: childrenLoading,
+    refetch: refetchChildren,
+  } = useChildrenData(userId);
+  const { metrics } = useChildMetrics(activeChildId);
+  const { unreadCount } = useUnreadMessages(userId, activeChildId);
+  
+  // Derived values (not hooks)
+  const userEmail = profile?.email;
+  const userName = profile?.firstName || userEmail?.split('@')[0] || 'User';
+  const preschoolName = profile?.preschoolName;
+  const userRole = profile?.role;
+  const roleDisplay = userRole ? userRole.charAt(0).toUpperCase() + userRole.slice(1) : 'User';
+  const avatarLetter = (userName[0] || 'U').toUpperCase();
 
   const handleAskFromActivity = async (prompt: string, display: string, language?: string, enableInteractive?: boolean) => {
     try {
@@ -88,30 +124,6 @@ export default function ParentDashboard() {
       setShowAskAI(true);
     }
   };
-  
-  // Fetch user profile with preschool data
-  const { profile, loading: profileLoading } = useUserProfile(userId);
-  const { slug: tenantSlug } = useTenantSlug(userId);
-  
-  const userEmail = profile?.email;
-  const userName = profile?.firstName || userEmail?.split('@')[0] || 'User';
-  const preschoolName = profile?.preschoolName;
-  const userRole = profile?.role;
-  const roleDisplay = userRole ? userRole.charAt(0).toUpperCase() + userRole.slice(1) : 'User';
-  const avatarLetter = (userName[0] || 'U').toUpperCase();
-  // Pending requests - real data from database
-  const [pendingRequests, setPendingRequests] = useState<{
-    childName: string;
-    requestedDate: string;
-    status: string;
-  }[]>([]);
-  const [, setParentLinkRequests] = useState<{
-    id: string;
-    parentName: string;
-    childName: string;
-    relationship?: string;
-    requestedDate: string;
-  }[]>([]);
 
   // Initialize auth and user ID
   useEffect(() => {
@@ -255,18 +267,6 @@ export default function ParentDashboard() {
     loadLinkRequests();
   }, [userId]);
 
-  // Load dashboard data
-  const {
-    childrenCards,
-    activeChildId,
-    setActiveChildId,
-    loading: childrenLoading,
-    refetch: refetchChildren,
-  } = useChildrenData(userId);
-
-  const { metrics } = useChildMetrics(activeChildId);
-  const { unreadCount } = useUnreadMessages(userId, activeChildId);
-
   const handleRefresh = async () => {
     await refetchChildren();
   };
@@ -298,17 +298,17 @@ export default function ParentDashboard() {
           <div className="leftGroup">
             {preschoolName ? (
               <div className="chip" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ fontSize: 16 }}>🎓</span>
+                <span style={{ fontSize: 16 }}>??</span>
                 <span style={{ fontWeight: 600 }}>{preschoolName}</span>
               </div>
             ) : profile?.preschoolId ? (
               <div className="chip" style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--warning-bg)', color: 'var(--warning)' }}>
-                <span style={{ fontSize: 16 }}>⚠️</span>
+                <span style={{ fontSize: 16 }}>??</span>
                 <span style={{ fontWeight: 600 }}>School Info Loading...</span>
               </div>
             ) : (
               <div className="chip" style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--warning-bg)', color: 'var(--warning)' }}>
-                <span style={{ fontSize: 16 }}>⚠️</span>
+                <span style={{ fontSize: 16 }}>??</span>
                 <span style={{ fontWeight: 600 }}>No School Linked</span>
               </div>
             )}
@@ -400,7 +400,7 @@ export default function ParentDashboard() {
                   padding: 'var(--space-5)',
                   textAlign: 'center'
                 }}>
-                  <div style={{ fontSize: 48, marginBottom: 16 }}>🕒</div>
+                  <div style={{ fontSize: 48, marginBottom: 16 }}>??</div>
                   <h2 style={{ margin: 0, marginBottom: 8, fontSize: 20, fontWeight: 700 }}>
                     Registration Pending
                   </h2>
@@ -418,12 +418,12 @@ export default function ParentDashboard() {
               <div className="card" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white', marginBottom: 16, cursor: 'pointer' }} onClick={() => router.push('/dashboard/parent/preschool')}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: 24 }}>🎓</span>
+                    <span style={{ fontSize: 24 }}>??</span>
                     <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>{preschoolName}</h2>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', paddingLeft: 32 }}>
                     <p style={{ margin: 0, fontSize: 14, opacity: 0.9 }}>{roleDisplay}</p>
-                    <span style={{ opacity: 0.7 }}>•</span>
+                    <span style={{ opacity: 0.7 }}>?</span>
                     <TierBadge userId={userId} size="sm" showUpgrade />
                   </div>
                 </div>
@@ -499,7 +499,7 @@ export default function ParentDashboard() {
                           {child.firstName} {child.lastName}
                         </div>
                         <div style={{ fontSize: 12, color: 'var(--muted)' }}>
-                          {child.grade}{child.className ? ` • ${child.className}` : ''}
+                          {child.grade}{child.className ? ` ? ${child.className}` : ''}
                         </div>
                       </div>
                       {activeChildId === child.id && (
