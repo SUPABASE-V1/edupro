@@ -45,6 +45,12 @@ export default function ParentDashboard() {
   const [userId, setUserId] = useState<string>();
   const [authLoading, setAuthLoading] = useState(true);
   const [greeting, setGreeting] = useState('');
+  const [trialStatus, setTrialStatus] = useState<{
+    is_trial: boolean;
+    days_remaining: number;
+    plan_tier: string;
+    plan_name: string;
+  } | null>(null);
   const [showAskAI, setShowAskAI] = useState(false);
   const [aiPrompt, setAIPrompt] = useState('');
   const [aiDisplay, setAIDisplay] = useState('');
@@ -152,6 +158,30 @@ export default function ParentDashboard() {
 
     initAuth();
   }, [router]);
+
+  // Load trial status
+  useEffect(() => {
+    const loadTrialStatus = async () => {
+      if (!userId) return;
+      
+      try {
+        const { data, error } = await supabase.rpc('get_my_trial_status');
+        
+        if (error) {
+          console.error('[ParentDashboard] Error fetching trial status:', error);
+          return;
+        }
+        
+        if (data) {
+          setTrialStatus(data);
+        }
+      } catch (err) {
+        console.error('[ParentDashboard] Failed to load trial status:', err);
+      }
+    };
+    
+    loadTrialStatus();
+  }, [userId]);
 
   // Load link requests (parent's own and incoming to approve)
   useEffect(() => {
@@ -384,6 +414,60 @@ export default function ParentDashboard() {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-3)', gap: 'var(--space-2)' }}>
               <h1 className="h1" style={{ margin: 0 }}>{greeting}, {userName}</h1>
             </div>
+
+            {/* Trial Status Banner */}
+            {trialStatus?.is_trial && trialStatus.days_remaining !== undefined && (
+              <div className="card" style={{
+                background: trialStatus.days_remaining <= 3 
+                  ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' 
+                  : trialStatus.days_remaining <= 7
+                  ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'
+                  : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                color: 'white',
+                marginBottom: 16,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 16,
+                flexWrap: 'wrap'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <Clock size={24} />
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 4 }}>
+                      {trialStatus.days_remaining === 0 ? '?? Trial Ends Today!' : 
+                       trialStatus.days_remaining === 1 ? '? Last Day of Trial' :
+                       `? ${trialStatus.days_remaining} Days Left in Your ${trialStatus.plan_name} Trial`}
+                    </div>
+                    <div style={{ fontSize: 13, opacity: 0.9 }}>
+                      {trialStatus.days_remaining === 0 
+                        ? 'Upgrade now to keep using premium features' 
+                        : trialStatus.days_remaining <= 3
+                        ? 'Your trial is ending soon - upgrade to continue with full access'
+                        : 'Enjoying your trial? Upgrade anytime to unlock all features'}
+                    </div>
+                  </div>
+                </div>
+                {trialStatus.days_remaining <= 7 && (
+                  <button
+                    onClick={() => router.push('/#pricing')}
+                    className="btn"
+                    style={{
+                      background: 'white',
+                      color: trialStatus.days_remaining <= 3 ? '#dc2626' : '#d97706',
+                      fontWeight: 700,
+                      border: 'none',
+                      padding: '10px 20px',
+                      borderRadius: 8,
+                      cursor: 'pointer',
+                      fontSize: 14
+                    }}
+                  >
+                    Upgrade Now
+                  </button>
+                )}
+              </div>
+            )}
 
             {/* Show onboarding if no preschool linked */}
             {!preschoolName && !profile?.preschoolId && (
