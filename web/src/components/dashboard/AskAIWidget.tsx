@@ -69,9 +69,14 @@ export function AskAIWidget({
     }
   }, [messages]);
 
-  // Auto-populate and send initial prompt
+  // Auto-populate initial prompt (but don't send yet)
   useEffect(() => {
     if (!initialPrompt || hasProcessedInitial) return;
+    
+    // Just populate the input, don't auto-send
+    setHasProcessedInitial(true);
+    setInput(initialPrompt);
+    return; // Skip auto-send
     
     const runInitial = async () => {
       setHasProcessedInitial(true);
