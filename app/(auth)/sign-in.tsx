@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Platform, ActivityIndicator, ScrollView, KeyboardAvoidingView } from "react-native";
-import { Stack, router } from "expo-router";
+import { Stack, router, useLocalSearchParams } from "expo-router";
 import { useTheme } from "@/contexts/ThemeContext";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
@@ -19,11 +19,13 @@ export default function SignIn() {
   const { t } = useTranslation();
   const { theme } = useTheme();
   const { session, loading: authLoading } = useAuth();
+  const searchParams = useLocalSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const passwordInputRef = useRef<TextInput>(null);
 
 console.log('[SignIn] Component rendering, theme:', theme);
@@ -59,6 +61,15 @@ console.log('[SignIn] Component rendering, theme:', theme);
     const { x, y, width, height } = e.nativeEvent.layout;
     console.log('[SignIn] Card layout:', { x, y, width, height });
   };
+
+  // Check for verification success message
+  useEffect(() => {
+    if (searchParams.verified === 'true') {
+      setSuccessMessage(t('auth.email_verified', { defaultValue: 'Email verified successfully! You can now sign in.' }));
+      // Auto-dismiss after 5 seconds
+      setTimeout(() => setSuccessMessage(null), 5000);
+    }
+  }, [searchParams, t]);
 
   // Load saved credentials (web platform - no biometrics)
   useEffect(() => {
@@ -467,13 +478,37 @@ return (
               <Text style={styles.logoSubtext}>{t('app.tagline', { defaultValue: 'Empowering Education Through AI' })}</Text>
             </View>
 
-<GlassCard style={styles.card}>
+            <GlassCard style={styles.card}>
               <View style={styles.header}>
-<Text style={styles.title}>{t('auth.sign_in.welcome_back', { defaultValue: 'Welcome Back' })}</Text>
+                <Text style={styles.title}>{t('auth.sign_in.welcome_back', { defaultValue: 'Welcome Back' })}</Text>
                 <Text style={styles.subtitle}>{t('auth.sign_in.sign_in_to_account', { defaultValue: 'Sign in to your account' })}</Text>
               </View>
 
-          <View style={styles.form}>
+              {successMessage && (
+                <View style={{
+                  backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                  borderWidth: 1,
+                  borderColor: 'rgba(16, 185, 129, 0.4)',
+                  borderRadius: 10,
+                  padding: 12,
+                  marginBottom: 16,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 8,
+                }}>
+                  <Text style={{ fontSize: 16 }}>?</Text>
+                  <Text style={{ 
+                    color: '#6ee7b7', 
+                    fontSize: 14, 
+                    flex: 1,
+                    fontWeight: '500'
+                  }}>
+                    {successMessage}
+                  </Text>
+                </View>
+              )}
+
+              <View style={styles.form}>
             <TextInput
               style={styles.input}
               placeholder={t('auth.email', { defaultValue: 'Email' })}

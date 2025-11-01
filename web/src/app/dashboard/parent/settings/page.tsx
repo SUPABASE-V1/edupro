@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useTenantSlug } from '@/lib/tenant/useTenantSlug';
 import { ParentShell } from '@/components/dashboard/parent/ParentShell';
-import { Settings, User, Bell, Lock, Globe, Moon, Sun, Upload, LogOut, Camera } from 'lucide-react';
+import { Settings, User, Bell, Lock, Globe, Moon, Sun, Upload, LogOut, Camera, AlertTriangle } from 'lucide-react';
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -17,6 +17,8 @@ export default function SettingsPage() {
   const [darkMode, setDarkMode] = useState(true);
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [signingOut, setSigningOut] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -33,6 +35,36 @@ export default function SettingsPage() {
     setSigningOut(true);
     await supabase.auth.signOut();
     router.push('/sign-in');
+  };
+
+  const handleDeleteAccount = async () => {
+    const confirmed = typeof window !== 'undefined'
+      ? window.confirm('Are you sure you want to permanently delete your EduDash Pro account? This action cannot be undone and will remove access immediately.')
+      : false;
+
+    if (!confirmed) return;
+
+    try {
+      setDeletingAccount(true);
+      setDeleteError(null);
+
+      const { data, error } = await supabase.functions.invoke('delete-account', {
+        method: 'POST',
+        body: { confirm: true },
+      });
+
+      if (error || !data?.success) {
+        throw error ?? new Error('Failed to delete account');
+      }
+
+      await supabase.auth.signOut();
+      router.push('/sign-in?accountDeleted=1');
+    } catch (err) {
+      console.error('[ParentSettings] delete account failed', err);
+      setDeleteError('We could not delete your account right now. Please try again or contact support.');
+    } finally {
+      setDeletingAccount(false);
+    }
   };
 
   useEffect(() => {
@@ -56,8 +88,15 @@ export default function SettingsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      <div className="app">
+        <header className="topbar">
+          <div className="container topbarRow">
+            <div className="brand">EduDash Pro</div>
+          </div>
+        </header>
+        <main className="content container">
+          Loading...
+        </main>
       </div>
     );
   }
@@ -69,137 +108,151 @@ export default function SettingsPage() {
           <h1 className="h1">Settings</h1>
           <p className="muted">Manage your account preferences</p>
         </div>
+
         <div className="section">
-          <div className="grid gap-6 max-w-3xl">
+          <div style={{ maxWidth: 800, display: 'grid', gap: 'var(--space-4)' }}>
 
             {/* Profile Settings */}
-            <div className="card p-md">
-              <div className="flex items-center gap-3 mb-6">
-                <User className="w-5 h-5 text-blue-500" />
-                <h2 className="text-lg font-semibold">Profile</h2>
+            <div className="card">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>
+                <User className="icon20" style={{ color: 'var(--primary)' }} />
+                <h2 className="h2" style={{ margin: 0 }}>Profile</h2>
               </div>
-              <div className="space-y-5">
+              <div style={{ display: 'grid', gap: 'var(--space-4)' }}>
                 {/* Profile Picture */}
                 <div>
-                  <label className="block text-sm text-gray-400 mb-4">Profile Picture</label>
-                  <div className="flex items-center gap-4">
-                    <div className="relative">
+                  <label className="label">Profile Picture</label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginTop: 'var(--space-2)' }}>
+                    <div style={{ position: 'relative' }}>
                       {profileImage ? (
                         <img
                           src={profileImage}
                           alt="Profile"
-                          className="w-20 h-20 rounded-full object-cover border-2 border-blue-500"
+                          style={{ width: 80, height: 80, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--primary)' }}
                         />
                       ) : (
-                        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-white text-2xl font-bold border-2 border-blue-500">
+                        <div className="avatar" style={{ width: 80, height: 80, fontSize: 28, border: '2px solid var(--primary)' }}>
                           {userEmail?.[0]?.toUpperCase() || 'U'}
                         </div>
                       )}
-                      <label className="absolute bottom-0 right-0 w-7 h-7 bg-blue-600 hover:bg-blue-700 rounded-full flex items-center justify-center cursor-pointer shadow-lg transition-colors">
-                        <Camera className="w-4 h-4 text-white" />
+                      <label style={{
+                        position: 'absolute',
+                        bottom: 0,
+                        right: 0,
+                        width: 28,
+                        height: 28,
+                        background: 'var(--primary)',
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        boxShadow: 'var(--shadow-md)'
+                      }}>
+                        <Camera className="icon16" style={{ color: 'white' }} />
                         <input
                           type="file"
                           accept="image/*"
                           onChange={handleImageUpload}
-                          className="hidden"
+                          style={{ display: 'none' }}
                         />
                       </label>
                     </div>
-                    <div className="flex-1">
-                      <p className="text-sm text-gray-300 mb-1">Upload a profile picture</p>
-                      <p className="text-xs text-gray-500">JPG, PNG or GIF (Max 2MB)</p>
+                    <div>
+                      <p style={{ fontSize: 14, marginBottom: 4 }}>Upload a profile picture</p>
+                      <p className="muted" style={{ fontSize: 12 }}>JPG, PNG or GIF (Max 2MB)</p>
                     </div>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm text-gray-400 mb-2">Email</label>
+                  <label className="label">Email</label>
                   <input
                     type="email"
                     value={userEmail}
                     disabled
-                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm"
+                    className="input"
+                    style={{ opacity: 0.6, cursor: 'not-allowed' }}
                   />
                 </div>
+
                 <div>
-                  <label className="block text-sm text-gray-400 mb-2">Full Name</label>
+                  <label className="label">Full Name</label>
                   <input
                     type="text"
                     placeholder="Enter your full name"
-                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="input"
                   />
                 </div>
-                <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-semibold transition-colors">
+
+                <button className="btn btnPrimary" style={{ width: 'fit-content' }}>
                   Save Changes
                 </button>
               </div>
             </div>
 
             {/* Notifications */}
-            <div className="card p-md">
-              <div className="flex items-center gap-3 mb-6">
-                <Bell className="w-5 h-5 text-blue-500" />
-                <h2 className="text-lg font-semibold">Notifications</h2>
+            <div className="card">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>
+                <Bell className="icon20" style={{ color: 'var(--primary)' }} />
+                <h2 className="h2" style={{ margin: 0 }}>Notifications</h2>
               </div>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
+              <div style={{ display: 'grid', gap: 'var(--space-3)' }}>
+                <div className="listItem">
                   <div>
-                    <div className="text-sm font-medium">Email Notifications</div>
-                    <div className="text-xs text-gray-400">Receive updates via email</div>
+                    <div style={{ fontWeight: 600, marginBottom: 4 }}>Email Notifications</div>
+                    <div className="muted" style={{ fontSize: 12 }}>Receive updates via email</div>
                   </div>
-                  <button className="relative inline-flex h-6 w-11 items-center rounded-full bg-blue-600">
-                    <span className="translate-x-6 inline-block h-4 w-4 transform rounded-full bg-white transition" />
+                  <button className="toggle toggleActive">
+                    <span className="toggleThumb" style={{ transform: 'translateX(20px)' }} />
                   </button>
                 </div>
-                <div className="flex items-center justify-between">
+                <div className="listItem">
                   <div>
-                    <div className="text-sm font-medium">Push Notifications</div>
-                    <div className="text-xs text-gray-400">Receive push notifications</div>
+                    <div style={{ fontWeight: 600, marginBottom: 4 }}>Push Notifications</div>
+                    <div className="muted" style={{ fontSize: 12 }}>Receive push notifications</div>
                   </div>
-                  <button className="relative inline-flex h-6 w-11 items-center rounded-full bg-gray-600">
-                    <span className="translate-x-1 inline-block h-4 w-4 transform rounded-full bg-white transition" />
+                  <button className="toggle">
+                    <span className="toggleThumb" />
                   </button>
                 </div>
               </div>
             </div>
 
             {/* Appearance */}
-            <div className="card p-md">
-              <div className="flex items-center gap-3 mb-6">
+            <div className="card">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>
                 {darkMode ? (
-                  <Moon className="w-5 h-5 text-blue-500" />
+                  <Moon className="icon20" style={{ color: 'var(--primary)' }} />
                 ) : (
-                  <Sun className="w-5 h-5 text-blue-500" />
+                  <Sun className="icon20" style={{ color: 'var(--primary)' }} />
                 )}
-                <h2 className="text-lg font-semibold">Appearance</h2>
+                <h2 className="h2" style={{ margin: 0 }}>Appearance</h2>
               </div>
-              <div className="flex items-center justify-between">
+              <div className="listItem">
                 <div>
-                  <div className="text-sm font-medium">Dark Mode</div>
-                  <div className="text-xs text-gray-400">Toggle dark mode</div>
+                  <div style={{ fontWeight: 600, marginBottom: 4 }}>Dark Mode</div>
+                  <div className="muted" style={{ fontSize: 12 }}>Toggle dark mode</div>
                 </div>
                 <button
                   onClick={() => setDarkMode(!darkMode)}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full ${
-                    darkMode ? 'bg-blue-600' : 'bg-gray-600'
-                  }`}
+                  className={`toggle ${darkMode ? 'toggleActive' : ''}`}
                 >
                   <span
-                    className={`${
-                      darkMode ? 'translate-x-6' : 'translate-x-1'
-                    } inline-block h-4 w-4 transform rounded-full bg-white transition`}
+                    className="toggleThumb"
+                    style={{ transform: darkMode ? 'translateX(20px)' : 'translateX(0)' }}
                   />
                 </button>
               </div>
             </div>
 
             {/* Language */}
-            <div className="card p-md">
-              <div className="flex items-center gap-3 mb-6">
-                <Globe className="w-5 h-5 text-blue-500" />
-                <h2 className="text-lg font-semibold">Language</h2>
+            <div className="card">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>
+                <Globe className="icon20" style={{ color: 'var(--primary)' }} />
+                <h2 className="h2" style={{ margin: 0 }}>Language</h2>
               </div>
-              <select className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <select className="input">
                 <option>English (South Africa)</option>
                 <option>Afrikaans</option>
                 <option>Zulu</option>
@@ -208,32 +261,72 @@ export default function SettingsPage() {
             </div>
 
             {/* Security */}
-            <div className="card p-md">
-              <div className="flex items-center gap-3 mb-6">
-                <Lock className="w-5 h-5 text-blue-500" />
-                <h2 className="text-lg font-semibold">Security</h2>
+            <div className="card">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>
+                <Lock className="icon20" style={{ color: 'var(--primary)' }} />
+                <h2 className="h2" style={{ margin: 0 }}>Security</h2>
               </div>
-              <button className="w-full px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm font-medium transition-colors text-left">
+              <button className="btn btnSecondary" style={{ width: '100%', justifyContent: 'flex-start' }}>
                 Change Password
               </button>
             </div>
 
             {/* Sign Out */}
-            <div className="card p-md border-2 border-red-900/30">
-              <div className="flex items-center gap-3 mb-6">
-                <LogOut className="w-5 h-5 text-red-500" />
-                <h2 className="text-lg font-semibold">Sign Out</h2>
+            <div className="card" style={{ borderColor: 'var(--danger-border)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>
+                <LogOut className="icon20" style={{ color: 'var(--danger)' }} />
+                <h2 className="h2" style={{ margin: 0 }}>Sign Out</h2>
               </div>
-              <p className="text-sm text-gray-400 mb-4">
+              <p className="muted" style={{ marginBottom: 'var(--space-3)' }}>
                 Sign out from your account on this device.
               </p>
               <button
                 onClick={handleSignOut}
                 disabled={signingOut}
-                className="w-full px-4 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 disabled:from-gray-700 disabled:to-gray-700 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 disabled:cursor-not-allowed shadow-lg hover:shadow-red-600/30"
+                className="btn"
+                style={{
+                  width: '100%',
+                  background: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)',
+                  color: 'white',
+                  opacity: signingOut ? 0.5 : 1,
+                  cursor: signingOut ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 'var(--space-2)'
+                }}
               >
-                <LogOut className="w-4 h-4" />
+                <LogOut className="icon16" />
                 {signingOut ? 'Signing out...' : 'Sign Out'}
+              </button>
+            </div>
+
+            {/* Delete Account */}
+            <div className="card p-md border-2 border-red-800/40 bg-red-950/20">
+              <div className="flex items-center gap-3 mb-6">
+                <AlertTriangle className="w-5 h-5 text-red-400" />
+                <h2 className="text-lg font-semibold text-red-200">Delete Account</h2>
+              </div>
+              <p className="text-sm text-red-200/80 mb-3">
+                Permanently delete your EduDash Pro account, remove access to all Dash AI features, and end your subscription. This cannot be undone.
+              </p>
+              <ul className="text-xs text-red-100/70 mb-4 space-y-1 list-disc list-inside">
+                <li>All devices will be signed out immediately</li>
+                <li>Your subscription and trial benefits will stop</li>
+                <li>Some records may be retained for regulatory requirements</li>
+              </ul>
+              {deleteError && (
+                <div className="mb-3 rounded-md border border-red-500/50 bg-red-900/40 px-3 py-2 text-xs text-red-100">
+                  {deleteError}
+                </div>
+              )}
+              <button
+                onClick={handleDeleteAccount}
+                disabled={deletingAccount}
+                className="w-full px-4 py-3 bg-gradient-to-r from-red-700 to-red-800 hover:from-red-800 hover:to-red-900 disabled:from-gray-700 disabled:to-gray-700 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 disabled:cursor-not-allowed shadow-lg hover:shadow-red-700/40"
+              >
+                <AlertTriangle className="w-4 h-4" />
+                {deletingAccount ? 'Deleting account?' : 'Delete My Account'}
               </button>
             </div>
           </div>

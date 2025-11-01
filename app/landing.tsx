@@ -67,22 +67,24 @@ export default function LandingHandler() {
             const { data, error } = await assertSupabase().auth.verifyOtp({ token_hash: tokenHash, type: 'email' });
             if (error) throw error;
             
-            setMessage(t('landing.email_verified', { defaultValue: 'Email verified! Redirecting to app...' }));
+            setMessage(t('landing.email_verified', { defaultValue: 'Email verified! Redirecting to sign in...' }));
             setStatus('done');
             
-            // On native, route to dashboard
+            // On native, route to sign-in
             if (!isWeb) {
+              // Sign out user first so they need to sign in with verified credentials
+              await assertSupabase().auth.signOut();
               // Small delay to show success message
               setTimeout(() => {
-                router.replace('/' as any); // AuthContext will redirect to dashboard
+                router.replace('/(auth)/sign-in' as any);
               }, 1500);
               return;
             }
             
-            // On web/PWA, redirect to dashboard
-            // User is already authenticated after verifyOtp
+            // On web/PWA, sign out and redirect to sign-in page
+            await assertSupabase().auth.signOut();
             setTimeout(() => {
-              window.location.href = '/';
+              window.location.href = '/sign-in?verified=true';
             }, 1000);
             return;
           } catch (e: any) {

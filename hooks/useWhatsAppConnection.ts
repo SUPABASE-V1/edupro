@@ -1,4 +1,3 @@
-import { logger } from '@/lib/logger';
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { assertSupabase } from '../lib/supabase'
@@ -217,7 +216,7 @@ export const useWhatsAppConnection = () => {
 
       if (!existingContact) {
         // Already disconnected - just invalidate cache
-        logger.info('No WhatsApp contact found - already disconnected')
+        console.log('No WhatsApp contact found - already disconnected')
         return { alreadyDisconnected: true }
       }
 
@@ -284,7 +283,7 @@ export const useWhatsAppConnection = () => {
         throw new Error('WhatsApp not connected - no active contact found')
       }
 
-      logger.info('Sending test message to contact:', currentStatus.contact.id)
+      console.log('Sending test message to contact:', currentStatus.contact.id)
 
       const contactId = currentStatus.contact.id
       const parentName = profile?.first_name || 'Parent'
@@ -316,7 +315,7 @@ export const useWhatsAppConnection = () => {
 
       // 2) Fallback to plain text to ensure QA works even without templates
       const textBody = `Hello ${parentName}! 👋\n\nThis is a test message from EduDash Pro to confirm your WhatsApp connection. You’ll receive school updates here. Reply STOP to opt out.`
-      logger.info('Sending WhatsApp message with body:', { 
+      console.log('Sending WhatsApp message with body:', { 
         contact_id: contactId, 
         message_type: 'text',
         content_preview: textBody.substring(0, 50) + '...'
@@ -330,7 +329,7 @@ export const useWhatsAppConnection = () => {
         }
       })
       
-      logger.info('WhatsApp send response:', txt)
+      console.log('WhatsApp send response:', txt)
 
       if (txt.error) {
         console.error('WhatsApp send error:', txt.error)

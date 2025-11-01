@@ -175,7 +175,7 @@ export default function OrganizationSelector({
           marginBottom: 8,
         }}
       >
-        Select Organization *
+        Select Organization <span style={{ color: "#9CA3AF", fontWeight: 400 }}>(Optional)</span>
         <span style={{ color: "#9CA3AF", fontWeight: 400, fontSize: 12, display: "block", marginTop: 4 }}>
           (Preschool, School, Aftercare, Training Center, etc.)
         </span>
@@ -292,7 +292,7 @@ export default function OrganizationSelector({
                   lineHeight: 1,
                 }}
               >
-                ×
+                ?
               </button>
             </div>
             

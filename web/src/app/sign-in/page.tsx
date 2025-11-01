@@ -1,18 +1,32 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 
-export default function SignInPage() {
+// Separate component for search params handling
+function SignInFormWithParams() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Check for verification success
+    if (searchParams.get('verified') === 'true') {
+      setSuccessMessage('Email verified successfully! You can now sign in.');
+    }
+    // Check for verification error
+    if (searchParams.get('error') === 'verification_failed') {
+      setError('Email verification failed. Please try again or contact support.');
+    }
+  }, [searchParams]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -89,6 +103,12 @@ export default function SignInPage() {
           <h2 style={{ color: "#fff", fontSize: 20, fontWeight: 600, marginBottom: 8 }}>Welcome Back</h2>
           <p style={{ color: "#9CA3AF", fontSize: 14 }}>Sign in to your account</p>
         </div>
+
+        {successMessage && (
+          <div style={{ padding: 12, background: "#065f46", border: "1px solid #059669", borderRadius: 8, marginBottom: 20 }}>
+            <p style={{ color: "#6ee7b7", fontSize: 14, margin: 0 }}>✓ {successMessage}</p>
+          </div>
+        )}
 
         <form onSubmit={onSubmit} style={{ display: "flex", flexDirection: "column", gap: 20 }}>
           <div>
@@ -195,5 +215,18 @@ export default function SignInPage() {
       </div>
     </div>
     </>
+  );
+}
+
+// Main export with Suspense boundary
+export default function SignInPage() {
+  return (
+    <Suspense fallback={
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#0a0a0f" }}>
+        <div style={{ color: "#fff" }}>Loading...</div>
+      </div>
+    }>
+      <SignInFormWithParams />
+    </Suspense>
   );
 }

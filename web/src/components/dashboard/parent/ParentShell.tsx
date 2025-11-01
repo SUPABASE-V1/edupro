@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
@@ -15,6 +15,8 @@ import {
   Settings,
   Menu,
   X,
+  Sparkles,
+  BookOpen,
 } from 'lucide-react';
 
 interface ParentShellProps {
@@ -23,22 +25,62 @@ interface ParentShellProps {
   userName?: string;
   preschoolName?: string;
   unreadCount?: number;
+  hasOrganization?: boolean;
   children: React.ReactNode;
 }
 
-export function ParentShell({ tenantSlug, userEmail, userName, preschoolName, unreadCount = 0, children }: ParentShellProps) {
+export function ParentShell({ tenantSlug, userEmail, userName, preschoolName, unreadCount = 0, hasOrganization: hasOrganizationProp, children }: ParentShellProps) {
   const router = useRouter();
   const pathname = usePathname();
   const supabase = createClient();
   const avatarLetter = useMemo(() => (userEmail?.[0] || 'U').toUpperCase(), [userEmail]);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [hasOrganization, setHasOrganization] = useState(hasOrganizationProp || false);
 
-  const nav = [
-    { href: '/dashboard/parent', label: 'Dashboard', icon: LayoutDashboard },
-    { href: '/dashboard/parent/messages', label: 'Messages', icon: MessageCircle, badge: unreadCount },
-    { href: '/dashboard/parent/children', label: 'My Children', icon: Users },
-    { href: '/dashboard/parent/settings', label: 'Settings', icon: Settings },
-  ];
+  // Auto-detect if user has organization (if not explicitly provided)
+  useEffect(() => {
+    if (hasOrganizationProp !== undefined) {
+      setHasOrganization(hasOrganizationProp);
+      return;
+    }
+
+    // Fetch user's preschool_id to determine if they're organization-linked
+    const checkOrganization = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('preschool_id')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      setHasOrganization(!!profileData?.preschool_id);
+    };
+
+    checkOrganization();
+  }, [supabase, hasOrganizationProp]);
+
+  // Personalized navigation based on user type
+  const nav = useMemo(() => {
+    if (hasOrganization) {
+      // Organization-linked parents see school-focused nav
+      return [
+        { href: '/dashboard/parent', label: 'Dashboard', icon: LayoutDashboard },
+        { href: '/dashboard/parent/messages', label: 'Messages', icon: MessageCircle, badge: unreadCount },
+        { href: '/dashboard/parent/children', label: 'My Children', icon: Users },
+        { href: '/dashboard/parent/settings', label: 'Settings', icon: Settings },
+      ];
+    } else {
+      // Independent parents see learning-focused nav
+      return [
+        { href: '/dashboard/parent', label: 'Dashboard', icon: LayoutDashboard },
+        { href: '/dashboard/parent/ai-help', label: 'AI Help', icon: Sparkles },
+        { href: '/dashboard/parent/children', label: 'My Children', icon: Users },
+        { href: '/dashboard/parent/settings', label: 'Settings', icon: Settings },
+      ];
+    }
+  }, [hasOrganization, unreadCount]);
 
   // Check if we should show back button (not on dashboard home)
   const showBackButton = pathname !== '/dashboard/parent';

@@ -66,13 +66,15 @@ export function TierBadge({ userId, preschoolId, size = 'md', showUpgrade = fals
         }
 
         // Fetch plan info from preschools (more stable across schemas)
+        // Try both subscription_plan and subscription_tier for compatibility
         const { data: school } = await supabase
           .from('preschools')
-          .select('subscription_plan')
+          .select('subscription_plan, subscription_tier')
           .eq('id', schoolId)
           .maybeSingle();
 
-        const plan = (school?.subscription_plan as string | null) || 'free';
+        // Use subscription_tier first (newer), fall back to subscription_plan, default to free
+        const plan = (school?.subscription_tier || school?.subscription_plan as string | null) || 'free';
         setTier(plan);
       } catch (error) {
         console.error('Error loading tier:', error);

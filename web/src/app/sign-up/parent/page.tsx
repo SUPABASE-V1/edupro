@@ -21,6 +21,8 @@ function ParentSignUpForm() {
   const [invitationCode, setInvitationCode] = useState<string | null>(null);
   const [hasInvitation, setHasInvitation] = useState(false);
   const [invitationLoading, setInvitationLoading] = useState(false);
+  const [step, setStep] = useState(1); // 1: basic info, 2: usage type, 3: organization (optional)
+  const [usageType, setUsageType] = useState<string | null>(null);
 
   // Check for invitation code in URL
   useEffect(() => {
@@ -83,10 +85,16 @@ function ParentSignUpForm() {
       return;
     }
 
-    if (!selectedOrganization && !invitationCode) {
-      setError("Please select an organization or use an invitation code");
+    if (!usageType) {
+      setError("Please select how you'll be using EduDash Pro");
       return;
     }
+
+    // Organization is now optional - independent users don't need one
+    // if (!selectedOrganization && !invitationCode) {
+    //   setError("Please select an organization or use an invitation code");
+    //   return;
+    // }
 
     setLoading(true);
 
@@ -106,6 +114,7 @@ function ParentSignUpForm() {
           last_name: lastName,
           role: 'parent',
           phone: phoneNumber || null,
+          usage_type: usageType || 'independent', // Track how parent intends to use the app
         },
         emailRedirectTo: `${window.location.origin}/auth/callback`,
       }
@@ -156,6 +165,30 @@ function ParentSignUpForm() {
           console.error('Join request error:', joinError);
         }
         // Don't fail the signup - account is created successfully
+      }
+    }
+
+    // Start 7-day Premium trial for ALL independent users (no organization selected)
+    const isIndependentUser = !selectedOrganization && !invitationCode;
+    
+    // Give trial to ALL independent users regardless of usage type
+    if (isIndependentUser) {
+      try {
+        const { data: trialData, error: trialError } = await supabase.rpc('start_user_trial', {
+          target_user_id: authData.user.id,
+          trial_days: 7,
+          plan_tier: 'premium'
+        });
+        
+        if (trialError) {
+          console.error('[Signup] Failed to start trial:', trialError);
+          // Don't fail signup - trial is a bonus feature
+        } else {
+          console.log('[Signup] ✅ 7-day Premium trial started for', authData.user.email);
+        }
+      } catch (err) {
+        console.error('[Signup] Trial start error:', err);
+        // Silent fail - don't block signup
       }
     }
 
@@ -227,12 +260,78 @@ function ParentSignUpForm() {
               />
             </div>
 
-            {/* Organization Selection (hidden if has invitation) */}
-            {!hasInvitation && (
-              <OrganizationSelector
-                onSelect={setSelectedOrganization}
-                selectedOrganizationId={selectedOrganization?.id || null}
-              />
+            {/* Usage Type Selection */}
+            <div>
+              <label style={{ display: "block", color: "#fff", fontSize: 14, fontWeight: 500, marginBottom: 12 }}>
+                How will you be using EduDash Pro? *
+              </label>
+              <div style={{ display: "grid", gap: 10 }}>
+                {[
+                  { value: 'preschool', icon: '🎨', label: 'Preschool age (3-5 years)', desc: 'Age-appropriate activities for preschoolers' },
+                  { value: 'k12_school', icon: '🏫', label: 'School age (6-18 years)', desc: 'Content for primary and high school' },
+                  { value: 'homeschool', icon: '🏠', label: 'Homeschooling', desc: 'Teaching at home full-time' },
+                  { value: 'aftercare', icon: '⭐', label: 'Aftercare/Extracurricular', desc: 'After school care or activities' },
+                  { value: 'supplemental', icon: '📚', label: 'Supplemental learning', desc: 'Extra support alongside school' },
+                  { value: 'exploring', icon: '🔍', label: 'Just exploring', desc: 'Want to see what\'s available' },
+                ].map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => setUsageType(option.value)}
+                    style={{
+                      padding: "16px",
+                      background: usageType === option.value ? "rgba(0, 245, 255, 0.1)" : "#1a1a1f",
+                      border: usageType === option.value ? "2px solid #00f5ff" : "1px solid #2a2a2f",
+                      borderRadius: 10,
+                      color: "#fff",
+                      textAlign: "left",
+                      cursor: "pointer",
+                      transition: "all 0.2s",
+                      display: "flex",
+                      gap: 12,
+                      alignItems: "flex-start"
+                    }}
+                  >
+                    <span style={{ fontSize: 24, flexShrink: 0 }}>{option.icon}</span>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 600, marginBottom: 4 }}>{option.label}</div>
+                      <div style={{ fontSize: 12, color: "#9CA3AF" }}>{option.desc}</div>
+                    </div>
+                    {usageType === option.value && (
+                      <span style={{ fontSize: 20, color: "#00f5ff" }}>✓</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Organization Selection - NOW SHOWN FOR ALL TYPES (but clearly optional) */}
+            {!hasInvitation && usageType && (
+              <div>
+                <div style={{ marginBottom: 12, padding: 12, background: "rgba(99, 102, 241, 0.1)", border: "1px solid rgba(99, 102, 241, 0.3)", borderRadius: 8 }}>
+                  <p style={{ color: "#a5b4fc", fontSize: 13, margin: 0, lineHeight: 1.5 }}>
+                    💡 <strong>Link to School (Optional):</strong> Only select an organization if your child is enrolled and you want features like attendance tracking, fees, and teacher communication. 
+                    <strong style={{ display: 'block', marginTop: 6 }}>⚠️ Skip this step if you're homeschooling or using the app independently.</strong>
+                  </p>
+                </div>
+                <label style={{ display: "block", color: "#fff", fontSize: 14, fontWeight: 500, marginBottom: 8 }}>
+                  Search for Organization <span style={{ color: "#9CA3AF", fontWeight: 400 }}>(Optional - Leave blank if not enrolled)</span>
+                </label>
+                <OrganizationSelector
+                  onSelect={setSelectedOrganization}
+                  selectedOrganizationId={selectedOrganization?.id || null}
+                />
+                {selectedOrganization && (
+                  <div style={{ marginTop: 12, padding: 12, background: "rgba(34, 197, 94, 0.1)", border: "1px solid rgba(34, 197, 94, 0.3)", borderRadius: 8 }}>
+                    <p style={{ color: "#86efac", fontSize: 13, margin: 0 }}>
+                      ✓ You've selected: <strong>{selectedOrganization.name}</strong>
+                      <span style={{ display: 'block', marginTop: 4, fontSize: 12 }}>
+                        A join request will be sent for approval.
+                      </span>
+                    </p>
+                  </div>
+                )}
+              </div>
             )}
 
             <div>

@@ -16,6 +16,7 @@ import {
   Upload,
   FileText,
   Info,
+  ArrowLeft,
 } from 'lucide-react';
 
 interface Payment {
@@ -203,6 +204,29 @@ export default function PaymentsPage() {
   return (
     <ParentShell tenantSlug={slug} userEmail={email}>
       <div className="container">
+        {/* Back Button */}
+        <button
+          onClick={() => router.push('/dashboard/parent')}
+          className="btn"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 8,
+            marginBottom: 24,
+            background: 'var(--surface-1)',
+            border: '1px solid var(--border)',
+            color: 'var(--text)',
+            padding: '8px 16px',
+            borderRadius: 8,
+            cursor: 'pointer',
+            fontSize: 14,
+            fontWeight: 500
+          }}
+        >
+          <ArrowLeft size={16} />
+          Back to Dashboard
+        </button>
+
         <div className="section">
           <h1 className="h1" style={{ marginBottom: 'var(--space-2)' }}>Fees & Payments</h1>
           <p className="muted" style={{ marginBottom: 'var(--space-6)' }}>

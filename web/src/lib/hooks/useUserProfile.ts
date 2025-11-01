@@ -9,6 +9,7 @@ export interface UserProfile {
   firstName?: string;
   lastName?: string;
   role: 'parent' | 'teacher' | 'principal' | 'superadmin' | null;
+  usageType?: 'preschool' | 'k12_school' | 'homeschool' | 'aftercare' | 'supplemental' | 'exploring' | 'independent';
   preschoolId?: string;
   preschoolName?: string;
   preschoolSlug?: string;
@@ -48,10 +49,10 @@ export function useUserProfile(userId: string | undefined): UseUserProfileReturn
       }
 
 
-      // Get profile data from profiles table (includes role)
+      // Get profile data from profiles table (includes role and usage_type)
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .select('first_name, last_name, preschool_id, role')
+        .select('first_name, last_name, preschool_id, role, usage_type')
         .eq('id', userId)
         .maybeSingle();
 
@@ -114,6 +115,7 @@ export function useUserProfile(userId: string | undefined): UseUserProfileReturn
         firstName: profileData?.first_name,
         lastName: profileData?.last_name,
         role: profileData?.role as any || null,
+        usageType: profileData?.usage_type as any || undefined,
         preschoolId,
         preschoolName,
         preschoolSlug,
