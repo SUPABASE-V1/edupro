@@ -478,8 +478,8 @@ export default function ParentDashboard() {
               <ParentOnboarding userName={userName} />
             )}
 
-            {/* Show pending requests widget */}
-            <PendingRequestsWidget userId={userId} />
+            {/* Show pending requests widget - Only for organization-linked parents */}
+            {hasOrganization && <PendingRequestsWidget userId={userId} />}
 
             {/* Show pending status if preschool linked but no children */}
             {preschoolName && childrenCards.length === 0 && pendingRequests.length === 0 && !childrenLoading && (
@@ -504,7 +504,7 @@ export default function ParentDashboard() {
               </div>
             )}
 
-            {preschoolName && (
+            {hasOrganization && preschoolName && (
               <div 
                 className="card" 
                 style={{ 
