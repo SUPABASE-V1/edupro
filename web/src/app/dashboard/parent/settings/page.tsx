@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useTenantSlug } from '@/lib/tenant/useTenantSlug';
 import { ParentShell } from '@/components/dashboard/parent/ParentShell';
-import { Settings, User, Bell, Lock, Globe, Moon, Sun, Camera, LogOut, Trash2, AlertTriangle } from 'lucide-react';
+import { Settings, User, Bell, Lock, Globe, Moon, Sun, Upload, LogOut, Camera, AlertTriangle } from 'lucide-react';
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -17,9 +17,8 @@ export default function SettingsPage() {
   const [darkMode, setDarkMode] = useState(true);
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [signingOut, setSigningOut] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [deleteConfirmText, setDeleteConfirmText] = useState('');
-  const [deleting, setDeleting] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -39,28 +38,32 @@ export default function SettingsPage() {
   };
 
   const handleDeleteAccount = async () => {
-    if (deleteConfirmText !== 'DELETE') {
-      alert('Please type DELETE to confirm account deletion.');
-      return;
-    }
+    const confirmed = typeof window !== 'undefined'
+      ? window.confirm('Are you sure you want to permanently delete your EduDash Pro account? This action cannot be undone and will remove access immediately.')
+      : false;
 
-    setDeleting(true);
+    if (!confirmed) return;
+
     try {
-      // Call delete account function
-      const { error } = await supabase.rpc('delete_user_account');
-      
-      if (error) {
-        alert(`Failed to delete account: ${error.message}`);
-        setDeleting(false);
-        return;
+      setDeletingAccount(true);
+      setDeleteError(null);
+
+      const { data, error } = await supabase.functions.invoke('delete-account', {
+        method: 'POST',
+        body: { confirm: true },
+      });
+
+      if (error || !data?.success) {
+        throw error ?? new Error('Failed to delete account');
       }
 
-      // Sign out and redirect
       await supabase.auth.signOut();
-      router.push('/sign-in?deleted=true');
+      router.push('/sign-in?accountDeleted=1');
     } catch (err) {
-      alert('An error occurred while deleting your account. Please contact support.');
-      setDeleting(false);
+      console.error('[ParentSettings] delete account failed', err);
+      setDeleteError('We could not delete your account right now. Please try again or contact support.');
+    } finally {
+      setDeletingAccount(false);
     }
   };
 
@@ -299,139 +302,33 @@ export default function SettingsPage() {
             </div>
 
             {/* Delete Account */}
-            <div className="card" style={{ 
-              background: 'linear-gradient(135deg, rgba(153, 27, 27, 0.3) 0%, rgba(127, 29, 29, 0.25) 100%)',
-              border: '2px solid #dc2626',
-              boxShadow: '0 4px 16px rgba(220, 38, 38, 0.25)'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>
-                <Trash2 className="icon20" style={{ color: '#fca5a5' }} />
-                <h2 className="h2" style={{ margin: 0, color: '#fca5a5', fontSize: 20 }}>Delete Account</h2>
+            <div className="card p-md border-2 border-red-800/40 bg-red-950/20">
+              <div className="flex items-center gap-3 mb-6">
+                <AlertTriangle className="w-5 h-5 text-red-400" />
+                <h2 className="text-lg font-semibold text-red-200">Delete Account</h2>
               </div>
-              
-              {!showDeleteConfirm ? (
-                <>
-                  <p style={{ marginBottom: 'var(--space-3)', color: '#fca5a5', fontSize: 14, lineHeight: 1.6 }}>
-                    Permanently delete your account and all associated data. This action cannot be undone.
-                  </p>
-                  <button
-                    onClick={() => setShowDeleteConfirm(true)}
-                    className="btn"
-                    style={{
-                      width: '100%',
-                      background: 'transparent',
-                      border: '2px solid #dc2626',
-                      color: '#fca5a5',
-                      fontWeight: 700,
-                      height: 44,
-                      transition: 'all 0.2s ease'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = 'rgba(220, 38, 38, 0.15)';
-                      e.currentTarget.style.borderColor = '#ef4444';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'transparent';
-                      e.currentTarget.style.borderColor = '#dc2626';
-                    }}
-                  >
-                    <Trash2 className="icon16" />
-                    Delete My Account
-                  </button>
-                </>
-              ) : (
-                <div style={{ display: 'grid', gap: 'var(--space-4)' }}>
-                  <div style={{
-                    background: 'rgba(220, 38, 38, 0.25)',
-                    border: '2px solid #dc2626',
-                    borderRadius: 10,
-                    padding: 'var(--space-4)',
-                    display: 'flex',
-                    gap: 'var(--space-3)',
-                    alignItems: 'flex-start'
-                  }}>
-                    <AlertTriangle style={{ width: 24, height: 24, color: '#fca5a5', flexShrink: 0, marginTop: 2 }} />
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 700, color: '#fca5a5', marginBottom: 8, fontSize: 16 }}>
-                        ?? Warning: This action is permanent
-                      </div>
-                      <p style={{ fontSize: 14, margin: 0, lineHeight: 1.6, color: '#fca5a5' }}>
-                        All your data, including children profiles, messages, and settings will be permanently deleted.
-                        This action cannot be undone.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label style={{ 
-                      display: 'block', 
-                      fontWeight: 700, 
-                      marginBottom: 8, 
-                      color: '#fca5a5',
-                      fontSize: 15
-                    }}>
-                      Type DELETE to confirm
-                    </label>
-                    <input
-                      type="text"
-                      value={deleteConfirmText}
-                      onChange={(e) => setDeleteConfirmText(e.target.value)}
-                      placeholder="DELETE"
-                      className="input"
-                      style={{ 
-                        borderColor: '#dc2626',
-                        borderWidth: 2,
-                        fontSize: 16,
-                        fontWeight: 700,
-                        letterSpacing: '1px',
-                        textAlign: 'center',
-                        textTransform: 'uppercase'
-                      }}
-                    />
-                  </div>
-
-                  <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
-                    <button
-                      onClick={() => {
-                        setShowDeleteConfirm(false);
-                        setDeleteConfirmText('');
-                      }}
-                      className="btn btnSecondary"
-                      style={{ 
-                        flex: 1,
-                        minWidth: 120,
-                        height: 44,
-                        fontWeight: 600
-                      }}
-                      disabled={deleting}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handleDeleteAccount}
-                      disabled={deleteConfirmText !== 'DELETE' || deleting}
-                      className="btn"
-                      style={{
-                        flex: 1,
-                        minWidth: 180,
-                        height: 44,
-                        background: deleteConfirmText === 'DELETE' && !deleting 
-                          ? 'linear-gradient(135deg, #dc2626 0%, #7f1d1d 100%)' 
-                          : 'rgba(127, 29, 29, 0.5)',
-                        borderColor: 'transparent',
-                        color: '#ffffff',
-                        fontWeight: 700,
-                        cursor: deleteConfirmText !== 'DELETE' || deleting ? 'not-allowed' : 'pointer',
-                        boxShadow: deleteConfirmText === 'DELETE' && !deleting ? '0 4px 12px rgba(220, 38, 38, 0.4)' : 'none'
-                      }}
-                    >
-                      {deleting ? 'Deleting...' : '??? Permanently Delete Account'}
-                    </button>
-                  </div>
+              <p className="text-sm text-red-200/80 mb-3">
+                Permanently delete your EduDash Pro account, remove access to all Dash AI features, and end your subscription. This cannot be undone.
+              </p>
+              <ul className="text-xs text-red-100/70 mb-4 space-y-1 list-disc list-inside">
+                <li>All devices will be signed out immediately</li>
+                <li>Your subscription and trial benefits will stop</li>
+                <li>Some records may be retained for regulatory requirements</li>
+              </ul>
+              {deleteError && (
+                <div className="mb-3 rounded-md border border-red-500/50 bg-red-900/40 px-3 py-2 text-xs text-red-100">
+                  {deleteError}
                 </div>
               )}
+              <button
+                onClick={handleDeleteAccount}
+                disabled={deletingAccount}
+                className="w-full px-4 py-3 bg-gradient-to-r from-red-700 to-red-800 hover:from-red-800 hover:to-red-900 disabled:from-gray-700 disabled:to-gray-700 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 disabled:cursor-not-allowed shadow-lg hover:shadow-red-700/40"
+              >
+                <AlertTriangle className="w-4 h-4" />
+                {deletingAccount ? 'Deleting account?' : 'Delete My Account'}
+              </button>
             </div>
-
           </div>
         </div>
       </div>
