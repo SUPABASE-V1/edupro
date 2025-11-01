@@ -93,7 +93,7 @@ export function AskAIWidget({
         const { data: sessionData } = await supabase.auth.getSession();
         const token = sessionData.session?.access_token;
         
-        const { data, error } = await supabase.functions.invoke('ai-proxy', {
+        const { data, error } = await supabase.functions.invoke('ai-proxy-simple', {
           body: {
             scope: 'parent',
             service_type: 'homework_help',
