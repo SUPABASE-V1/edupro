@@ -299,15 +299,19 @@ export default function SettingsPage() {
             </div>
 
             {/* Delete Account */}
-            <div className="card" style={{ background: 'var(--danger-bg)', borderColor: 'var(--danger-border)' }}>
+            <div className="card" style={{ 
+              background: 'rgba(127, 29, 29, 0.2)',
+              border: '2px solid rgba(239, 68, 68, 0.4)',
+              boxShadow: '0 4px 12px rgba(239, 68, 68, 0.1)'
+            }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>
-                <Trash2 className="icon20" style={{ color: 'var(--danger)' }} />
-                <h2 className="h2" style={{ margin: 0, color: 'var(--danger)' }}>Delete Account</h2>
+                <Trash2 className="icon20" style={{ color: '#ef4444' }} />
+                <h2 className="h2" style={{ margin: 0, color: '#ef4444' }}>Delete Account</h2>
               </div>
               
               {!showDeleteConfirm ? (
                 <>
-                  <p className="muted" style={{ marginBottom: 'var(--space-3)' }}>
+                  <p style={{ marginBottom: 'var(--space-3)', color: 'var(--text)', fontSize: 14, lineHeight: 1.6 }}>
                     Permanently delete your account and all associated data. This action cannot be undone.
                   </p>
                   <button
@@ -316,12 +320,10 @@ export default function SettingsPage() {
                     style={{
                       width: '100%',
                       background: 'transparent',
-                      border: '2px solid var(--danger)',
-                      color: 'var(--danger)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: 'var(--space-2)'
+                      border: '2px solid #ef4444',
+                      color: '#ef4444',
+                      fontWeight: 700,
+                      height: 44
                     }}
                   >
                     <Trash2 className="icon16" />
@@ -329,21 +331,22 @@ export default function SettingsPage() {
                   </button>
                 </>
               ) : (
-                <div style={{ display: 'grid', gap: 'var(--space-3)' }}>
+                <div style={{ display: 'grid', gap: 'var(--space-4)' }}>
                   <div style={{
-                    background: 'rgba(239, 68, 68, 0.1)',
-                    border: '1px solid var(--danger)',
-                    borderRadius: 'var(--radius-md)',
-                    padding: 'var(--space-3)',
+                    background: 'rgba(239, 68, 68, 0.15)',
+                    border: '2px solid #ef4444',
+                    borderRadius: 10,
+                    padding: 'var(--space-4)',
                     display: 'flex',
-                    gap: 'var(--space-2)'
+                    gap: 'var(--space-3)',
+                    alignItems: 'flex-start'
                   }}>
-                    <AlertTriangle className="icon20" style={{ color: 'var(--danger)', flexShrink: 0 }} />
-                    <div>
-                      <div style={{ fontWeight: 700, color: 'var(--danger)', marginBottom: 'var(--space-1)' }}>
+                    <AlertTriangle style={{ width: 24, height: 24, color: '#ef4444', flexShrink: 0, marginTop: 2 }} />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 700, color: '#ef4444', marginBottom: 8, fontSize: 16 }}>
                         Warning: This action is permanent
                       </div>
-                      <p style={{ fontSize: 14, margin: 0, lineHeight: 1.5 }}>
+                      <p style={{ fontSize: 14, margin: 0, lineHeight: 1.6, color: 'var(--text)' }}>
                         All your data, including children profiles, messages, and settings will be permanently deleted.
                         This action cannot be undone.
                       </p>
@@ -351,7 +354,13 @@ export default function SettingsPage() {
                   </div>
 
                   <div>
-                    <label className="label" style={{ color: 'var(--danger)' }}>
+                    <label style={{ 
+                      display: 'block', 
+                      fontWeight: 600, 
+                      marginBottom: 8, 
+                      color: '#ef4444',
+                      fontSize: 14
+                    }}>
                       Type DELETE to confirm
                     </label>
                     <input
@@ -360,18 +369,29 @@ export default function SettingsPage() {
                       onChange={(e) => setDeleteConfirmText(e.target.value)}
                       placeholder="DELETE"
                       className="input"
-                      style={{ borderColor: 'var(--danger)' }}
+                      style={{ 
+                        borderColor: '#ef4444',
+                        borderWidth: 2,
+                        fontSize: 16,
+                        fontWeight: 600,
+                        letterSpacing: '0.5px'
+                      }}
                     />
                   </div>
 
-                  <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+                  <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
                     <button
                       onClick={() => {
                         setShowDeleteConfirm(false);
                         setDeleteConfirmText('');
                       }}
                       className="btn btnSecondary"
-                      style={{ flex: 1 }}
+                      style={{ 
+                        flex: 1,
+                        minWidth: 120,
+                        height: 44,
+                        fontWeight: 600
+                      }}
                       disabled={deleting}
                     >
                       Cancel
@@ -382,9 +402,14 @@ export default function SettingsPage() {
                       className="btn"
                       style={{
                         flex: 1,
-                        background: 'var(--danger)',
+                        minWidth: 180,
+                        height: 44,
+                        background: deleteConfirmText === 'DELETE' && !deleting 
+                          ? 'linear-gradient(135deg, #dc2626 0%, #991b1b 100%)' 
+                          : 'rgba(239, 68, 68, 0.3)',
+                        borderColor: 'transparent',
                         color: 'white',
-                        opacity: deleteConfirmText !== 'DELETE' || deleting ? 0.5 : 1,
+                        fontWeight: 700,
                         cursor: deleteConfirmText !== 'DELETE' || deleting ? 'not-allowed' : 'pointer'
                       }}
                     >
