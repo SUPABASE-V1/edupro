@@ -95,7 +95,7 @@ export function PastPapersLibrary() {
   
   return (
     <div className="section">
-      <div className="sectionTitle">?? Official Past Papers</div>
+      <div className="sectionTitle">📚 Official Past Papers</div>
       <div style={{ fontSize: 14, color: 'var(--muted)', marginBottom: 'var(--space-4)' }}>
         Download official CAPS exam papers and memorandums for practice
       </div>
@@ -116,7 +116,7 @@ export function PastPapersLibrary() {
           <input
             type="text"
             className="input"
-            placeholder="?? Search papers by title, subject, or topic..."
+            placeholder="🔍 Search papers by title, subject, or topic..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             style={{ paddingLeft: 36 }}
@@ -191,7 +191,7 @@ export function PastPapersLibrary() {
             background: 'var(--surface)'
           }}
         >
-          <div style={{ fontSize: 48, marginBottom: 'var(--space-3)' }}>??</div>
+          <div style={{ fontSize: 48, marginBottom: 'var(--space-3)' }}>📄</div>
           <div style={{ fontSize: 14, color: 'var(--muted)' }}>
             No past papers found for the selected filters.
             <br />
@@ -226,9 +226,9 @@ export function PastPapersLibrary() {
                     gap: 'var(--space-2)',
                     alignItems: 'center'
                   }}>
-                    <span>?? {paper.total_marks} marks</span>
-                    <span>?? {paper.duration_minutes} min</span>
-                    <span>?? {paper.download_count} downloads</span>
+                    <span>📊 {paper.total_marks} marks</span>
+                    <span>⏱️ {paper.duration_minutes} min</span>
+                    <span>📥 {paper.download_count} downloads</span>
                   </div>
                   
                   {paper.tags && paper.tags.length > 0 && (
@@ -270,7 +270,7 @@ export function PastPapersLibrary() {
                       gap: 6
                     }}
                   >
-                    ?? Paper
+                    📄 Paper
                   </button>
                   
                   {paper.memo_file_url && (
@@ -289,7 +289,7 @@ export function PastPapersLibrary() {
                         gap: 6
                       }}
                     >
-                      ?? Memo
+                      📋 Memo
                     </a>
                   )}
                 </div>

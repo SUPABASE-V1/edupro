@@ -14,7 +14,7 @@ export function SavedConversations({ onSelectConversation }: SavedConversationsP
   if (loading) {
     return (
       <div className="section">
-        <div className="sectionTitle">?? Recent AI Sessions</div>
+        <div className="sectionTitle">💬 Recent AI Sessions</div>
         <div style={{ padding: 'var(--space-4)', textAlign: 'center', color: 'var(--muted)' }}>
           Loading conversations...
         </div>
@@ -25,7 +25,7 @@ export function SavedConversations({ onSelectConversation }: SavedConversationsP
   if (conversations.length === 0) {
     return (
       <div className="section">
-        <div className="sectionTitle">?? Recent AI Sessions</div>
+        <div className="sectionTitle">💬 Recent AI Sessions</div>
         <div 
           className="card" 
           style={{ 
@@ -34,7 +34,7 @@ export function SavedConversations({ onSelectConversation }: SavedConversationsP
             background: 'var(--surface)'
           }}
         >
-          <div style={{ fontSize: 48, marginBottom: 'var(--space-3)' }}>??</div>
+          <div style={{ fontSize: 48, marginBottom: 'var(--space-3)' }}>💬</div>
           <div style={{ fontSize: 14, color: 'var(--muted)' }}>
             No saved conversations yet.
             <br />
@@ -47,7 +47,7 @@ export function SavedConversations({ onSelectConversation }: SavedConversationsP
   
   return (
     <div className="section">
-      <div className="sectionTitle">?? Recent AI Sessions</div>
+      <div className="sectionTitle">💬 Recent AI Sessions</div>
       <div style={{ display: 'grid', gap: 'var(--space-3)' }}>
         {conversations.map(conv => {
           const messageCount = Array.isArray(conv.messages) ? conv.messages.length : 0;
@@ -78,7 +78,7 @@ export function SavedConversations({ onSelectConversation }: SavedConversationsP
                   flexShrink: 0,
                   marginTop: 2
                 }}>
-                  ??
+                  💬
                 </div>
                 
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -114,10 +114,10 @@ export function SavedConversations({ onSelectConversation }: SavedConversationsP
                     alignItems: 'center'
                   }}>
                     <span>
-                      ?? {messageCount} {messageCount === 1 ? 'message' : 'messages'}
+                      💬 {messageCount} {messageCount === 1 ? 'message' : 'messages'}
                     </span>
                     <span>
-                      ?? {formatDistanceToNow(new Date(conv.updatedAt), { addSuffix: true })}
+                      🕐 {formatDistanceToNow(new Date(conv.updatedAt), { addSuffix: true })}
                     </span>
                   </div>
                 </div>

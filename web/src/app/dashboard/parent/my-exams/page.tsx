@@ -125,7 +125,7 @@ export default function MyExamsPage() {
             Back to Dashboard
           </button>
           
-          <h1 className="h1">?? My Practice Exams</h1>
+          <h1 className="h1">📚 My Practice Exams</h1>
           <p style={{ fontSize: 15, color: 'var(--muted)' }}>
             View and retake your AI-generated practice tests
           </p>
@@ -140,7 +140,7 @@ export default function MyExamsPage() {
             marginBottom: 'var(--space-4)'
           }}>
             <div className="card" style={{ textAlign: 'center', padding: 'var(--space-4)' }}>
-              <div style={{ fontSize: 32, marginBottom: 'var(--space-2)' }}>??</div>
+              <div style={{ fontSize: 32, marginBottom: 'var(--space-2)' }}>📝</div>
               <div style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 4 }}>
                 {stats.totalExams}
               </div>
@@ -150,7 +150,7 @@ export default function MyExamsPage() {
             </div>
             
             <div className="card" style={{ textAlign: 'center', padding: 'var(--space-4)' }}>
-              <div style={{ fontSize: 32, marginBottom: 'var(--space-2)' }}>??</div>
+              <div style={{ fontSize: 32, marginBottom: 'var(--space-2)' }}>📝</div>
               <div style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 4 }}>
                 {stats.averageScore.toFixed(1)}%
               </div>
@@ -160,7 +160,7 @@ export default function MyExamsPage() {
             </div>
             
             <div className="card" style={{ textAlign: 'center', padding: 'var(--space-4)' }}>
-              <div style={{ fontSize: 32, marginBottom: 'var(--space-2)' }}>??</div>
+              <div style={{ fontSize: 32, marginBottom: 'var(--space-2)' }}>📝</div>
               <div style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 4 }}>
                 {stats.bestScore.toFixed(1)}%
               </div>
@@ -185,7 +185,7 @@ export default function MyExamsPage() {
               background: 'var(--surface)'
             }}
           >
-            <div style={{ fontSize: 64, marginBottom: 'var(--space-3)' }}>??</div>
+            <div style={{ fontSize: 64, marginBottom: 'var(--space-3)' }}>📝</div>
             <h3 style={{ fontSize: 18, marginBottom: 'var(--space-2)' }}>
               No Practice Exams Yet
             </h3>
@@ -197,7 +197,7 @@ export default function MyExamsPage() {
               className="btn btnPrimary"
               style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
             >
-              ?? Go to Dashboard
+              🏠 Go to Dashboard
             </button>
           </div>
         ) : (
@@ -235,7 +235,7 @@ export default function MyExamsPage() {
                         alignItems: 'center',
                         gap: 4
                       }}>
-                        ?? {formatDistanceToNow(new Date(exam.created_at), { addSuffix: true })}
+                        🕐 {formatDistanceToNow(new Date(exam.created_at), { addSuffix: true })}
                       </div>
                     </div>
                   </div>
@@ -262,9 +262,9 @@ export default function MyExamsPage() {
                         {latestProgress.percentage.toFixed(1)}%
                       </div>
                       <div style={{ fontSize: 13, color: 'var(--muted)' }}>
-                        ?? Score: {latestProgress.score_obtained}/{latestProgress.score_total} marks
-                        {' ? '}
-                        ?? {formatDistanceToNow(new Date(latestProgress.completed_at), { addSuffix: true })}
+                        📊 Score: {latestProgress.score_obtained}/{latestProgress.score_total} marks
+                        {' • '}
+                        🕐 {formatDistanceToNow(new Date(latestProgress.completed_at), { addSuffix: true })}
                       </div>
                     </div>
                   )}
@@ -275,7 +275,7 @@ export default function MyExamsPage() {
                       onClick={() => handleOpenExam(exam)}
                       style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
                     >
-                      {hasProgress ? '?? Review Exam' : '?? Take Exam'}
+                      {hasProgress ? '📊 Review Exam' : '📝 Take Exam'}
                     </button>
                     
                     {hasProgress && (
@@ -284,7 +284,7 @@ export default function MyExamsPage() {
                         onClick={() => handleOpenExam(exam)}
                         style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
                       >
-                        ?? Retake
+                        🔄 Retake
                       </button>
                     )}
                   </div>
