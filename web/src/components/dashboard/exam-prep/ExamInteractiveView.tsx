@@ -376,7 +376,7 @@ Use simple, encouraging language. Be concise but thorough.`,
         )}
 
         {/* Instructions */}
-        {exam.instructions.length > 0 && !submitted && (
+        {exam.instructions && Array.isArray(exam.instructions) && exam.instructions.length > 0 && !submitted && (
           <div style={{ marginTop: 'var(--space-3)' }}>
             <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 'var(--space-2)' }}>
               Instructions:
@@ -411,7 +411,7 @@ Use simple, encouraging language. Be concise but thorough.`,
       </div>
 
       {/* Sections */}
-      {exam.sections.map((section, sectionIdx) => (
+      {exam.sections && Array.isArray(exam.sections) && exam.sections.map((section, sectionIdx) => (
         <div key={sectionIdx} style={{ marginBottom: 'var(--space-4)' }}>
           <h2 style={{
             fontSize: 20,
@@ -424,7 +424,7 @@ Use simple, encouraging language. Be concise but thorough.`,
           }}>
             {section.title}
           </h2>
-          {section.questions.map(renderQuestion)}
+          {section.questions && Array.isArray(section.questions) && section.questions.map(renderQuestion)}
         </div>
       ))}
 
