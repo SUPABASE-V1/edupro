@@ -211,7 +211,26 @@ function getToolsForRole(role: string, tier: string): ClaudeTool[] {
   if (['parent', 'teacher', 'principal'].includes(role)) {
     tools.push({
       name: 'generate_caps_exam',
-      description: 'Generate a structured, CAPS-aligned examination paper with complete, well-formed questions. Use this when a user requests an exam, practice test, or assessment. Every question MUST have: 1) Clear action verb (Calculate, List, Identify, etc.) 2) ALL required data (sequences, options, scenarios) 3) Specific instruction (NOT vague scenarios). NO diagram references.',
+      description: `Generate a structured, CAPS-aligned examination paper for INTERACTIVE use (no images/diagrams available). 
+      
+CRITICAL RULES - Questions MUST:
+1. Include ALL data inline as text (e.g., "Sequence: 2, 5, 8, 11, 14" NOT "Find the pattern in the diagram")
+2. Use clear action verbs (Calculate, List, Identify, Rewrite, Complete, etc.)
+3. Be self-contained - NO references to: diagrams, charts, graphs, images, figures, tables (unless data is provided as text)
+
+EXAMPLES OF VALID QUESTIONS:
+? "Calculate the common difference: 2, 5, 8, 11, 14"
+? "Complete the sequence: 10, 15, 20, __, __"
+? "Given the data: Jan:120, Feb:150, Mar:180, calculate the average"
+? "Rewrite in past tense: The children are playing"
+
+EXAMPLES OF INVALID QUESTIONS (will be rejected):
+? "Refer to the diagram to find X"
+? "Use the graph below to calculate..."
+? "See the table and answer..."
+? "Based on the picture, identify..."
+
+When user requests exam, generate questions that work WITHOUT any visual aids.`,
       input_schema: {
         type: 'object',
         properties: {
