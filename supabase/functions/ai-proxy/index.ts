@@ -406,6 +406,10 @@ async function executeTool(
       return await executeGenerateCapsExamTool(toolInput, context)
     }
     
+    if (toolName === 'generate_diagram') {
+      return await executeGenerateDiagramTool(toolInput, context)
+    }
+    
     return {
       success: false,
       error: `Unknown tool: ${toolName}`
