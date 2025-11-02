@@ -314,6 +314,63 @@ When user requests exam, generate questions that work WITHOUT any visual aids.`,
         },
         required: ['title', 'grade', 'subject', 'sections', 'totalMarks']
       }
+    }),
+    // Diagram Generation Tool
+    {
+      name: 'generate_diagram',
+      description: 'Generate a diagram, chart, or visual aid for exam questions. Use when a question requires visual representation (charts, flowcharts, shapes, number lines, etc.). Returns diagram data that will be embedded in the question.',
+      input_schema: {
+        type: 'object',
+        properties: {
+          type: {
+            type: 'string',
+            enum: ['chart', 'mermaid', 'svg'],
+            description: 'Type of diagram: chart (bar/line/pie charts), mermaid (flowcharts/sequence diagrams), svg (custom SVG)'
+          },
+          data: {
+            type: 'object',
+            description: 'Diagram-specific data',
+            properties: {
+              chartType: {
+                type: 'string',
+                enum: ['bar', 'line', 'pie'],
+                description: 'Type of chart (for type=chart)'
+              },
+              data: {
+                type: 'array',
+                description: 'Chart data points with name and value properties',
+                items: {
+                  type: 'object',
+                  properties: {
+                    name: { type: 'string', description: 'Label (e.g., "January", "Apple")' },
+                    value: { type: 'number', description: 'Numeric value' }
+                  },
+                  required: ['name', 'value']
+                }
+              },
+              xKey: { type: 'string', description: 'X-axis data key (default: name)' },
+              yKey: { type: 'string', description: 'Y-axis data key (default: value)' },
+              mermaidCode: { 
+                type: 'string', 
+                description: 'Mermaid diagram syntax (for type=mermaid). Example: "flowchart TD\\nA[Start] --> B{Decision}\\nB -->|Yes| C[End]"'
+              },
+              svg: {
+                type: 'string',
+                description: 'Raw SVG markup (for type=svg)'
+              }
+            }
+          },
+          title: {
+            type: 'string',
+            description: 'Diagram title/heading'
+          },
+          caption: {
+            type: 'string',
+            description: 'Optional caption explaining the diagram'
+          }
+        },
+        required: ['type', 'data']
+      }
     })
   }
   
@@ -517,6 +574,86 @@ async function executeGenerateCapsExamTool(
   return {
     success: true,
     data: exam
+  }
+}
+
+/**
+ * Execute diagram generation tool
+ */
+async function executeGenerateDiagramTool(
+  input: Record<string, any>,
+  context: { supabaseAdmin: any; userId: string; organizationId: string | null; hasOrganization: boolean; isGuest: boolean }
+): Promise<{ success: boolean; diagram?: any; error?: string }> {
+  console.log('[ai-proxy] Executing generate_diagram tool with input:', JSON.stringify(input, null, 2))
+  
+  try {
+    const { type, data, title, caption } = input;
+    
+    // Validate input
+    if (!type || !data) {
+      return {
+        success: false,
+        error: 'Missing required fields: type and data'
+      };
+    }
+    
+    // Prepare diagram data based on type
+    let diagramData: any;
+    
+    if (type === 'chart') {
+      // Validate chart data
+      if (!data.chartType || !Array.isArray(data.data) || data.data.length === 0) {
+        return {
+          success: false,
+          error: 'Chart requires chartType and non-empty data array'
+        };
+      }
+      diagramData = {
+        chartType: data.chartType,
+        data: data.data,
+        xKey: data.xKey || 'name',
+        yKey: data.yKey || 'value'
+      };
+    } else if (type === 'mermaid') {
+      // Validate mermaid code
+      if (!data.mermaidCode || typeof data.mermaidCode !== 'string') {
+        return {
+          success: false,
+          error: 'Mermaid diagram requires mermaidCode string'
+        };
+      }
+      diagramData = data.mermaidCode;
+    } else if (type === 'svg') {
+      // Validate SVG
+      if (!data.svg || typeof data.svg !== 'string') {
+        return {
+          success: false,
+          error: 'SVG diagram requires svg markup string'
+        };
+      }
+      diagramData = data.svg;
+    } else {
+      return {
+        success: false,
+        error: `Unsupported diagram type: ${type}`
+      };
+    }
+    
+    return {
+      success: true,
+      diagram: {
+        type,
+        data: diagramData,
+        title,
+        caption
+      }
+    };
+  } catch (error) {
+    console.error('[ai-proxy] generate_diagram error:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error generating diagram'
+    };
   }
 }
 
