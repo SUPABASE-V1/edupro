@@ -172,6 +172,7 @@ const GRADE_COMPLEXITY = {
 };
 
 export function ExamPrepWidget({ onAskDashAI, guestMode = false }: ExamPrepWidgetProps) {
+  const router = useRouter();
   const [selectedGrade, setSelectedGrade] = useState<string>('grade_9');
   const [selectedSubject, setSelectedSubject] = useState<string>('Mathematics');
   const [selectedExamType, setSelectedExamType] = useState<string>('practice_test');
