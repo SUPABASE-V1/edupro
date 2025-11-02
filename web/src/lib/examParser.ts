@@ -13,6 +13,12 @@ export interface ExamQuestion {
   options?: string[]; // For multiple choice
   correctAnswer?: string | number; // For auto-grading
   sectionTitle?: string;
+  diagram?: {
+    type: 'chart' | 'mermaid' | 'svg' | 'image';
+    data: any;
+    title?: string;
+    caption?: string;
+  };
 }
 
 export interface ParsedExam {
@@ -266,7 +272,7 @@ export function gradeAnswer(
     console.log('[gradeAnswer] No correct answer provided - cannot auto-grade');
     return {
       isCorrect: false,
-      feedback: '⏳ Answer recorded. Awaiting teacher review.',
+      feedback: '? Answer recorded. Awaiting teacher review.',
       marks: 0,
     };
   }
@@ -286,8 +292,8 @@ export function gradeAnswer(
     const result = {
       isCorrect,
       feedback: isCorrect 
-        ? '✓ Correct!' 
-        : `✗ Incorrect. The correct answer is ${correctLetter.toUpperCase()}`,
+        ? '? Correct!' 
+        : `? Incorrect. The correct answer is ${correctLetter.toUpperCase()}`,
       marks: isCorrect ? question.marks : 0,
     };
     
@@ -311,14 +317,14 @@ export function gradeAnswer(
       if (allMatch) {
         return {
           isCorrect: true,
-          feedback: '✓ Correct!',
+          feedback: '? Correct!',
           marks: question.marks,
         };
       }
       
       return {
         isCorrect: false,
-        feedback: `✗ Incorrect. Expected: "${question.correctAnswer}"`,
+        feedback: `? Incorrect. Expected: "${question.correctAnswer}"`,
         marks: 0,
       };
     }
@@ -331,8 +337,8 @@ export function gradeAnswer(
       return {
         isCorrect,
         feedback: isCorrect 
-          ? '✓ Correct!' 
-          : `✗ Incorrect. Expected: "${question.correctAnswer}"`,
+          ? '? Correct!' 
+          : `? Incorrect. Expected: "${question.correctAnswer}"`,
         marks: isCorrect ? question.marks : 0,
       };
     }
@@ -347,7 +353,7 @@ export function gradeAnswer(
   if (studentClean === correctClean) {
     return {
       isCorrect: true,
-      feedback: '✓ Correct!',
+      feedback: '? Correct!',
       marks: question.marks,
     };
   }
@@ -356,7 +362,7 @@ export function gradeAnswer(
   if (studentClean.includes(correctClean) || correctClean.includes(studentClean)) {
     return {
       isCorrect: true,
-      feedback: '✓ Correct!',
+      feedback: '? Correct!',
       marks: question.marks,
     };
   }
@@ -383,7 +389,7 @@ export function gradeAnswer(
     if (studentValue === correctValue) {
       return {
         isCorrect: true,
-        feedback: '✓ Correct!',
+        feedback: '? Correct!',
         marks: question.marks,
       };
     }
@@ -392,7 +398,7 @@ export function gradeAnswer(
   // Not a match
   const result = {
     isCorrect: false,
-    feedback: `✗ Your answer: "${studentAnswer}". Expected: "${question.correctAnswer}"`,
+    feedback: `? Your answer: "${studentAnswer}". Expected: "${question.correctAnswer}"`,
     marks: 0,
   };
   
