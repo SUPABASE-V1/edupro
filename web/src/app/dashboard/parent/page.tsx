@@ -51,6 +51,8 @@ export default function ParentDashboard() {
   const [showAskAI, setShowAskAI] = useState(false);
   const [aiPrompt, setAIPrompt] = useState('');
   const [aiDisplay, setAIDisplay] = useState('');
+  const [aiLanguage, setAILanguage] = useState('en-ZA');
+  const [aiInteractive, setAIInteractive] = useState(false);
 
   // Set greeting based on time of day
   useEffect(() => {
@@ -68,9 +70,16 @@ export default function ParentDashboard() {
   }, [loading, userId, router]);
 
   // Handle AI interactions
-  const handleAskFromActivity = async (prompt: string, display: string) => {
+  const handleAskFromActivity = async (
+    prompt: string, 
+    display: string, 
+    language?: string, 
+    enableInteractive?: boolean
+  ) => {
     setAIPrompt(prompt);
     setAIDisplay(display);
+    setAILanguage(language || 'en-ZA');
+    setAIInteractive(enableInteractive || false);
     setShowAskAI(true);
   };
 
@@ -78,6 +87,8 @@ export default function ParentDashboard() {
     setShowAskAI(false);
     setAIPrompt('');
     setAIDisplay('');
+    setAILanguage('en-ZA');
+    setAIInteractive(false);
   };
 
   // Handle exam prep navigation
@@ -319,8 +330,8 @@ export default function ParentDashboard() {
               fullscreen={true}
               initialPrompt={aiPrompt}
               displayMessage={aiDisplay}
-              language={profile?.preferredLanguage || 'en-ZA'}
-              enableInteractive={true}
+              language={aiLanguage}
+              enableInteractive={aiInteractive}
               onClose={handleCloseAI}
             />
           </div>
