@@ -90,7 +90,7 @@ Use simple, encouraging language. Be concise but thorough.`,
             console.error(`[ExamInteractiveView] AI Error for ${qId}:`, invokeError);
             setExplanations(prev => ({
               ...prev,
-              [qId]: '?? **Failed to load explanation**\n\nPlease try again later or contact support if the issue persists.'
+              [qId]: '❌ **Failed to load explanation**\n\nPlease try again later or contact support if the issue persists.'
             }));
             continue;
           }
@@ -103,14 +103,14 @@ Use simple, encouraging language. Be concise but thorough.`,
           } else {
             setExplanations(prev => ({
               ...prev,
-              [qId]: '?? **No explanation available**\n\nThe AI did not return a response. Please try again.'
+              [qId]: '⚠️ **No explanation available**\n\nThe AI did not return a response. Please try again.'
             }));
           }
         } catch (error) {
           console.error(`[ExamInteractiveView] Exception for ${qId}:`, error);
           setExplanations(prev => ({
             ...prev,
-            [qId]: '?? **An error occurred**\n\nWe encountered an unexpected error while fetching the explanation. Please try again.'
+            [qId]: '❌ **An error occurred**\n\nWe encountered an unexpected error while fetching the explanation. Please try again.'
           }));
         }
       }
@@ -481,8 +481,8 @@ Use simple, encouraging language. Be concise but thorough.`,
             {loadingExplanations 
               ? 'Getting Explanations...' 
               : Object.keys(explanations).length > 0
-              ? '? Explanations Loaded'
-              : '?? Get AI Explanations'}
+              ? '✓ Explanations Loaded'
+              : '🤖 Get AI Explanations'}
           </button>
           {Object.keys(explanations).length > 0 && (
             <p className="muted" style={{ fontSize: 12, marginTop: 'var(--space-2)', marginBottom: 0 }}>

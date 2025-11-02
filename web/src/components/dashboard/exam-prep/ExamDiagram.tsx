@@ -206,7 +206,6 @@ function renderChart(data: any) {
             cy="50%" 
             outerRadius={100}
             label={(entry) => `${entry[xKey]}: ${entry[yKey]}`}
-            labelStyle={{ fontSize: '12px', fontWeight: 600 }}
           >
             {chartData.map((entry: any, index: number) => (
               <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />

@@ -314,7 +314,7 @@ export default function MessagesPage() {
               <p style={{ color: 'var(--muted)', fontSize: 14, marginBottom: 24 }}>
                 {searchQuery 
                   ? 'Try a different search term' 
-                  : 'When teachers or school staff send you messages, they'll appear here.'
+                  : 'When teachers or school staff send you messages, they will appear here.'
                 }
               </p>
               {!searchQuery && (
