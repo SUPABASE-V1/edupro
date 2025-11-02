@@ -354,20 +354,32 @@ async function executeGenerateCapsExamTool(
   console.log('[ai-proxy] Executing generate_caps_exam tool with input:', JSON.stringify(input, null, 2))
   
   // Validate required fields
-  const { title, grade, subject, sections, totalMarks } = input
+  let { title, grade, subject, sections, totalMarks } = input
   
-  if (!title || !grade || !subject || !sections || !totalMarks) {
+  if (!title || !grade || !subject || !sections) {
     const missing = [];
     if (!title) missing.push('title');
     if (!grade) missing.push('grade');
     if (!subject) missing.push('subject');
     if (!sections) missing.push('sections');
-    if (!totalMarks) missing.push('totalMarks');
     console.error('[ai-proxy] Missing fields:', missing.join(', '));
     return {
       success: false,
       error: `Missing required fields: ${missing.join(', ')}`
     }
+  }
+  
+  // Calculate totalMarks if missing (sum from all questions)
+  if (!totalMarks && Array.isArray(sections)) {
+    totalMarks = sections.reduce((total: number, section: any) => {
+      if (Array.isArray(section.questions)) {
+        return total + section.questions.reduce((sectionTotal: number, q: any) => {
+          return sectionTotal + (Number(q.marks) || 0);
+        }, 0);
+      }
+      return total;
+    }, 0);
+    console.log(`[ai-proxy] Calculated totalMarks: ${totalMarks}`);
   }
   
   // Validate sections have questions
@@ -454,8 +466,8 @@ async function executeGenerateCapsExamTool(
       
       // Check for action verbs (age-appropriate - foundation phase uses simpler verbs)
       const actionVerbs = isFoundationPhase
-        ? /\b(count|circle|match|choose|select|find|name|list|show|draw|color|colour|write|identify|point|tick|cross|trace|cut|paste|measure|sort|group|build|make|complete|fill)\b/i
-        : /\b(calculate|compute|simplify|solve|list|identify|name|describe|explain|compare|choose|select|find|determine|evaluate|analyze|analyse|write|state|give|show|classify|match|order|arrange|label|prove|derive|expand|factorise|factorize|convert|graph|plot|sketch|measure|estimate|construct|complete|continue|extend|fill)\b/i;
+        ? /\b(count|circle|match|choose|select|find|name|list|show|draw|color|colour|write|identify|point|tick|cross|trace|cut|paste|measure|sort|group|build|make|complete|fill|change|correct|rewrite)\b/i
+        : /\b(calculate|compute|simplify|solve|list|identify|name|describe|explain|compare|choose|select|find|determine|evaluate|analyze|analyse|write|state|give|show|classify|match|order|arrange|label|prove|derive|expand|factorise|factorize|convert|graph|plot|sketch|measure|estimate|construct|complete|continue|extend|fill|rewrite|correct|edit|change|transform|translate|rephrase|paraphrase|summarize|summarise|underline|highlight|justify|define|discuss|outline|illustrate)\b/i;
       
       if (!actionVerbs.test(qText)) {
         const suggestionVerbs = isFoundationPhase 
