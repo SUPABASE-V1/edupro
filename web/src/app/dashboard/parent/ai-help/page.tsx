@@ -75,17 +75,17 @@ export default function AIHelpPage() {
               border: '1px solid rgba(236, 72, 153, 0.2)',
               textAlign: 'left'
             }}>
-              <h3 style={{ marginTop: 0, marginBottom: 16, fontSize: 18 }}>AI Tutor Features ??</h3>
-              <p style={{ marginBottom: 16, color: 'var(--muted)' }}>
-                Our AI tutor is being enhanced with:
+                            <h3 style={{ marginTop: 0, marginBottom: 16, fontSize: 18 }}>AI Tutor Features 🤖</h3>
+              <p style={{ color: 'var(--muted)', marginBottom: 20, lineHeight: 1.6 }}>
+                Get instant help with homework and studying:
               </p>
-              <ul style={{ marginBottom: 24, color: 'var(--muted)', lineHeight: 1.8 }}>
-                <li>?? Natural conversation interface</li>
-                <li>?? Subject-specific explanations</li>
-                <li>?? Step-by-step problem solving</li>
-                <li>??? Voice interaction support</li>
-                <li>?? Multi-language support</li>
-                <li>?? Homework checking and feedback</li>
+              <ul style={{ marginLeft: 20, marginBottom: 20, lineHeight: 1.8 }}>
+                <li>💬 Natural conversation interface</li>
+                <li>📚 Subject-specific explanations</li>
+                <li>🔢 Step-by-step problem solving</li>
+                <li>🎙️ Voice interaction support</li>
+                <li>🌍 Multi-language support</li>
+                <li>✅ Homework checking and feedback</li>
               </ul>
 
               <div style={{
@@ -99,7 +99,7 @@ export default function AIHelpPage() {
                   <Brain size={20} style={{ marginTop: 2, flexShrink: 0, color: '#10b981' }} />
                   <div>
                     <p style={{ margin: 0, fontSize: 14, fontWeight: 600, marginBottom: 4 }}>
-                      ?? Basic AI Help Available Now!
+                      ✨ Basic AI Help Available Now!
                     </p>
                     <p style={{ margin: 0, fontSize: 14, color: 'var(--muted)' }}>
                       Try asking questions on the dashboard - look for the AI helper widget!
@@ -115,7 +115,7 @@ export default function AIHelpPage() {
                 border: '1px solid var(--border)'
               }}>
                 <p style={{ margin: 0, fontSize: 14, color: 'var(--muted)' }}>
-                  ?? <strong>Coming soon:</strong> Dedicated AI tutor chat with conversation history, voice input, and personalized learning recommendations!
+                  💡 <strong>Coming soon:</strong> Dedicated AI tutor chat with conversation history, voice input, and personalized learning recommendations!
                 </p>
               </div>
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { BookOpen, Zap } from 'lucide-react';
+import { BookOpen, Zap, AlertTriangle } from 'lucide-react';
 
 interface ExamWeekBannerProps {
   onStartExamPrep: () => void;
@@ -22,7 +22,7 @@ export function ExamWeekBanner({ onStartExamPrep }: ExamWeekBannerProps) {
       onClick={onStartExamPrep}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-        <span style={{ fontSize: 32, flexShrink: 0 }}>??</span>
+        <AlertTriangle size={32} style={{ flexShrink: 0 }} />
         <div style={{ flex: 1, minWidth: 200 }}>
           <div style={{ 
             fontWeight: 800, 
@@ -49,14 +49,18 @@ export function ExamWeekBanner({ onStartExamPrep }: ExamWeekBannerProps) {
             fontSize: 14,
             fontWeight: 700,
             cursor: 'pointer',
-            flexShrink: 0
+            flexShrink: 0,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6
           }}
           onClick={(e) => {
             e.stopPropagation();
             onStartExamPrep();
           }}
         >
-          Start Prep ?
+          <BookOpen size={14} />
+          Start Prep
         </button>
       </div>
     </div>

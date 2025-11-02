@@ -75,26 +75,24 @@ export default function HomeworkPage() {
               border: '1px solid rgba(245, 158, 11, 0.2)',
               textAlign: 'left'
             }}>
-              <h3 style={{ marginTop: 0, marginBottom: 16, fontSize: 18 }}>Coming Soon! ??</h3>
-              <p style={{ marginBottom: 16, color: 'var(--muted)' }}>
-                We're building a comprehensive homework tracker that will include:
+              <h3 style={{ marginTop: 0, marginBottom: 16, fontSize: 18 }}>Coming Soon! 📚</h3>
+              <p style={{ color: 'var(--muted)', marginBottom: 20, lineHeight: 1.6 }}>
+                Manage your child's homework efficiently:
               </p>
-              <ul style={{ marginBottom: 24, color: 'var(--muted)', lineHeight: 1.8 }}>
-                <li>?? Assignment tracking and deadlines</li>
-                <li>? Completion status and reminders</li>
-                <li>?? Upload homework photos</li>
-                <li>?? Teacher feedback and comments</li>
-                <li>?? Homework completion statistics</li>
-              </ul>
-              
-              <div style={{
+              <ul style={{ marginLeft: 20, marginBottom: 20, lineHeight: 1.8 }}>
+                <li>📋 Assignment tracking and deadlines</li>
+                <li>🤖 AI-powered homework assistance</li>
+                <li>📸 Upload homework photos</li>
+                <li>💬 Teacher feedback and comments</li>
+                <li>📊 Homework completion statistics</li>
+              </ul>              <div style={{
                 padding: 16,
                 background: 'var(--surface-1)',
                 borderRadius: 8,
                 border: '1px solid var(--border)'
               }}>
                 <p style={{ margin: 0, fontSize: 14, color: 'var(--muted)' }}>
-                  ?? <strong>Need homework help now?</strong> Our AI tutor can help explain problems and guide your child through solutions!
+                  💡 <strong>Need homework help now?</strong> Our AI tutor can help explain problems and guide your child through solutions!
                 </p>
               </div>
 

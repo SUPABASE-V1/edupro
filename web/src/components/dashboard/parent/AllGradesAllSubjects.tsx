@@ -1,48 +1,66 @@
 'use client';
 
-import { BookOpen, GraduationCap } from 'lucide-react';
+import { 
+  BookOpen, 
+  GraduationCap, 
+  Languages, 
+  Calculator, 
+  Heart, 
+  Microscope, 
+  Globe, 
+  Cpu, 
+  Briefcase, 
+  Users, 
+  Palette, 
+  DollarSign, 
+  TrendingUp, 
+  MapPin, 
+  Clock, 
+  Monitor,
+  Sparkles
+} from 'lucide-react';
 
 // Complete CAPS Subject Coverage
 const CAPS_SUBJECTS = {
   'Foundation Phase (Grade R-3)': [
-    { name: 'Home Language', icon: '??', grades: 'R-3' },
-    { name: 'First Additional Language', icon: '??', grades: '1-3' },
-    { name: 'Mathematics', icon: '??', grades: 'R-3' },
-    { name: 'Life Skills', icon: '??', grades: 'R-3' },
+    { name: 'Home Language', icon: Languages, grades: 'R-3', color: '#3b82f6' },
+    { name: 'First Additional Language', icon: BookOpen, grades: '1-3', color: '#8b5cf6' },
+    { name: 'Mathematics', icon: Calculator, grades: 'R-3', color: '#10b981' },
+    { name: 'Life Skills', icon: Heart, grades: 'R-3', color: '#ec4899' },
   ],
   'Intermediate Phase (Grade 4-6)': [
-    { name: 'Home Language', icon: '??', grades: '4-6' },
-    { name: 'First Additional Language', icon: '??', grades: '4-6' },
-    { name: 'Mathematics', icon: '??', grades: '4-6' },
-    { name: 'Natural Sciences & Technology', icon: '??', grades: '4-6' },
-    { name: 'Social Sciences', icon: '??', grades: '4-6' },
+    { name: 'Home Language', icon: Languages, grades: '4-6', color: '#3b82f6' },
+    { name: 'First Additional Language', icon: BookOpen, grades: '4-6', color: '#8b5cf6' },
+    { name: 'Mathematics', icon: Calculator, grades: '4-6', color: '#10b981' },
+    { name: 'Natural Sciences & Technology', icon: Microscope, grades: '4-6', color: '#f59e0b' },
+    { name: 'Social Sciences', icon: Globe, grades: '4-6', color: '#06b6d4' },
   ],
   'Senior Phase (Grade 7-9)': [
-    { name: 'Home Language', icon: '??', grades: '7-9' },
-    { name: 'First Additional Language', icon: '??', grades: '7-9' },
-    { name: 'Mathematics', icon: '??', grades: '7-9' },
-    { name: 'Natural Sciences', icon: '??', grades: '7-9' },
-    { name: 'Social Sciences', icon: '??', grades: '7-9' },
-    { name: 'Technology', icon: '??', grades: '7-9' },
-    { name: 'Economic & Management Sciences', icon: '??', grades: '7-9' },
-    { name: 'Life Orientation', icon: '??', grades: '7-9' },
-    { name: 'Creative Arts', icon: '??', grades: '7-9' },
+    { name: 'Home Language', icon: Languages, grades: '7-9', color: '#3b82f6' },
+    { name: 'First Additional Language', icon: BookOpen, grades: '7-9', color: '#8b5cf6' },
+    { name: 'Mathematics', icon: Calculator, grades: '7-9', color: '#10b981' },
+    { name: 'Natural Sciences', icon: Microscope, grades: '7-9', color: '#f59e0b' },
+    { name: 'Social Sciences', icon: Globe, grades: '7-9', color: '#06b6d4' },
+    { name: 'Technology', icon: Cpu, grades: '7-9', color: '#6366f1' },
+    { name: 'Economic & Management Sciences', icon: Briefcase, grades: '7-9', color: '#14b8a6' },
+    { name: 'Life Orientation', icon: Heart, grades: '7-9', color: '#ec4899' },
+    { name: 'Creative Arts', icon: Palette, grades: '7-9', color: '#f97316' },
   ],
   'FET Phase (Grade 10-12)': [
-    { name: 'Home Language', icon: '??', grades: '10-12' },
-    { name: 'First Additional Language', icon: '??', grades: '10-12' },
-    { name: 'Mathematics', icon: '??', grades: '10-12' },
-    { name: 'Mathematical Literacy', icon: '??', grades: '10-12' },
-    { name: 'Physical Sciences', icon: '??', grades: '10-12' },
-    { name: 'Life Sciences', icon: '??', grades: '10-12' },
-    { name: 'Accounting', icon: '??', grades: '10-12' },
-    { name: 'Business Studies', icon: '??', grades: '10-12' },
-    { name: 'Economics', icon: '??', grades: '10-12' },
-    { name: 'Geography', icon: '???', grades: '10-12' },
-    { name: 'History', icon: '??', grades: '10-12' },
-    { name: 'Life Orientation', icon: '??', grades: '10-12' },
-    { name: 'Information Technology', icon: '??', grades: '10-12' },
-    { name: 'Computer Applications Technology', icon: '???', grades: '10-12' },
+    { name: 'Home Language', icon: Languages, grades: '10-12', color: '#3b82f6' },
+    { name: 'First Additional Language', icon: BookOpen, grades: '10-12', color: '#8b5cf6' },
+    { name: 'Mathematics', icon: Calculator, grades: '10-12', color: '#10b981' },
+    { name: 'Mathematical Literacy', icon: TrendingUp, grades: '10-12', color: '#22c55e' },
+    { name: 'Physical Sciences', icon: Microscope, grades: '10-12', color: '#f59e0b' },
+    { name: 'Life Sciences', icon: Heart, grades: '10-12', color: '#ec4899' },
+    { name: 'Accounting', icon: DollarSign, grades: '10-12', color: '#14b8a6' },
+    { name: 'Business Studies', icon: Briefcase, grades: '10-12', color: '#0891b2' },
+    { name: 'Economics', icon: TrendingUp, grades: '10-12', color: '#059669' },
+    { name: 'Geography', icon: MapPin, grades: '10-12', color: '#06b6d4' },
+    { name: 'History', icon: Clock, grades: '10-12', color: '#a855f7' },
+    { name: 'Life Orientation', icon: Users, grades: '10-12', color: '#ec4899' },
+    { name: 'Information Technology', icon: Cpu, grades: '10-12', color: '#6366f1' },
+    { name: 'Computer Applications Technology', icon: Monitor, grades: '10-12', color: '#4f46e5' },
   ],
 };
 
@@ -65,8 +83,9 @@ export function AllGradesAllSubjects({ onSelectSubject }: AllGradesAllSubjectsPr
         border: '2px solid #8b5cf6',
         borderRadius: 12
       }}>
-        <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 8, color: 'var(--text)' }}>
-          ?? Complete CAPS Curriculum Support
+        <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 8, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Sparkles size={18} style={{ color: '#8b5cf6' }} />
+          Complete CAPS Curriculum Support
         </div>
         <div style={{ fontSize: 13, color: 'var(--muted)', lineHeight: 1.6 }}>
           Click any subject below to get instant AI help, practice tests, revision notes, and exam prep materials aligned with the South African CAPS curriculum.
@@ -117,7 +136,11 @@ export function AllGradesAllSubjects({ onSelectSubject }: AllGradesAllSubjectsPr
                   e.currentTarget.style.transform = 'translateY(0)';
                 }}
               >
-                <span style={{ fontSize: 20 }}>{subject.icon}</span>
+                {/* Render icon component */}
+                <subject.icon 
+                  size={20} 
+                  style={{ color: subject.color, flexShrink: 0 }} 
+                />
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 2, color: 'var(--text)' }}>
                     {subject.name}
@@ -142,8 +165,9 @@ export function AllGradesAllSubjects({ onSelectSubject }: AllGradesAllSubjectsPr
         textAlign: 'center',
         boxShadow: '0 4px 20px rgba(236, 72, 153, 0.3)'
       }}>
-        <div style={{ fontSize: 15, fontWeight: 800, marginBottom: 6 }}>
-          ?? Can't Find Your Subject?
+        <div style={{ fontSize: 15, fontWeight: 800, marginBottom: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+          <Sparkles size={18} />
+          Can't Find Your Subject?
         </div>
         <div style={{ fontSize: 13, opacity: 0.95 }}>
           Use Emergency Exam Help above - Our AI tutor supports ALL subjects in ALL 11 official languages!

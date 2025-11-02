@@ -19,8 +19,9 @@ import { EmptyChildrenState } from '@/components/dashboard/parent/EmptyChildrenS
 import { QuickActionsGrid } from '@/components/dashboard/parent/QuickActionsGrid';
 import { CAPSActivitiesWidget } from '@/components/dashboard/parent/CAPSActivitiesWidget';
 import { ExamPrepWidget } from '@/components/dashboard/exam-prep/ExamPrepWidget';
+import { CollapsibleSection } from '@/components/dashboard/parent/CollapsibleSection';
 import { AskAIWidget } from '@/components/dashboard/AskAIWidget';
-import { Users, BarChart3 } from 'lucide-react';
+import { Users, BarChart3, Calendar, BookOpen, GraduationCap, Zap, Target, Lightbulb } from 'lucide-react';
 
 export default function ParentDashboard() {
   const router = useRouter();
@@ -139,16 +140,20 @@ export default function ParentDashboard() {
         {childrenCards.length === 0 && !childrenLoading && (
           <EmptyChildrenState
             usageType={usageType}
-            onAddChild={() => router.push('/dashboard/parent/children/add')}
+            onAddChild={() => {
+              // If parent has organization, they should claim/link children
+              // If independent parent, they should register children
+              if (hasOrganization) {
+                router.push('/dashboard/parent/claim-child');
+              } else {
+                router.push('/dashboard/parent/register-child');
+              }
+            }}
           />
         )}
 
         {childrenCards.length > 0 && (
-          <div className="section">
-            <div className="sectionTitle">
-              <Users className="icon16" style={{ color: '#a78bfa' }} />
-              My Children
-            </div>
+          <CollapsibleSection title="My Children" icon={Users} defaultCollapsed={false}>
             <div style={{ 
               display: 'flex', 
               gap: 'var(--space-3)', 
@@ -194,39 +199,48 @@ export default function ParentDashboard() {
                 </div>
               ))}
             </div>
-          </div>
+          </CollapsibleSection>
         )}
 
         {/* Quick Actions Grid */}
         <QuickActionsGrid usageType={usageType} hasOrganization={hasOrganization} />
 
         {/* Emergency Exam Help - Priority Access to AI Tutor */}
-        <EmergencyExamHelp onClick={handleStartExamPrep} />
+        <CollapsibleSection title="Emergency Exam Help" icon={Zap} defaultCollapsed={false}>
+          <EmergencyExamHelp onClick={handleStartExamPrep} />
+        </CollapsibleSection>
 
         {/* CAPS Exam Calendar - Real Exam Schedule */}
-        <CAPSExamCalendar childGrade={activeChild ? `Grade ${Math.floor(10 + (activeChild.progressScore / 20))}` : undefined} />
+        <CollapsibleSection title="CAPS Exam Calendar" icon={Calendar} defaultCollapsed={false}>
+          <CAPSExamCalendar 
+            childGrade={activeChild ? `Grade ${Math.floor(10 + (activeChild.progressScore / 20))}` : undefined}
+            usageType={usageType}
+          />
+        </CollapsibleSection>
 
         {/* Quick Subject Practice - One-Click Practice Tests */}
         {activeChild && (
-          <QuickSubjectPractice
-            childAge={activeChild.progressScore > 80 ? 15 : 10}
-            onSelectSubject={handleSubjectPractice}
-          />
+          <CollapsibleSection title="Quick Subject Practice" icon={Target} defaultCollapsed={true}>
+            <QuickSubjectPractice
+              childAge={activeChild.progressScore > 80 ? 15 : 10}
+              onSelectSubject={handleSubjectPractice}
+            />
+          </CollapsibleSection>
         )}
 
         {/* All Grades & Subjects - Complete CAPS Coverage */}
-        <AllGradesAllSubjects onSelectSubject={handleSubjectPractice} />
+        <CollapsibleSection title="All Grades & Subjects" icon={BookOpen} defaultCollapsed={true}>
+          <AllGradesAllSubjects onSelectSubject={handleSubjectPractice} />
+        </CollapsibleSection>
 
         {/* Exam Tips - Study Best Practices */}
-        <ExamTips />
+        <CollapsibleSection title="Exam Tips & Study Strategies" icon={Lightbulb} defaultCollapsed={true}>
+          <ExamTips />
+        </CollapsibleSection>
 
         {/* Overview Section (ONLY for organization-linked parents) */}
         {hasOrganization && (
-          <div className="section">
-            <div className="sectionTitle">
-              <BarChart3 className="icon16" style={{ color: '#60a5fa' }} />
-              Overview
-            </div>
+          <CollapsibleSection title="Overview" icon={BarChart3} defaultCollapsed={true}>
             <div className="grid2">
               <div className="card tile">
                 <div className="metricValue">{unreadCount}</div>
@@ -245,23 +259,23 @@ export default function ParentDashboard() {
                 <div className="metricLabel">Total Children</div>
               </div>
             </div>
-          </div>
+          </CollapsibleSection>
         )}
 
         {/* CAPS Activities Widget */}
         {activeChild && (
-          <div className="section">
+          <CollapsibleSection title="Learning Activities" icon={GraduationCap} defaultCollapsed={true}>
             <CAPSActivitiesWidget
               childAge={activeChild.progressScore > 80 ? 6 : 5}
               childName={activeChild.firstName}
               onAskDashAI={(prompt, display) => handleAskFromActivity(prompt, display)}
             />
-          </div>
+          </CollapsibleSection>
         )}
 
         {/* Exam Prep Widget */}
         {activeChild && activeChild.progressScore > 50 && (
-          <div className="section">
+          <div className="section" style={{ marginTop: 0 }}>
             <div className="card" style={{ 
               padding: 'var(--space-5)', 
               background: 'linear-gradient(135deg, rgba(251, 191, 36, 0.05) 0%, rgba(245, 158, 11, 0.05) 100%)', 

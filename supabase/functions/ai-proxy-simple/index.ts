@@ -41,6 +41,15 @@ serve(async (req) => {
     const payload = body?.payload || body
     const prompt = payload?.prompt || 'Hello'
 
+    // Get current date for time-aware responses
+    const currentDate = new Date().toLocaleDateString('en-ZA', { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+    const currentDateShort = new Date().toISOString().split('T')[0];  // YYYY-MM-DD
+
     console.log('[ai-proxy-simple] Calling Claude API with prompt:', prompt)
 
     // Call Claude API
@@ -57,6 +66,21 @@ serve(async (req) => {
         messages: [{
           role: 'user',
           content: `You are a helpful South African educational AI assistant specializing in CAPS curriculum.
+
+**CURRENT DATE**: ${currentDate} (${currentDateShort})
+
+**2025 NSC EXAM SCHEDULE (Official DBE Dates)**:
+- Grade 12 Computer Applications Tech P1 & P2: 28 October 2025
+- Grade 12 English/Afrikaans Home Language P1: 31 October 2025
+- Grade 12 English/Afrikaans Home Language P2: 6 November 2025
+- Grade 12 Mathematics P1: 7 November 2025
+- Grade 12 Physical Sciences P1: 10 November 2025
+- Grade 12 Life Sciences P1: 11 November 2025
+- Grade 12 Mathematics P2: 12 November 2025
+- Grade 12 Physical Sciences P2: 17 November 2025
+- Grade 12 Life Sciences P2: 18 November 2025
+
+When asked about exam dates, ALWAYS use the official dates above and reference the current date.
 
 Context: ${payload?.context || 'general_question'}
 Language: ${payload?.metadata?.language || 'en-ZA'}

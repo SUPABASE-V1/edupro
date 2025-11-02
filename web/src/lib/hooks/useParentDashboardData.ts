@@ -59,7 +59,7 @@ export function useParentDashboardData() {
   // Debug logging
   useEffect(() => {
     if (profile) {
-      console.log('?? [ParentDashboard] Profile Data:', {
+      console.log('📊 [ParentDashboard] Profile Data:', {
         preschoolId: profile.preschoolId,
         preschoolName: profile.preschoolName,
         hasOrganization: !!profile.preschoolId,

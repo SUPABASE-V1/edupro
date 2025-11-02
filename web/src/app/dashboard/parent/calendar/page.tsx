@@ -75,17 +75,17 @@ export default function CalendarPage() {
               border: '1px solid rgba(6, 182, 212, 0.2)',
               textAlign: 'left'
             }}>
-              <h3 style={{ marginTop: 0, marginBottom: 16, fontSize: 18 }}>Coming Soon! ??</h3>
-              <p style={{ marginBottom: 16, color: 'var(--muted)' }}>
-                We're building a comprehensive school calendar that will include:
+                            <h3 style={{ marginTop: 0, marginBottom: 16, fontSize: 18 }}>Coming Soon! 📅</h3>
+              <p style={{ color: 'var(--muted)', marginBottom: 20, lineHeight: 1.6 }}>
+                Stay organized with a comprehensive school calendar featuring:
               </p>
-              <ul style={{ marginBottom: 24, color: 'var(--muted)', lineHeight: 1.8 }}>
-                <li>?? School events and activities</li>
-                <li>??? Term dates and holidays</li>
-                <li>?? Exam and assessment schedules</li>
-                <li>?? Special days and celebrations</li>
-                <li>?? Event reminders and notifications</li>
-                <li>?? Sync with your personal calendar</li>
+              <ul style={{ marginLeft: 20, marginBottom: 20, lineHeight: 1.8 }}>
+                <li>🎓 School events and activities</li>
+                <li>📆 Term dates and holidays</li>
+                <li>📝 Exam and assessment schedules</li>
+                <li>🎉 Special days and celebrations</li>
+                <li>🔔 Event reminders and notifications</li>
+                <li>🔄 Sync with your personal calendar</li>
               </ul>
               
               <div style={{
@@ -95,7 +95,7 @@ export default function CalendarPage() {
                 border: '1px solid var(--border)'
               }}>
                 <p style={{ margin: 0, fontSize: 14, color: 'var(--muted)' }}>
-                  ?? <strong>Stay connected:</strong> Check the messages section for important announcements from your school!
+                  💡 <strong>Stay connected:</strong> Check the messages section for important announcements from your school!
                 </p>
               </div>
 

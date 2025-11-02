@@ -75,16 +75,16 @@ export default function ProgressPage() {
               border: '1px solid rgba(6, 182, 212, 0.2)',
               textAlign: 'left'
             }}>
-              <h3 style={{ marginTop: 0, marginBottom: 16, fontSize: 18 }}>Coming Soon! ??</h3>
-              <p style={{ marginBottom: 16, color: 'var(--muted)' }}>
-                We're building comprehensive progress tracking that will include:
+                            <h3 style={{ marginTop: 0, marginBottom: 16, fontSize: 18 }}>Coming Soon! 📊</h3>
+              <p style={{ color: 'var(--muted)', marginBottom: 20, lineHeight: 1.6 }}>
+                Track your child's learning journey with comprehensive progress analytics:
               </p>
-              <ul style={{ marginBottom: 24, color: 'var(--muted)', lineHeight: 1.8 }}>
-                <li>?? Subject-wise performance analytics</li>
-                <li>?? Learning trajectory over time</li>
-                <li>?? Skill mastery indicators</li>
-                <li>?? Achievements and milestones</li>
-                <li>?? Detailed report cards</li>
+              <ul style={{ marginLeft: 20, marginBottom: 20, lineHeight: 1.8 }}>
+                <li>📈 Subject-wise performance analytics</li>
+                <li>📉 Learning trajectory over time</li>
+                <li>🎯 Skill mastery indicators</li>
+                <li>🏆 Achievements and milestones</li>
+                <li>📝 Detailed report cards</li>
               </ul>
               
               <div style={{
@@ -94,7 +94,7 @@ export default function ProgressPage() {
                 border: '1px solid var(--border)'
               }}>
                 <p style={{ margin: 0, fontSize: 14, color: 'var(--muted)' }}>
-                  ?? <strong>Start tracking now:</strong> Add your children to begin collecting progress data as features roll out!
+                  💡 <strong>Start tracking now:</strong> Add your children to begin collecting progress data as features roll out!
                 </p>
               </div>
 

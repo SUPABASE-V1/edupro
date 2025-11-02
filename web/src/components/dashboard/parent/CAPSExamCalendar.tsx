@@ -1,6 +1,6 @@
 'use client';
 
-import { Calendar, Clock, BookOpen } from 'lucide-react';
+import { Calendar, Clock, BookOpen, AlertCircle, Timer, GraduationCap } from 'lucide-react';
 
 interface ExamPeriod {
   grade: string;
@@ -11,41 +11,76 @@ interface ExamPeriod {
   status: 'upcoming' | 'today' | 'completed';
 }
 
-// South African CAPS Exam Schedule (Nov/Dec 2025)
+// ⚠️ OFFICIAL DBE EXAM DATES - Updated from education.gov.za
+// Source: https://www.education.gov.za/Curriculum/NationalSeniorCertificate(NSC)Examinations.aspx
+// Auto-calculate status based on current date
+const getCurrentDate = () => {
+  const now = new Date();
+  return now.toLocaleDateString('en-ZA', { month: 'short', day: 'numeric' });
+};
+
+const getExamStatus = (examDate: string): 'upcoming' | 'today' | 'completed' => {
+  const today = getCurrentDate();
+  const examDateObj = new Date(examDate + ' 2025');
+  const todayObj = new Date();
+  
+  // Normalize to start of day
+  examDateObj.setHours(0, 0, 0, 0);
+  todayObj.setHours(0, 0, 0, 0);
+  
+  if (examDateObj.getTime() === todayObj.getTime()) return 'today';
+  if (examDateObj < todayObj) return 'completed';
+  return 'upcoming';
+};
+
+// South African CAPS Exam Schedule (Oct/Nov 2025 - OFFICIAL DBE DATES)
 const EXAM_SCHEDULE: ExamPeriod[] = [
-  // Grade 12 Finals (Already started)
-  { grade: 'Grade 12', subject: 'English Home Language P1', date: 'Nov 1', time: '09:00', duration: '3h', status: 'today' },
-  { grade: 'Grade 12', subject: 'English Home Language P2', date: 'Nov 4', time: '14:00', duration: '2.5h', status: 'upcoming' },
-  { grade: 'Grade 12', subject: 'Afrikaans Home Language P1', date: 'Nov 1', time: '09:00', duration: '3h', status: 'today' },
-  { grade: 'Grade 12', subject: 'Mathematics P1', date: 'Nov 5', time: '09:00', duration: '3h', status: 'upcoming' },
-  { grade: 'Grade 12', subject: 'Mathematics P2', date: 'Nov 8', time: '09:00', duration: '3h', status: 'upcoming' },
-  { grade: 'Grade 12', subject: 'Physical Sciences P1', date: 'Nov 6', time: '09:00', duration: '3h', status: 'upcoming' },
-  { grade: 'Grade 12', subject: 'Physical Sciences P2', date: 'Nov 11', time: '14:00', duration: '3h', status: 'upcoming' },
-  { grade: 'Grade 12', subject: 'Life Sciences P1', date: 'Nov 7', time: '09:00', duration: '2.5h', status: 'upcoming' },
-  { grade: 'Grade 12', subject: 'Life Sciences P2', date: 'Nov 12', time: '14:00', duration: '2.5h', status: 'upcoming' },
+  // Grade 12 Finals (NSC 2025)
+  { grade: 'Grade 12', subject: 'Computer Applications Technology P1', date: 'Oct 28', time: '09:00', duration: '3h', status: getExamStatus('Oct 28') },
+  { grade: 'Grade 12', subject: 'Computer Applications Technology P2', date: 'Oct 28', time: '14:00', duration: '3h', status: getExamStatus('Oct 28') },
+  { grade: 'Grade 12', subject: 'English Home Language P1', date: 'Oct 31', time: '09:00', duration: '3h', status: getExamStatus('Oct 31') },
+  { grade: 'Grade 12', subject: 'Afrikaans Home Language P1', date: 'Oct 31', time: '09:00', duration: '3h', status: getExamStatus('Oct 31') },
+  { grade: 'Grade 12', subject: 'English Home Language P2', date: 'Nov 6', time: '14:00', duration: '2.5h', status: getExamStatus('Nov 6') },
+  { grade: 'Grade 12', subject: 'Afrikaans Home Language P2', date: 'Nov 6', time: '14:00', duration: '2.5h', status: getExamStatus('Nov 6') },
+  { grade: 'Grade 12', subject: 'Mathematics P1', date: 'Nov 7', time: '09:00', duration: '3h', status: getExamStatus('Nov 7') },
+  { grade: 'Grade 12', subject: 'Physical Sciences P1', date: 'Nov 10', time: '09:00', duration: '3h', status: getExamStatus('Nov 10') },
+  { grade: 'Grade 12', subject: 'Life Sciences P1', date: 'Nov 11', time: '09:00', duration: '2.5h', status: getExamStatus('Nov 11') },
+  { grade: 'Grade 12', subject: 'Mathematics P2', date: 'Nov 12', time: '09:00', duration: '3h', status: getExamStatus('Nov 12') },
+  { grade: 'Grade 12', subject: 'Physical Sciences P2', date: 'Nov 17', time: '14:00', duration: '3h', status: getExamStatus('Nov 17') },
+  { grade: 'Grade 12', subject: 'Life Sciences P2', date: 'Nov 18', time: '14:00', duration: '2.5h', status: getExamStatus('Nov 18') },
   
-  // Grade 11 Finals
-  { grade: 'Grade 11', subject: 'English HL P1', date: 'Nov 2', time: '09:00', duration: '2.5h', status: 'upcoming' },
-  { grade: 'Grade 11', subject: 'Mathematics P1', date: 'Nov 6', time: '09:00', duration: '3h', status: 'upcoming' },
-  { grade: 'Grade 11', subject: 'Physical Sciences P1', date: 'Nov 7', time: '09:00', duration: '3h', status: 'upcoming' },
-  { grade: 'Grade 11', subject: 'Life Sciences P1', date: 'Nov 8', time: '09:00', duration: '2.5h', status: 'upcoming' },
+  // Grade 11 Finals (School-Based, Approximate)
+  { grade: 'Grade 11', subject: 'English HL P1', date: 'Nov 3', time: '09:00', duration: '2.5h', status: getExamStatus('Nov 3') },
+  { grade: 'Grade 11', subject: 'Mathematics P1', date: 'Nov 5', time: '09:00', duration: '3h', status: getExamStatus('Nov 5') },
+  { grade: 'Grade 11', subject: 'Physical Sciences P1', date: 'Nov 6', time: '09:00', duration: '3h', status: getExamStatus('Nov 6') },
+  { grade: 'Grade 11', subject: 'Life Sciences P1', date: 'Nov 10', time: '09:00', duration: '2.5h', status: getExamStatus('Nov 10') },
   
-  // Grade 10 Finals
-  { grade: 'Grade 10', subject: 'English HL P1', date: 'Nov 3', time: '09:00', duration: '2h', status: 'upcoming' },
-  { grade: 'Grade 10', subject: 'Mathematics P1', date: 'Nov 7', time: '09:00', duration: '2h', status: 'upcoming' },
-  { grade: 'Grade 10', subject: 'Natural Sciences', date: 'Nov 8', time: '14:00', duration: '2h', status: 'upcoming' },
+  // Grade 10 Finals (School-Based, Approximate)
+  { grade: 'Grade 10', subject: 'English HL P1', date: 'Nov 4', time: '09:00', duration: '2h', status: getExamStatus('Nov 4') },
+  { grade: 'Grade 10', subject: 'Mathematics P1', date: 'Nov 7', time: '09:00', duration: '2h', status: getExamStatus('Nov 7') },
+  { grade: 'Grade 10', subject: 'Natural Sciences', date: 'Nov 10', time: '14:00', duration: '2h', status: getExamStatus('Nov 10') },
   
-  // Grade 9 Finals
-  { grade: 'Grade 9', subject: 'English HL', date: 'Nov 4', time: '09:00', duration: '2h', status: 'upcoming' },
-  { grade: 'Grade 9', subject: 'Mathematics', date: 'Nov 8', time: '09:00', duration: '2h', status: 'upcoming' },
-  { grade: 'Grade 9', subject: 'Natural Sciences', date: 'Nov 11', time: '09:00', duration: '1.5h', status: 'upcoming' },
+  // Grade 9 Finals (School-Based, Approximate)
+  { grade: 'Grade 9', subject: 'English HL', date: 'Nov 5', time: '09:00', duration: '2h', status: getExamStatus('Nov 5') },
+  { grade: 'Grade 9', subject: 'Mathematics', date: 'Nov 6', time: '09:00', duration: '2h', status: getExamStatus('Nov 6') },
+  { grade: 'Grade 9', subject: 'Natural Sciences', date: 'Nov 11', time: '09:00', duration: '1.5h', status: getExamStatus('Nov 11') },
 ];
 
 interface CAPSExamCalendarProps {
   childGrade?: string;
+  usageType?: 'preschool' | 'k12_school' | 'homeschool' | 'aftercare' | 'hybrid' | 'independent' | 'supplemental' | 'exploring';
 }
 
-export function CAPSExamCalendar({ childGrade }: CAPSExamCalendarProps) {
+export function CAPSExamCalendar({ childGrade, usageType }: CAPSExamCalendarProps) {
+  // 🚫 Don't show CAPS exam calendar to preschool parents (ages 3-6)
+  if (usageType === 'preschool' || usageType === 'aftercare' || usageType === 'supplemental') {
+    return null;  // They need developmental milestones, not Grade 12 exams
+  }
+  
+  // ⚠️ Only show for Grade 9-12 students (FET Phase)
+  if (childGrade && !['Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'].includes(childGrade)) {
+    return null;  // Foundation/Intermediate phase students have different assessments
+  }
   // Filter exams by child's grade if provided
   const relevantExams = childGrade 
     ? EXAM_SCHEDULE.filter(exam => exam.grade === childGrade)
@@ -72,7 +107,7 @@ export function CAPSExamCalendar({ childGrade }: CAPSExamCalendarProps) {
           border: '2px solid #fca5a5'
         }}>
           <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 24 }}>??</span>
+            <AlertCircle size={24} />
             EXAMS WRITING TODAY
           </div>
           {todayExams.map((exam, idx) => (
@@ -85,10 +120,19 @@ export function CAPSExamCalendar({ childGrade }: CAPSExamCalendarProps) {
               <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 4 }}>
                 {exam.subject}
               </div>
-              <div style={{ fontSize: 13, opacity: 0.95, display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-                <span>? {exam.time}</span>
-                <span>?? {exam.duration}</span>
-                <span>?? {exam.grade}</span>
+              <div style={{ fontSize: 13, opacity: 0.95, display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <Clock size={14} />
+                  {exam.time}
+                </span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <Timer size={14} />
+                  {exam.duration}
+                </span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <GraduationCap size={14} />
+                  {exam.grade}
+                </span>
               </div>
             </div>
           ))}
@@ -117,7 +161,10 @@ export function CAPSExamCalendar({ childGrade }: CAPSExamCalendarProps) {
                     <Clock size={12} />
                     {exam.time}
                   </span>
-                  <span>?? {exam.duration}</span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <Timer size={12} />
+                    {exam.duration}
+                  </span>
                 </div>
               </div>
               <div style={{
@@ -150,9 +197,33 @@ export function CAPSExamCalendar({ childGrade }: CAPSExamCalendarProps) {
           <BookOpen size={16} style={{ display: 'inline', marginRight: 6, verticalAlign: 'middle', color: '#3b82f6' }} />
           Need help with any of these subjects?
         </div>
-        <div style={{ fontSize: 12, fontWeight: 600, color: '#3b82f6' }}>
-          ?? Use Emergency Exam Help below for instant AI tutor support
+        <div style={{ fontSize: 12, fontWeight: 600, color: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+          <AlertCircle size={14} />
+          Use Emergency Exam Help below for instant AI tutor support
         </div>
+      </div>
+
+      {/* Disclaimer */}
+      <div style={{
+        marginTop: 12,
+        padding: 10,
+        background: 'rgba(251, 191, 36, 0.1)',
+        border: '1px solid rgba(251, 191, 36, 0.3)',
+        borderRadius: 8,
+        fontSize: 11,
+        color: 'var(--muted)',
+        textAlign: 'center'
+      }}>
+        ⚠️ <strong>Official DBE dates</strong> for Grade 12. Grades 9-11 dates may vary by school. 
+        Always verify with your school timetable or visit{' '}
+        <a 
+          href="https://www.education.gov.za/Curriculum/NationalSeniorCertificate(NSC)Examinations.aspx" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          style={{ color: '#3b82f6', textDecoration: 'underline' }}
+        >
+          education.gov.za
+        </a>
       </div>
     </div>
   );
