@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useTenantSlug } from '@/lib/tenant/useTenantSlug';
 import { useUserProfile } from '@/lib/hooks/useUserProfile';
 import { ParentShell } from '@/components/dashboard/parent/ParentShell';
-import { MessageSquare, Send, Search } from 'lucide-react';
+import { MessageSquare, Send, Search, ArrowLeft } from 'lucide-react';
 
 export default function MessagesPage() {
   const router = useRouter();
@@ -53,6 +53,29 @@ export default function MessagesPage() {
       unreadCount={0}
     >
       <div className="container">
+        {/* Back Button */}
+        <button
+          onClick={() => router.push('/dashboard/parent')}
+          className="btn"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 8,
+            marginBottom: 24,
+            background: 'var(--surface-1)',
+            border: '1px solid var(--border)',
+            color: 'var(--text)',
+            padding: '8px 16px',
+            borderRadius: 8,
+            cursor: 'pointer',
+            fontSize: 14,
+            fontWeight: 500
+          }}
+        >
+          <ArrowLeft size={16} />
+          Back to Dashboard
+        </button>
+
         <div className="section">
           <h1 className="h1">Messages</h1>
           <p className="muted">Communicate with teachers and school staff</p>

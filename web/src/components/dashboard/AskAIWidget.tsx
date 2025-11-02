@@ -1,12 +1,14 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { X, Send, Bot, Database, Loader2, CheckCircle, XCircle } from 'lucide-react';
+import { X, Send, Bot, Database, Loader2, Sparkles } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { parseExamMarkdown } from '@/lib/examParser';
 import { ExamInteractiveView } from './exam-prep/ExamInteractiveView';
+import { useAIConversation } from '@/lib/hooks/useAIConversation';
+import { useExamSession } from '@/lib/hooks/useExamSession';
 
 const TRUTHY_ENV_VALUES = new Set(['true', '1', 'yes', 'y', 'on', 'enabled']);
 const FALSY_ENV_VALUES = new Set(['false', '0', 'no', 'n', 'off', 'disabled']);
@@ -37,48 +39,80 @@ const isDashAIEnabled = () => {
 interface AskAIWidgetProps {
   inline?: boolean;
   initialPrompt?: string;
-  displayMessage?: string; // what to show to the user (sanitized)
+  displayMessage?: string;
   fullscreen?: boolean;
-  language?: string; // Language code (e.g., 'en-ZA', 'af-ZA', 'zu-ZA')
-  enableInteractive?: boolean; // Enable interactive exam parsing for practice tests
+  language?: string;
+  enableInteractive?: boolean;
+  conversationId?: string; // NEW: For persistence
+  onClose?: () => void;
 }
 
-export function AskAIWidget({ inline = true, initialPrompt, displayMessage, fullscreen = false, language = 'en-ZA', enableInteractive = false }: AskAIWidgetProps) {
+export function AskAIWidget({ 
+  inline = true, 
+  initialPrompt, 
+  displayMessage, 
+  fullscreen = false, 
+  language = 'en-ZA', 
+  enableInteractive = false,
+  conversationId, // NEW
+  onClose 
+}: AskAIWidgetProps) {
   const [open, setOpen] = useState(inline);
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<{ role: 'user' | 'assistant' | 'tool'; text: string; tool?: any }[]>([]);
+  const [loading, setLoading] = useState(false);
   const [hasProcessedInitial, setHasProcessedInitial] = useState(false);
   const [interactiveExam, setInteractiveExam] = useState<any>(null);
-  const [isExecutingTool, setIsExecutingTool] = useState(false);
+  const [currentGenerationId, setCurrentGenerationId] = useState<string | null>(null);
   const scrollerRef = useRef<HTMLDivElement>(null);
   const examSetRef = useRef(false);
+  
+  // NEW: Conversation persistence
+  const { 
+    messages: persistedMessages, 
+    saveMessages 
+  } = useAIConversation(conversationId || null);
+  
+  // NEW: Exam session management
+  const { saveExamGeneration } = useExamSession(null);
 
-  // Auto-populate and send initial prompt
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
+    if (scrollerRef.current) {
+      scrollerRef.current.scrollTop = scrollerRef.current.scrollHeight;
+    }
+  }, [messages]);
+
+  // Auto-populate and run initial prompt
   useEffect(() => {
     if (!initialPrompt || hasProcessedInitial) return;
     
     const runInitial = async () => {
       setHasProcessedInitial(true);
-      setInput(initialPrompt);
-      // Show a short, user-friendly message instead of the internal server prompt
-      const shown = displayMessage || 'Generating activity...';
+      const shown = displayMessage || initialPrompt;
       setMessages([{ role: 'user', text: shown }]);
-      setInput('');
+      setLoading(true);
 
       const supabase = createClient();
       try {
         const ENABLED = isDashAIEnabled();
         if (!ENABLED) {
-          setMessages((m) => [...m, { role: 'assistant', text: 'Dash AI is not enabled in this environment.' }]);
+          setMessages((m) => [...m, { 
+            role: 'assistant', 
+            text: '⚠️ Dash AI is not enabled. Please contact your administrator or check your environment configuration.' 
+          }]);
           return;
         }
+
         const { data: sessionData } = await supabase.auth.getSession();
         const token = sessionData.session?.access_token;
+        
+        // Use ai-proxy (not ai-proxy-simple) for exam generation with tool support
         const { data, error } = await supabase.functions.invoke('ai-proxy', {
           body: {
             scope: 'parent',
             service_type: 'homework_help',
-            enable_tools: true,  // Enable agentic mode
+            enable_tools: true,
             payload: {
               prompt: initialPrompt,
               context: 'caps_exam_preparation',
@@ -89,21 +123,59 @@ export function AskAIWidget({ inline = true, initialPrompt, displayMessage, full
               }
             },
             metadata: {
-              role: 'parent'  // Pass role for tool access control
+              role: 'parent'
             }
           },
           headers: token ? { Authorization: `Bearer ${token}` } : undefined,
         });
-        if (error) throw error;
+
+        if (error) {
+          console.error('[DashAI] Edge Function Error:', error);
+          console.error('[DashAI] Error details:', JSON.stringify(error, null, 2));
+          console.error('[DashAI] Response data:', data);
+          
+          // Try to get detailed error from response
+          let errorDetails = 'Unknown error';
+          if (data?.error) {
+            errorDetails = data.error;
+            if (data.details) errorDetails += `\n\nDetails: ${data.details}`;
+          } else if (error.message) {
+            errorDetails = error.message;
+          }
+          
+          // Handle function not found
+          if (error.name === 'FunctionsFetchError') {
+            setMessages((m) => [...m, { 
+              role: 'assistant', 
+              text: `❌ **AI Service Not Deployed**\n\nThe \`ai-proxy\` Edge Function is not deployed yet.\n\n**To fix this:**\n\n1. Open a terminal in your project\n2. Run:\n   \`\`\`bash\n   cd supabase/functions\n   supabase functions deploy ai-proxy\n   \`\`\`\n\n3. Or deploy via Supabase Dashboard:\n   - Go to **Functions** → **Create Function**\n   - Name: \`ai-proxy\`\n   - Copy code from \`/supabase/functions/ai-proxy/index.ts\`\n   - Click **Deploy**\n\nOnce deployed, refresh this page and try again!` 
+            }]);
+            setLoading(false);
+            return;
+          }
+          
+          // Handle 500 errors (function crashed)
+          if (error.name === 'FunctionsHttpError') {
+            setMessages((m) => [...m, { 
+              role: 'assistant', 
+              text: `❌ **AI Service Error (500)**\n\nThe Edge Function is deployed but crashed.\n\n**Error:** ${errorDetails}\n\n**Most Common Causes:**\n\n1. **Missing ANTHROPIC_API_KEY** (most likely)\n   - Go to Supabase Dashboard\n   - Settings → Edge Functions → Environment Variables\n   - Add: \`ANTHROPIC_API_KEY\` = \`sk-ant-api03-...\`\n   - Redeploy function\n\n2. **Invalid API Key**\n   - Get new key from: https://console.anthropic.com/settings/keys\n   - Update environment variable\n\n3. **Check Function Logs:**\n   - Supabase Dashboard → Edge Functions → ai-proxy-simple → Logs\n   - Look for the actual error message\n\n**Need help?** Copy the logs and I can help debug!` 
+            }]);
+            setLoading(false);
+            return;
+          }
+          
+          throw error;
+        }
         
-        // Handle ai-proxy response format with tool execution
+        // Log response for debugging
+        console.log('[DashAI] Edge Function Response:', data);
+        
+        // Handle tool execution
         if (data?.tool_use && data?.tool_results) {
-          // Tool was executed - show tool execution
           setMessages((m) => [
             ...m,
             { 
               role: 'tool', 
-              text: `🔍 Executed: ${data.tool_use[0]?.name}`,
+              text: `🔧 ${data.tool_use[0]?.name}`,
               tool: {
                 name: data.tool_use[0]?.name,
                 results: data.tool_results[0]
@@ -112,107 +184,152 @@ export function AskAIWidget({ inline = true, initialPrompt, displayMessage, full
           ]);
         }
         
-        console.log('[AskAI] Full AI response data:', data);
         const content = data?.content || data?.error?.message || 'No response from AI';
-        if (content) {
-          setMessages((m) => [...m, { role: 'assistant', text: content }]);
-        }
         
-        // If interactive mode is enabled, check for structured exam from tool OR parse markdown
+        // Handle interactive exam mode FIRST (before adding to messages)
         if (enableInteractive && !examSetRef.current) {
-          console.log('[AskAI] enableInteractive=true, checking for exam');
-          
-          // PRIORITY 1: Check if tool returned structured exam data
           if (data?.tool_results && Array.isArray(data.tool_results)) {
             for (const toolResult of data.tool_results) {
               try {
-                console.log('[AskAI] Tool result content:', toolResult.content);
-                console.log('[AskAI] Tool result content type:', typeof toolResult.content);
-                
-                // Check if it's an error string
-                if (typeof toolResult.content === 'string' && toolResult.content.startsWith('Error:')) {
-                  console.error('[AskAI] Tool execution failed:', toolResult.content);
-                  continue; // Skip this result
+                // Check if content is an error message first
+                if (typeof toolResult.content === 'string') {
+                  // Try to parse as JSON, but handle errors gracefully
+                  if (toolResult.content.startsWith('Error:') || toolResult.content.startsWith('{') === false) {
+                    console.error('[DashAI] Tool execution failed:', toolResult.content);
+                    setMessages(prev => [...prev, {
+                      role: 'assistant',
+                      text: `❌ Exam generation failed: ${toolResult.content}\n\nPlease try again with different parameters.`,
+                    }]);
+                    continue;
+                  }
                 }
                 
                 const resultData = typeof toolResult.content === 'string' 
                   ? JSON.parse(toolResult.content)
                   : toolResult.content;
                 
-                console.log('[AskAI] Parsed tool result data:', resultData);
-                
-                // Tool results have { success: true, data: { exam } } structure
-                if (resultData.success && resultData.data) {
-                  const examData = resultData.data;
-                  if (examData.sections && Array.isArray(examData.sections)) {
-                    console.log('[AskAI] ✅ Found structured exam from tool with', examData.sections.length, 'sections');
-                    examSetRef.current = true;
-                    setInteractiveExam(examData);
-                    return; // Exit early - structured exam found
-                  }
-                }
-                // Legacy format: direct exam data
-                else if (resultData.sections && Array.isArray(resultData.sections)) {
-                  console.log('[AskAI] ✅ Found structured exam (legacy format) with', resultData.sections.length, 'sections');
+                if (resultData.success && resultData.data?.sections) {
                   examSetRef.current = true;
+                  
+                  // Save to database before showing
+                  try {
+                    const generationId = await saveExamGeneration(
+                      resultData.data,
+                      initialPrompt, // original prompt
+                      resultData.data.title || 'Generated Exam',
+                      resultData.data.grade,
+                      resultData.data.subject
+                    );
+                    setCurrentGenerationId(generationId);
+                  } catch (error) {
+                    console.error('[DashAI] Failed to save exam:', error);
+                  }
+                  
+                  setInteractiveExam(resultData.data);
+                  return;
+                } else if (resultData.sections) {
+                  examSetRef.current = true;
+                  
+                  // Save to database before showing
+                  try {
+                    const generationId = await saveExamGeneration(
+                      resultData,
+                      initialPrompt, // original prompt
+                      resultData.title || 'Generated Exam',
+                      resultData.grade,
+                      resultData.subject
+                    );
+                    setCurrentGenerationId(generationId);
+                  } catch (error) {
+                    console.error('[DashAI] Failed to save exam:', error);
+                  }
+                  
                   setInteractiveExam(resultData);
                   return;
                 }
               } catch (e) {
-                console.error('[AskAI] Failed to parse tool result:', e);
-                console.error('[AskAI] Tool result content:', toolResult.content?.substring(0, 200));
+                console.error('[DashAI] Failed to parse tool result:', e);
+                // Show user-friendly error message
+                setMessages(prev => [...prev, {
+                  role: 'assistant',
+                  text: `❌ Failed to process exam generation result. The AI may have returned an error:\n\n${toolResult.content}\n\nPlease try again.`,
+                }]);
               }
             }
           }
           
-          // PRIORITY 2: Fall back to markdown parsing if no tool result
+          // Fallback to markdown parsing
           if (content) {
-            console.log('[AskAI] No tool result, attempting markdown parse. Content length:', content.length);
             const parsedExam = parseExamMarkdown(content);
-            console.log('[AskAI] Parsed exam:', parsedExam);
             if (parsedExam) {
-              console.log('[AskAI] Setting interactive exam with', parsedExam.sections.length, 'sections');
               examSetRef.current = true;
+              
+              // Save to database before showing
+              try {
+                const generationId = await saveExamGeneration(
+                  parsedExam,
+                  initialPrompt, // original prompt
+                  parsedExam.title,
+                  parsedExam.grade,
+                  parsedExam.subject
+                );
+                setCurrentGenerationId(generationId);
+              } catch (error) {
+                console.error('[DashAI] Failed to save exam:', error);
+              }
+              
               setInteractiveExam(parsedExam);
-            } else {
-              console.warn('[AskAI] Failed to parse exam from markdown');
+              return; // Don't add to messages, we're showing it interactively
             }
           }
-        } else if (examSetRef.current) {
-          console.log('[AskAI] Exam already set, skipping');
-        } else {
-          console.log('[AskAI] Interactive mode not enabled. enableInteractive:', enableInteractive);
+        }
+        
+        // If we didn't show interactive exam, add content to messages
+        if (content) {
+          setMessages((m) => [...m, { role: 'assistant', text: content }]);
         }
       } catch (err: any) {
-        setMessages((m) => [...m, { role: 'assistant', text: 'Sorry, I could not generate the activity right now.' }]);
+        console.error('[DashAI] Error:', err);
+        const errorMessage = err?.message || 'Unknown error';
+        const errorContext = err?.context || '';
+        setMessages((m) => [...m, { 
+          role: 'assistant', 
+          text: `❌ **AI Service Error**\n\n${errorMessage}\n\n${errorContext}\n\n**Troubleshooting:**\n1. Check if ANTHROPIC_API_KEY is set in Supabase\n2. Check Edge Function logs in Supabase Dashboard\n3. Verify ai-proxy function is deployed\n4. Check database connection` 
+        }]);
       } finally {
-        scrollerRef.current?.scrollTo({ top: scrollerRef.current.scrollHeight, behavior: 'smooth' });
+        setLoading(false);
       }
     };
     runInitial();
-  }, [initialPrompt, hasProcessedInitial]);
+  }, [initialPrompt, hasProcessedInitial, displayMessage, language, enableInteractive]);
 
   const onSend = async () => {
     const text = input.trim();
-    if (!text) return;
+    if (!text || loading) return;
+    
     setMessages((m) => [...m, { role: 'user', text }]);
     setInput('');
-    setIsExecutingTool(true);
+    setLoading(true);
 
     const supabase = createClient();
     try {
       const ENABLED = isDashAIEnabled();
       if (!ENABLED) {
-        setMessages((m) => [...m, { role: 'assistant', text: 'Dash AI is not enabled in this environment.' }]);
+        setMessages((m) => [...m, { 
+          role: 'assistant', 
+          text: '⚠️ Dash AI is not enabled.' 
+        }]);
         return;
       }
+
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData.session?.access_token;
+      
       const { data, error } = await supabase.functions.invoke('ai-proxy', {
         body: {
           scope: 'parent',
           service_type: 'homework_help',
-          enable_tools: true,  // Enable agentic mode
+          enable_tools: true,
           payload: {
             prompt: text,
             context: 'general_question',
@@ -222,25 +339,30 @@ export function AskAIWidget({ inline = true, initialPrompt, displayMessage, full
             }
           },
           metadata: {
-            role: 'parent'  // Pass role for tool access control
+            role: 'parent'
           }
         },
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       });
-      if (error) throw error;
+
+      if (error) {
+        console.error('[DashAI] Send Error:', error);
+        throw error;
+      }
       
-      // Handle ai-proxy response format with tool execution
+      // Handle tool execution
       if (data?.tool_use && data?.tool_results) {
-        // Tool was executed - show tool execution
         setMessages((m) => [
           ...m,
           { 
             role: 'tool', 
-            text: `🔍 Queried database: ${data.tool_use[0]?.input?.query_type}`,
+            text: `🔧 ${data.tool_use[0]?.name}`,
             tool: {
               name: data.tool_use[0]?.name,
               input: data.tool_use[0]?.input,
-              results: JSON.parse(data.tool_results[0]?.content || '{}')
+              results: typeof data.tool_results[0]?.content === 'string' 
+                ? JSON.parse(data.tool_results[0]?.content || '{}')
+                : data.tool_results[0]?.content
             }
           }
         ]);
@@ -251,146 +373,220 @@ export function AskAIWidget({ inline = true, initialPrompt, displayMessage, full
         setMessages((m) => [...m, { role: 'assistant', text: content }]);
       }
     } catch (err: any) {
-      setMessages((m) => [...m, { role: 'assistant', text: 'Sorry, I could not process that right now.' }]);
+      console.error('[DashAI] Error:', err);
+      const errorMessage = err?.message || 'Unknown error';
+      setMessages((m) => [...m, { 
+        role: 'assistant', 
+        text: `❌ **Error:** ${errorMessage}\n\nPlease check the browser console for details.` 
+      }]);
     } finally {
-      setIsExecutingTool(false);
-      scrollerRef.current?.scrollTo({ top: scrollerRef.current.scrollHeight, behavior: 'smooth' });
+      setLoading(false);
     }
   };
 
-  // Floating (default)
-  if (!inline) {
-    if (!open) {
-      return (
-        <button
-          aria-label="Ask AI"
-          onClick={() => setOpen(true)}
-          className="fixed bottom-6 right-6 z-50 rounded-full bg-purple-600 hover:bg-purple-700 text-white shadow-lg px-4 py-3 inline-flex items-center gap-2"
-        >
-          <Bot className="w-5 h-5" />
-          <span className="hidden md:inline">Ask Dash</span>
-        </button>
-      );
-    }
-
-    return (
-      <div className="fixed bottom-6 right-6 z-50 w-[360px] max-w-[90vw] rounded-xl border border-purple-700 bg-[#0c0a12] text-white shadow-2xl">
-        <div className="flex items-center justify-between px-3 py-2 rounded-t-xl bg-gradient-to-r from-purple-600 to-fuchsia-600">
-          <div className="flex items-center gap-2">
-            <Bot className="w-4 h-4 text-white" />
-            <span className="text-sm font-semibold">Ask Dash</span>
-          </div>
-          <button aria-label="Close" onClick={() => setOpen(false)} className="p-1 text-white/80 hover:text-white">
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-        <div ref={scrollerRef} className="max-h-[320px] overflow-y-auto p-3 space-y-2">
-          {messages.length === 0 && (
-            <div className="text-xs text-gray-300">Ask anything about your dashboard, child progress, or tasks.</div>
-          )}
-          {messages.map((m, i) => (
-            <div key={i} className={`text-sm leading-relaxed flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-              {m.role === 'tool' ? (
-                <div className="w-full bg-blue-500/10 border border-blue-500/30 rounded-lg px-3 py-2 flex items-center gap-2">
-                  <Database className="w-4 h-4 text-blue-400" />
-                  <span className="text-xs text-blue-300">{m.text}</span>
-                  {m.tool?.results?.row_count !== undefined && (
-                    <span className="ml-auto text-xs text-blue-400 font-semibold">
-                      ✓ {m.tool.results.row_count} results
-                    </span>
-                  )}
-                </div>
-              ) : (
-                <span className={`inline-block rounded-2xl px-3 py-2 shadow-lg ${m.role === 'user' ? 'bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white' : 'bg-white/5 border border-white/10 text-gray-200 backdrop-blur'}`}>
-                  {m.text}
-                </span>
-              )}
-            </div>
-          ))}
-          {isExecutingTool && (
-            <div className="flex items-center gap-2 text-xs text-gray-400">
-              <Loader2 className="w-3 h-3 animate-spin" />
-              <span>Executing tool...</span>
-            </div>
-          )}
-        </div>
-        <div className="flex items-center gap-2 p-3 border-t border-gray-800">
-          <input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), onSend())}
-            placeholder="Type a question..."
-            className="flex-1 bg-[#0f0a17]/80 border border-purple-800/60 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/60 shadow-inner"
-          />
-          <button onClick={onSend} className="p-2 rounded-lg bg-purple-600 hover:bg-purple-700 text-sm font-semibold inline-flex items-center shadow-md">
-            <Send className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-    );
-  }
+  const handleClose = () => {
+    setOpen(false);
+    onClose?.();
+  };
 
   // Fullscreen mode
   if (fullscreen) {
-    // If interactive exam is available, show it instead
     if (interactiveExam) {
       return (
-        <div style={{ height: '100%', overflowY: 'auto' }}>
-          <ExamInteractiveView
-            exam={interactiveExam}
-            onClose={() => setInteractiveExam(null)}
-          />
+        <div className="app" style={{ height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          {/* Header */}
+          <div className="topbar" style={{ flexShrink: 0 }}>
+            <div className="topbarEdge">
+              <div className="topbarRow">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: '50%',
+                    background: 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <Sparkles className="icon20" style={{ color: 'white' }} />
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: 16 }}>Dash AI</div>
+                    <div style={{ fontSize: 12, color: 'var(--muted)' }}>
+                      {interactiveExam.title || displayMessage || 'Interactive Exam'}
+                    </div>
+                  </div>
+                </div>
+                <button className="iconBtn" onClick={() => setInteractiveExam(null)} aria-label="Close">
+                  <X className="icon16" />
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          {/* Exam Content - Scrollable */}
+          <div style={{ flex: 1, overflow: 'auto' }}>
+            <ExamInteractiveView
+              exam={interactiveExam}
+              generationId={currentGenerationId}
+              onClose={() => setInteractiveExam(null)}
+            />
+          </div>
         </div>
       );
     }
     
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--background)' }}>
-        {/* Messages area */}
-        <div ref={scrollerRef} style={{ flex: 1, overflowY: 'auto', padding: 'var(--space-6)' }}>
-          {messages.length === 0 && (
-            <div style={{ textAlign: 'center', color: 'var(--muted)', marginTop: 'var(--space-8)' }}>
-              <p style={{ fontSize: 14 }}>Ask anything about your dashboard, child progress, or tasks.</p>
-            </div>
-          )}
-          <div style={{ maxWidth: '900px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
-            {messages.map((m, i) => (
-              <div key={i} style={{ display: 'flex', justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start' }}>
-                <div
-                  className="card"
-                  style={{
-                    maxWidth: '75%',
-                    padding: 'var(--space-4)',
-                    background: m.role === 'user' ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : 'var(--card)',
-                    color: m.role === 'user' ? 'white' : 'var(--text)',
-                    border: m.role === 'user' ? 'none' : '1px solid var(--border)'
-                  }}
-                >
-                  <div style={{ margin: 0, lineHeight: 1.7 }} className="markdown-content">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.text}</ReactMarkdown>
+      <div className="app" style={{ height: '100%' }}>
+        {/* Header */}
+        <div className="topbar">
+          <div className="topbarEdge">
+            <div className="topbarRow">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <Sparkles className="icon20" style={{ color: 'white' }} />
+                </div>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: 16 }}>Dash AI</div>
+                  <div style={{ fontSize: 12, color: 'var(--muted)' }}>
+                    {displayMessage || 'AI-Powered Exam Help'}
                   </div>
                 </div>
               </div>
-            ))}
+              {onClose && (
+                <button className="iconBtn" onClick={handleClose} aria-label="Close">
+                  <X className="icon16" />
+                </button>
+              )}
+            </div>
           </div>
         </div>
-        {/* Input area */}
+
+        {/* Messages */}
+        <div className="content" ref={scrollerRef} style={{ 
+          flex: 1, 
+          paddingBottom: 'calc(80px + var(--space-4))',
+          paddingTop: 'var(--space-4)'
+        }}>
+          <div className="container" style={{ maxWidth: 900 }}>
+            {messages.length === 0 && (
+              <div className="card" style={{ 
+                textAlign: 'center', 
+                padding: 'var(--space-6)',
+                marginTop: 'var(--space-6)' 
+              }}>
+                <Bot style={{ 
+                  width: 48, 
+                  height: 48, 
+                  margin: '0 auto var(--space-4)', 
+                  color: 'var(--primary)' 
+                }} />
+                <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 8 }}>
+                  Ask Dash AI Anything
+                </div>
+                <div className="muted" style={{ fontSize: 14 }}>
+                  CAPS-aligned help • Exam prep • Practice tests • 24/7 support
+                </div>
+              </div>
+            )}
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+              {messages.map((m, i) => (
+                <div 
+                  key={i} 
+                  style={{ 
+                    display: 'flex', 
+                    justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start' 
+                  }}
+                >
+                  {m.role === 'tool' ? (
+                    <div className="card" style={{
+                      maxWidth: '85%',
+                      background: 'rgba(59, 130, 246, 0.1)',
+                      borderColor: 'rgba(59, 130, 246, 0.3)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 12
+                    }}>
+                      <Database className="icon16" style={{ color: '#60a5fa', flexShrink: 0 }} />
+                      <span style={{ fontSize: 13, color: '#93c5fd', fontWeight: 600 }}>
+                        {m.text}
+                      </span>
+                      {m.tool?.results?.row_count !== undefined && (
+                        <span className="badge" style={{ marginLeft: 'auto' }}>
+                          {m.tool.results.row_count} results
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    <div 
+                      className="card" 
+                      style={{
+                        maxWidth: '85%',
+                        background: m.role === 'user' 
+                          ? 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)' 
+                          : 'var(--surface-2)',
+                        borderColor: m.role === 'user' ? 'transparent' : 'var(--border)',
+                        color: m.role === 'user' ? 'white' : 'var(--text)'
+                      }}
+                    >
+                      {m.role === 'assistant' ? (
+                        <div className="markdown-content" style={{ lineHeight: 1.7 }}>
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.text}</ReactMarkdown>
+                        </div>
+                      ) : (
+                        <div style={{ lineHeight: 1.6 }}>{m.text}</div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+              
+              {loading && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, color: 'var(--muted)' }}>
+                  <Loader2 className="icon16" style={{ animation: 'spin 1s linear infinite' }} />
+                  <span style={{ fontSize: 13 }}>Dash AI is thinking...</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Input */}
         <div style={{
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
           borderTop: '1px solid var(--border)',
           background: 'var(--surface)',
           padding: 'var(--space-4)',
-          flexShrink: 0
+          zIndex: 10
         }}>
-          <div style={{ maxWidth: '900px', margin: '0 auto', display: 'flex', gap: 'var(--space-3)', alignItems: 'center' }}>
+          <div className="container" style={{ maxWidth: 900, display: 'flex', gap: 'var(--space-3)' }}>
             <input
-              className="searchInput"
+              className="input"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), onSend())}
-              placeholder="Type your question here..."
+              onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), onSend())}
+              placeholder="Ask about exams, subjects, practice tests..."
+              disabled={loading}
               style={{ flex: 1 }}
             />
-            <button className="btn btnPrimary" onClick={onSend} style={{ flexShrink: 0 }}>
+            <button 
+              className="btn btnPrimary" 
+              onClick={onSend}
+              disabled={loading || !input.trim()}
+              style={{ minWidth: 100 }}
+            >
               <Send className="icon16" />
               Send
             </button>
@@ -400,54 +596,273 @@ export function AskAIWidget({ inline = true, initialPrompt, displayMessage, full
     );
   }
 
-  // Inline (expands upwards inside its container)
-  return (
-    <div className="mt-4 mb-3 flex flex-col flex-1 max-h-full min-h-0">
-      {/* Card container to match dashboard styling */}
-      <div className="card flex flex-col flex-1 min-h-0 p-0">
-        {/* Title row (consistent with sections) */}
-        <div className="titleRow px-4 py-2">
-          <div className="sectionTitle" style={{ margin: 0 }}>Ask Dash</div>
-          <button aria-label={open ? 'Collapse' : 'Expand'} onClick={() => setOpen((v) => !v)} className="btn" style={{ height: 32, paddingInline: 10 }}>
-            {open ? 'Hide' : 'Open'}
+  // Floating widget (not inline)
+  if (!inline) {
+    if (!open) {
+      return (
+        <button
+          className="btn btnPrimary"
+          onClick={() => setOpen(true)}
+          aria-label="Ask Dash AI"
+          style={{
+            position: 'fixed',
+            bottom: 24,
+            right: 24,
+            zIndex: 50,
+            borderRadius: '999px',
+            height: 56,
+            paddingLeft: 20,
+            paddingRight: 20,
+            boxShadow: '0 8px 30px rgba(124, 58, 237, 0.4)'
+          }}
+        >
+          <Bot className="icon20" />
+          <span>Ask Dash</span>
+        </button>
+      );
+    }
+
+    return (
+      <div 
+        className="card" 
+        style={{
+          position: 'fixed',
+          bottom: 24,
+          right: 24,
+          zIndex: 50,
+          width: 380,
+          maxWidth: '90vw',
+          height: 520,
+          maxHeight: '80vh',
+          display: 'flex',
+          flexDirection: 'column',
+          padding: 0,
+          boxShadow: '0 12px 40px rgba(0, 0, 0, 0.4)'
+        }}
+      >
+        {/* Header */}
+        <div style={{
+          padding: 'var(--space-3)',
+          borderBottom: '1px solid var(--border)',
+          background: 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)',
+          borderRadius: 'var(--radius-2) var(--radius-2) 0 0',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <Sparkles className="icon16" style={{ color: 'white' }} />
+            <span style={{ fontWeight: 700, fontSize: 14, color: 'white' }}>Dash AI</span>
+          </div>
+          <button 
+            onClick={() => setOpen(false)} 
+            aria-label="Close"
+            style={{
+              width: 28,
+              height: 28,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: 8,
+              background: 'rgba(255, 255, 255, 0.2)',
+              border: 'none',
+              cursor: 'pointer',
+              color: 'white'
+            }}
+          >
+            <X className="icon16" />
           </button>
         </div>
-        {open && (
-          <div className="flex flex-col flex-1 min-h-0">
-            <div ref={scrollerRef} className="flex-1 overflow-y-auto px-10 py-8 space-y-10 min-h-0">
-              {messages.length === 0 && (
-                <div className="text-xs text-gray-400">Ask anything about your dashboard, child progress, or tasks.</div>
+
+        {/* Messages */}
+        <div 
+          ref={scrollerRef}
+          style={{
+            flex: 1,
+            overflowY: 'auto',
+            padding: 'var(--space-3)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 'var(--space-3)'
+          }}
+        >
+          {messages.length === 0 && (
+            <div style={{ textAlign: 'center', color: 'var(--muted)', marginTop: 'var(--space-4)', fontSize: 13 }}>
+              Ask about exams, practice tests, or any CAPS subject
+            </div>
+          )}
+
+          {messages.map((m, i) => (
+            <div 
+              key={i} 
+              style={{ 
+                display: 'flex', 
+                justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start' 
+              }}
+            >
+              {m.role === 'tool' ? (
+                <div style={{
+                  padding: 10,
+                  borderRadius: 10,
+                  background: 'rgba(59, 130, 246, 0.1)',
+                  border: '1px solid rgba(59, 130, 246, 0.3)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  fontSize: 12
+                }}>
+                  <Database className="icon16" style={{ color: '#60a5fa' }} />
+                  <span style={{ color: '#93c5fd' }}>{m.text}</span>
+                </div>
+              ) : (
+                <div style={{
+                  maxWidth: '85%',
+                  padding: 12,
+                  borderRadius: 16,
+                  background: m.role === 'user' 
+                    ? 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)' 
+                    : 'var(--surface-2)',
+                  border: m.role === 'user' ? 'none' : '1px solid var(--border)',
+                  color: m.role === 'user' ? 'white' : 'var(--text)',
+                  fontSize: 13,
+                  lineHeight: 1.6
+                }}>
+                  {m.text}
+                </div>
               )}
+            </div>
+          ))}
+
+          {loading && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--muted)', fontSize: 12 }}>
+              <Loader2 className="icon16" style={{ animation: 'spin 1s linear infinite' }} />
+              <span>Thinking...</span>
+            </div>
+          )}
+        </div>
+
+        {/* Input */}
+        <div style={{
+          padding: 'var(--space-3)',
+          borderTop: '1px solid var(--border)',
+          display: 'flex',
+          gap: 8
+        }}>
+          <input
+            className="input"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), onSend())}
+            placeholder="Type your question..."
+            disabled={loading}
+            style={{ flex: 1, height: 36, fontSize: 13 }}
+          />
+          <button 
+            className="btn btnPrimary" 
+            onClick={onSend}
+            disabled={loading || !input.trim()}
+            style={{ width: 36, height: 36, padding: 0 }}
+          >
+            <Send className="icon16" />
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Inline mode (embedded in page)
+  return (
+    <div className="section">
+      <div className="card" style={{ padding: 0 }}>
+        {/* Header */}
+        <div className="titleRow" style={{ padding: 'var(--space-4)', marginBottom: 0 }}>
+          <div className="sectionTitle" style={{ marginBottom: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
+            <Sparkles className="icon16" style={{ color: 'var(--primary)' }} />
+            Dash AI
+          </div>
+          <button className="btn" onClick={() => setOpen(!open)} style={{ height: 32 }}>
+            {open ? 'Hide' : 'Show'}
+          </button>
+        </div>
+
+        {open && (
+          <>
+            {/* Messages */}
+            <div 
+              ref={scrollerRef}
+              style={{
+                maxHeight: 400,
+                overflowY: 'auto',
+                padding: 'var(--space-4)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 'var(--space-4)'
+              }}
+            >
+              {messages.length === 0 && (
+                <div style={{ textAlign: 'center', color: 'var(--muted)', fontSize: 13 }}>
+                  Ask about your dashboard, child progress, or exam prep
+                </div>
+              )}
+
               {messages.map((m, i) => (
-                <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'} mx-3 my-2`}>
-                  <div
-                    className={`relative inline-block max-w-[96%] overflow-visible rounded-[28px] shadow-xl tracking-wide text-[16px] leading-8 whitespace-pre-wrap break-words px-10 py-7 
-                    ${m.role === 'user'
-                      ? 'bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white'
-                      : 'bg-[var(--surface-2)] border border-[var(--border)] text-[var(--text)]/92'}`}
-                  >
+                <div 
+                  key={i} 
+                  style={{ 
+                    display: 'flex', 
+                    justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start' 
+                  }}
+                >
+                  <div style={{
+                    maxWidth: '80%',
+                    padding: 'var(--space-3)',
+                    borderRadius: 12,
+                    background: m.role === 'user' 
+                      ? 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)' 
+                      : 'var(--surface-2)',
+                    border: m.role === 'user' ? 'none' : '1px solid var(--border)',
+                    color: m.role === 'user' ? 'white' : 'var(--text)',
+                    fontSize: 14,
+                    lineHeight: 1.6
+                  }}>
                     {m.text}
-                    {/* Tail */}
-                    <span
-                      className={`absolute w-[18px] h-[18px] rotate-45 bottom-4 ${m.role === 'user' ? 'right-[-10px] bg-gradient-to-r from-purple-600 to-fuchsia-600' : 'left-[-10px] bg-[var(--surface-2)] border border-[var(--border)]'}`}
-                    ></span>
                   </div>
                 </div>
               ))}
+
+              {loading && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--muted)' }}>
+                  <Loader2 className="icon16" style={{ animation: 'spin 1s linear infinite' }} />
+                  <span style={{ fontSize: 13 }}>Processing...</span>
+                </div>
+              )}
             </div>
-            <div className="flex items-center gap-2 px-4 py-3 border-t bg-gradient-to-r from-purple-900/35 to-fuchsia-900/25" style={{ borderColor: 'var(--border)' }}>
+
+            {/* Input */}
+            <div style={{
+              padding: 'var(--space-4)',
+              borderTop: '1px solid var(--border)',
+              display: 'flex',
+              gap: 10
+            }}>
               <input
+                className="input"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), onSend())}
-                placeholder="Type a question..."
-                className="flex-1 bg-purple-900/30 border border-purple-700/50 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/60 text-[var(--text)]"
+                onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), onSend())}
+                placeholder="Ask a question..."
+                disabled={loading}
+                style={{ flex: 1 }}
               />
-              <button onClick={onSend} className="p-3 rounded-xl bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:brightness-110 inline-flex items-center shadow-lg">
-                <Send className="w-4 h-4 text-white" />
+              <button 
+                className="btn btnPrimary" 
+                onClick={onSend}
+                disabled={loading || !input.trim()}
+              >
+                <Send className="icon16" />
               </button>
             </div>
-          </div>
+          </>
         )}
       </div>
     </div>

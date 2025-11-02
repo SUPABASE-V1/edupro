@@ -378,6 +378,11 @@ async function executeGenerateCapsExamTool(
     }
   }
   
+  // Detect grade level for age-appropriate validation
+  const gradeStr = String(grade).toLowerCase();
+  const isFoundationPhase = gradeStr.match(/\b(r|grade r|1|2|3|grade 1|grade 2|grade 3)\b/i);
+  const minQuestionLength = isFoundationPhase ? 10 : 20; // Shorter questions allowed for young learners
+  
   // Helper: detect if question provides textual dataset (so it's not visually dependent)
   const hasTextualDataset = (text: string): boolean => {
     const t = (text || '').toLowerCase();
@@ -431,11 +436,11 @@ async function executeGenerateCapsExamTool(
     for (const question of section.questions) {
       const qText: string = String(question.text || '').trim();
 
-      // Check for vague questions without data
-      if (qText.length < 20) {
+      // Check for vague questions without data (age-appropriate threshold)
+      if (qText.length < minQuestionLength) {
         return {
           success: false,
-          error: `Question \"${qText}\" is too short. Questions must be complete with all data.`
+          error: `Question "${qText}" is too short. Questions must be complete with all data.`
         }
       }
       
@@ -447,12 +452,18 @@ async function executeGenerateCapsExamTool(
         }
       }
       
-      // Check for action verbs (basic check)
-      const actionVerbs = /\b(calculate|compute|simplify|solve|list|identify|name|describe|explain|compare|choose|select|find|determine|evaluate|analyze|analyse|write|state|give|show|classify|match|order|arrange|label|prove|derive|expand|factorise|factorize|convert|graph|plot|sketch)\b/i
+      // Check for action verbs (age-appropriate - foundation phase uses simpler verbs)
+      const actionVerbs = isFoundationPhase
+        ? /\b(count|circle|match|choose|select|find|name|list|show|draw|color|colour|write|identify|point|tick|cross|trace|cut|paste|measure|sort|group|build|make)\b/i
+        : /\b(calculate|compute|simplify|solve|list|identify|name|describe|explain|compare|choose|select|find|determine|evaluate|analyze|analyse|write|state|give|show|classify|match|order|arrange|label|prove|derive|expand|factorise|factorize|convert|graph|plot|sketch|measure|estimate|construct)\b/i;
+      
       if (!actionVerbs.test(qText)) {
+        const suggestionVerbs = isFoundationPhase 
+          ? 'Count, Circle, Match, Choose, or Find'
+          : 'Calculate, Simplify, Solve, List, or Identify';
         return {
           success: false,
-          error: `Question \"${qText.substring(0, 80)}...\" missing clear action verb (e.g., Calculate, Simplify, Solve, List, Identify)`
+          error: `Question "${qText.substring(0, 80)}..." missing clear action verb (e.g., ${suggestionVerbs})`
         }
       }
     }

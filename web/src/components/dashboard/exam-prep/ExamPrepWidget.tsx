@@ -175,6 +175,8 @@ export function ExamPrepWidget({ onAskDashAI, guestMode = false }: ExamPrepWidge
   const [selectedSubject, setSelectedSubject] = useState<string>('Mathematics');
   const [selectedExamType, setSelectedExamType] = useState<string>('practice_test');
   const [selectedLanguage, setSelectedLanguage] = useState<SouthAfricanLanguage>('en-ZA');
+  const [showPromptPreview, setShowPromptPreview] = useState(false);
+  const [customPrompt, setCustomPrompt] = useState('');
 
   const getPhase = (grade: string): keyof typeof SUBJECTS_BY_PHASE => {
     if (grade === 'grade_r' || grade === 'grade_1' || grade === 'grade_2' || grade === 'grade_3') return 'foundation';
@@ -661,14 +663,155 @@ Generate 30 flashcards for ${gradeInfo?.label} ${selectedSubject} covering essen
       display = `Flashcards: ${gradeInfo?.label} ${selectedSubject} • 30 Essential CAPS Concepts (${languageName})`;
     }
     
+    // Store prompt and display for preview
+    setCustomPrompt(prompt);
+    setShowPromptPreview(true);
+  };
+
+  const handleConfirmGenerate = () => {
+    if (!onAskDashAI || !customPrompt) return;
+    
     // For practice tests, enable interactive mode
     const isInteractive = selectedExamType === 'practice_test';
+    const display = `${EXAM_TYPES.find(e => e.id === selectedExamType)?.label}: ${gradeInfo?.label} ${selectedSubject} (${LANGUAGE_OPTIONS[selectedLanguage]})`;
+    
+    onAskDashAI(customPrompt, display, selectedLanguage, isInteractive);
+    setShowPromptPreview(false);
+  };
 
-    onAskDashAI(prompt, display, selectedLanguage, isInteractive);
+  const handleCancelPreview = () => {
+    setShowPromptPreview(false);
+    setCustomPrompt('');
   };
 
   return (
     <>
+      {/* Prompt Preview Modal */}
+      {showPromptPreview && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+          padding: 'var(--space-4)'
+        }}>
+          <div className="card" style={{
+            maxWidth: 700,
+            width: '100%',
+            maxHeight: '80vh',
+            display: 'flex',
+            flexDirection: 'column',
+            padding: 0
+          }}>
+            {/* Header */}
+            <div style={{
+              padding: 'var(--space-4)',
+              borderBottom: '1px solid var(--border)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                <Sparkles className="icon20" style={{ color: 'var(--primary)' }} />
+                <span style={{ fontWeight: 700, fontSize: 16 }}>Review & Customize Prompt</span>
+              </div>
+              <button onClick={handleCancelPreview} className="iconBtn" aria-label="Close">
+                ✕
+              </button>
+            </div>
+
+            {/* Content */}
+            <div style={{
+              padding: 'var(--space-4)',
+              flex: 1,
+              overflowY: 'auto'
+            }}>
+              <div style={{ marginBottom: 'var(--space-3)' }}>
+                <div style={{ fontWeight: 600, marginBottom: 'var(--space-2)', fontSize: 14 }}>
+                  Selected Configuration:
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2)' }}>
+                  <span className="badge" style={{ background: 'var(--primary)', color: '#fff' }}>
+                    {gradeInfo?.label}
+                  </span>
+                  <span className="badge" style={{ background: 'var(--accent)', color: '#fff' }}>
+                    {selectedSubject}
+                  </span>
+                  <span className="badge" style={{ background: 'var(--warning)', color: '#fff' }}>
+                    {EXAM_TYPES.find(e => e.id === selectedExamType)?.label}
+                  </span>
+                  <span className="badge" style={{ background: 'var(--danger)', color: '#fff' }}>
+                    {LANGUAGE_OPTIONS[selectedLanguage]}
+                  </span>
+                </div>
+              </div>
+
+              <div style={{ marginBottom: 'var(--space-3)' }}>
+                <label style={{ display: 'block', fontWeight: 600, marginBottom: 'var(--space-2)', fontSize: 14 }}>
+                  AI Prompt (You can edit this):
+                </label>
+                <textarea
+                  value={customPrompt}
+                  onChange={(e) => setCustomPrompt(e.target.value)}
+                  style={{
+                    width: '100%',
+                    minHeight: 300,
+                    padding: 'var(--space-3)',
+                    borderRadius: 'var(--radius-2)',
+                    border: '1px solid var(--border)',
+                    background: 'var(--surface)',
+                    color: 'var(--text)',
+                    fontSize: 13,
+                    fontFamily: 'monospace',
+                    resize: 'vertical'
+                  }}
+                  placeholder="Edit the prompt to customize your exam generation..."
+                />
+              </div>
+
+              <div className="card" style={{
+                padding: 'var(--space-3)',
+                background: 'rgba(59, 130, 246, 0.1)',
+                border: '1px solid rgba(59, 130, 246, 0.3)'
+              }}>
+                <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                  <strong>💡 Customization Tips:</strong>
+                  <ul style={{ margin: '0.5rem 0', paddingLeft: '1.5rem' }}>
+                    <li>Want specific topics? Add: "Focus on [topic1], [topic2]"</li>
+                    <li>Adjust difficulty? Add: "Make questions [easier/harder] than usual"</li>
+                    <li>Need more/fewer questions? Modify the marks allocation</li>
+                    <li>Want a specific theme? Add: "Use [theme] context for all questions"</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer Actions */}
+            <div style={{
+              padding: 'var(--space-4)',
+              borderTop: '1px solid var(--border)',
+              display: 'flex',
+              gap: 'var(--space-3)',
+              justifyContent: 'flex-end'
+            }}>
+              <button onClick={handleCancelPreview} className="btn">
+                Cancel
+              </button>
+              <button onClick={handleConfirmGenerate} className="btn btnPrimary">
+                <Sparkles className="icon16" />
+                Generate Exam
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="sectionTitle" style={{ marginBottom: 'var(--space-4)' }}>
         <GraduationCap className="w-5 h-5" style={{ color: 'var(--primary)' }} />
         CAPS Exam Preparation
