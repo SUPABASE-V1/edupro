@@ -60,7 +60,7 @@ export function ExamInteractiveView({ exam, generationId, onClose }: ExamInterac
         if (!question) continue;
         
         try {
-          const { data } = await supabase.functions.invoke('ai-proxy-simple', {
+          const { data, error: invokeError } = await supabase.functions.invoke('ai-proxy-simple', {
             body: {
               payload: {
                 prompt: `You are a helpful South African tutor explaining exam answers to ${exam.grade || 'Grade 12'} students.
@@ -85,14 +85,32 @@ Use simple, encouraging language. Be concise but thorough.`,
             }
           });
           
+          if (invokeError) {
+            console.error(`[ExamInteractiveView] AI Error for ${qId}:`, invokeError);
+            setExplanations(prev => ({
+              ...prev,
+              [qId]: '?? **Failed to load explanation**\n\nPlease try again later or contact support if the issue persists.'
+            }));
+            continue;
+          }
+          
           if (data?.content) {
             setExplanations(prev => ({
               ...prev,
               [qId]: data.content
             }));
+          } else {
+            setExplanations(prev => ({
+              ...prev,
+              [qId]: '?? **No explanation available**\n\nThe AI did not return a response. Please try again.'
+            }));
           }
         } catch (error) {
-          console.error(`[ExamInteractiveView] Error getting explanation for ${qId}:`, error);
+          console.error(`[ExamInteractiveView] Exception for ${qId}:`, error);
+          setExplanations(prev => ({
+            ...prev,
+            [qId]: '?? **An error occurred**\n\nWe encountered an unexpected error while fetching the explanation. Please try again.'
+          }));
         }
       }
     }
@@ -294,7 +312,7 @@ Use simple, encouraging language. Be concise but thorough.`,
                   color: 'var(--primary)'
                 }}>
                   <Bot className="icon20" />
-                  <span style={{ fontSize: 15 }}>💡 Dash AI Explanation</span>
+                  <span style={{ fontSize: 15 }}>?? Dash AI Explanation</span>
                 </div>
                 <div className="markdown-content" style={{ fontSize: 14, lineHeight: 1.6 }}>
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>
@@ -345,10 +363,10 @@ Use simple, encouraging language. Be concise but thorough.`,
               {Math.round((score.earned / score.total) * 100)}% Score
             </div>
             <p className="muted" style={{ fontSize: 13, marginTop: 'var(--space-2)', marginBottom: 0 }}>
-              {score.earned / score.total >= 0.8 ? '🌟 Outstanding!' :
-               score.earned / score.total >= 0.7 ? '✨ Well done!' :
-               score.earned / score.total >= 0.5 ? '👍 Good effort!' :
-               '💪 Keep practicing!'}
+              {score.earned / score.total >= 0.8 ? '?? Outstanding!' :
+               score.earned / score.total >= 0.7 ? '? Well done!' :
+               score.earned / score.total >= 0.5 ? '?? Good effort!' :
+               '?? Keep practicing!'}
             </p>
           </div>
         )}
@@ -459,12 +477,12 @@ Use simple, encouraging language. Be concise but thorough.`,
             {loadingExplanations 
               ? 'Getting Explanations...' 
               : Object.keys(explanations).length > 0
-              ? '✓ Explanations Loaded'
-              : '💡 Get AI Explanations'}
+              ? '? Explanations Loaded'
+              : '?? Get AI Explanations'}
           </button>
           {Object.keys(explanations).length > 0 && (
             <p className="muted" style={{ fontSize: 12, marginTop: 'var(--space-2)', marginBottom: 0 }}>
-              ✨ Scroll up to see explanations for each incorrect answer
+              ? Scroll up to see explanations for each incorrect answer
             </p>
           )}
         </div>

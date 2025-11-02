@@ -7,6 +7,8 @@ import { parseExamMarkdown } from '@/lib/examParser';
 import { FileText, Download, TrendingUp, Trophy, ChevronLeft, Calendar } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { formatDistanceToNow } from 'date-fns';
+import { ParentShell } from '@/components/dashboard/parent/ParentShell';
+import { useParentDashboardData } from '@/lib/hooks/useParentDashboardData';
 
 interface SavedExam {
   id: string;
@@ -35,6 +37,9 @@ export default function MyExamsPage() {
     averageScore: 0,
     bestScore: 0
   });
+  
+  // Get parent dashboard data for shell
+  const { userName, preschoolName, hasOrganization, tenantSlug } = useParentDashboardData();
   
   useEffect(() => {
     fetchMyExams();
@@ -112,12 +117,17 @@ export default function MyExamsPage() {
   }
   
   return (
-    <div className="app">
+    <ParentShell
+      tenantSlug={tenantSlug}
+      userName={userName}
+      preschoolName={preschoolName}
+      hasOrganization={hasOrganization}
+    >
       <div className="container" style={{ maxWidth: 900 }}>
         {/* Header */}
         <div style={{ marginBottom: 'var(--space-4)' }}>
           <button
-            onClick={() => router.back()}
+            onClick={() => router.push('/dashboard/parent')}
             className="btn"
             style={{ marginBottom: 'var(--space-3)' }}
           >
@@ -220,7 +230,7 @@ export default function MyExamsPage() {
                           {exam.display_title}
                         </div>
                         <div style={{ fontSize: 13, color: 'var(--muted)' }}>
-                          {exam.grade.replace('grade_', 'Grade ')} ? {exam.subject}
+                          {exam.grade.replace('grade_', 'Grade ')} • {exam.subject}
                         </div>
                       </div>
                       
@@ -294,6 +304,6 @@ export default function MyExamsPage() {
           </div>
         )}
       </div>
-    </div>
+    </ParentShell>
   );
 }
