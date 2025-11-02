@@ -42,6 +42,7 @@ function GenerateExamContent() {
   const subject = searchParams.get('subject');
   const examType = searchParams.get('type');
   const language = searchParams.get('language') || 'en-ZA';
+  const customPromptParam = searchParams.get('prompt');
   
   useEffect(() => {
     if (!grade || !subject || !examType) {
@@ -75,7 +76,8 @@ function GenerateExamContent() {
       // Format grade for display
       const gradeDisplay = grade.replace('grade_', 'Grade ').replace('_', ' ');
       
-      const prompt = `Generate an interactive, age-appropriate practice examination paper for ${gradeDisplay} ${subject} strictly aligned to the CAPS curriculum.
+      // Use custom prompt if provided, otherwise use default
+      const prompt = customPromptParam || `Generate an interactive, age-appropriate practice examination paper for ${gradeDisplay} ${subject} strictly aligned to the CAPS curriculum.
 
 Requirements:
 - Include diagrams where appropriate (charts, flowcharts, etc.)
@@ -253,6 +255,20 @@ Requirements:
               width: '80px',
               height: '80px'
             }}>
+              <div style={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                animation: 'spin 2s linear infinite'
+              }}>
+                <Loader2 
+                  className="icon32" 
+                  style={{ 
+                    color: 'var(--primary)',
+                  }} 
+                />
+              </div>
               <Sparkles 
                 className="icon32" 
                 style={{ 
@@ -262,18 +278,6 @@ Requirements:
                   transform: 'translate(-50%, -50%)',
                   color: 'var(--primary)',
                   animation: 'pulse 2s ease-in-out infinite'
-                }} 
-              />
-              <Loader2 
-                className="icon32" 
-                style={{ 
-                  position: 'absolute',
-                  top: '50%',
-                  left: '50%',
-                  transform: 'translate(-50%, -50%)',
-                  animation: 'spin 1s linear infinite',
-                  color: 'var(--primary)',
-                  opacity: 0.3
                 }} 
               />
             </div>
@@ -313,7 +317,7 @@ Requirements:
                 height: '8px',
                 borderRadius: '50%',
                 background: 'var(--primary)',
-                animation: 'pulse 1.5s ease-in-out infinite'
+                animation: 'pulseOpacity 1.5s ease-in-out infinite'
               }} />
               <span style={{ fontSize: '14px', color: 'var(--muted)' }}>
                 {progress}
