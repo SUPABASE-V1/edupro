@@ -9,6 +9,7 @@ import { useChildMetrics } from '@/lib/hooks/parent/useChildMetrics';
 import { useTenantSlug } from '@/lib/tenant/useTenantSlug';
 import { useUserProfile } from '@/lib/hooks/useUserProfile';
 import { useUnreadMessages } from '@/lib/hooks/parent/useUnreadMessages';
+import { useUserType } from '@/lib/hooks/useUserType';
 import {
   MessageCircle,
   Calendar,
@@ -39,6 +40,9 @@ export default function ParentDashboard() {
   const supabase = createClient();
   const [userId, setUserId] = useState<string>();
   const [authLoading, setAuthLoading] = useState(true);
+  
+  // User type detection
+  const { profile: userTypeProfile, isStandalone, isAffiliated } = useUserType();
   const [greeting, setGreeting] = useState('');
   const [showAskAI, setShowAskAI] = useState(false);
   const [aiPrompt, setAIPrompt] = useState('');
@@ -126,6 +130,12 @@ export default function ParentDashboard() {
       }
 
       setUserId(session.user.id);
+      
+      // Redirect standalone parents to their dedicated dashboard
+      if (userTypeProfile && isStandalone) {
+        router.push('/dashboard/parent/standalone');
+        return;
+      }
 
       // Set greeting based on time of day
       const hour = new Date().getHours();
@@ -298,17 +308,17 @@ export default function ParentDashboard() {
           <div className="leftGroup">
             {preschoolName ? (
               <div className="chip" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ fontSize: 16 }}>🎓</span>
+                <span style={{ fontSize: 16 }}>??</span>
                 <span style={{ fontWeight: 600 }}>{preschoolName}</span>
               </div>
             ) : profile?.preschoolId ? (
               <div className="chip" style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--warning-bg)', color: 'var(--warning)' }}>
-                <span style={{ fontSize: 16 }}>⚠️</span>
+                <span style={{ fontSize: 16 }}>??</span>
                 <span style={{ fontWeight: 600 }}>School Info Loading...</span>
               </div>
             ) : (
               <div className="chip" style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--warning-bg)', color: 'var(--warning)' }}>
-                <span style={{ fontSize: 16 }}>⚠️</span>
+                <span style={{ fontSize: 16 }}>??</span>
                 <span style={{ fontWeight: 600 }}>No School Linked</span>
               </div>
             )}
@@ -400,7 +410,7 @@ export default function ParentDashboard() {
                   padding: 'var(--space-5)',
                   textAlign: 'center'
                 }}>
-                  <div style={{ fontSize: 48, marginBottom: 16 }}>🕒</div>
+                  <div style={{ fontSize: 48, marginBottom: 16 }}>??</div>
                   <h2 style={{ margin: 0, marginBottom: 8, fontSize: 20, fontWeight: 700 }}>
                     Registration Pending
                   </h2>
@@ -418,12 +428,12 @@ export default function ParentDashboard() {
               <div className="card" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white', marginBottom: 16, cursor: 'pointer' }} onClick={() => router.push('/dashboard/parent/preschool')}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: 24 }}>🎓</span>
+                    <span style={{ fontSize: 24 }}>??</span>
                     <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>{preschoolName}</h2>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', paddingLeft: 32 }}>
                     <p style={{ margin: 0, fontSize: 14, opacity: 0.9 }}>{roleDisplay}</p>
-                    <span style={{ opacity: 0.7 }}>•</span>
+                    <span style={{ opacity: 0.7 }}>?</span>
                     <TierBadge userId={userId} size="sm" showUpgrade />
                   </div>
                 </div>
@@ -499,7 +509,7 @@ export default function ParentDashboard() {
                           {child.firstName} {child.lastName}
                         </div>
                         <div style={{ fontSize: 12, color: 'var(--muted)' }}>
-                          {child.grade}{child.className ? ` • ${child.className}` : ''}
+                          {child.grade}{child.className ? ` ? ${child.className}` : ''}
                         </div>
                       </div>
                       {activeChildId === child.id && (
