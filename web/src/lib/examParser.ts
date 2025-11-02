@@ -17,6 +17,8 @@ export interface ExamQuestion {
 
 export interface ParsedExam {
   title: string;
+  grade?: string;
+  subject?: string;
   instructions: string[];
   sections: {
     title: string;

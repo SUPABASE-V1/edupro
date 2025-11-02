@@ -1,11 +1,16 @@
 'use client';
 
 import { useState } from 'react';
-import { CheckCircle2, XCircle, FileCheck, AlertCircle } from 'lucide-react';
+import { CheckCircle2, XCircle, FileCheck, AlertCircle, Bot, Sparkles } from 'lucide-react';
 import { ParsedExam, ExamQuestion, gradeAnswer } from '@/lib/examParser';
+import { useExamSession } from '@/lib/hooks/useExamSession';
+import { createClient } from '@/lib/supabase/client';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface ExamInteractiveViewProps {
   exam: ParsedExam;
+  generationId?: string | null;
   onClose?: () => void;
 }
 
@@ -19,11 +24,16 @@ interface QuestionFeedback {
   marks: number;
 }
 
-export function ExamInteractiveView({ exam, onClose }: ExamInteractiveViewProps) {
+export function ExamInteractiveView({ exam, generationId, onClose }: ExamInteractiveViewProps) {
   const [studentAnswers, setStudentAnswers] = useState<StudentAnswers>({});
   const [submitted, setSubmitted] = useState(false);
   const [feedback, setFeedback] = useState<Record<string, QuestionFeedback>>({});
   const [score, setScore] = useState<{ earned: number; total: number } | null>(null);
+  const [explanations, setExplanations] = useState<Record<string, string>>({});
+  const [loadingExplanations, setLoadingExplanations] = useState(false);
+  const [saving, setSaving] = useState(false);
+  
+  const { saveProgress } = useExamSession(generationId || null);
 
   const handleAnswerChange = (questionId: string, answer: string) => {
     setStudentAnswers((prev) => ({
@@ -31,8 +41,67 @@ export function ExamInteractiveView({ exam, onClose }: ExamInteractiveViewProps)
       [questionId]: answer,
     }));
   };
+  
+  /**
+   * Get AI-powered explanations for incorrect answers
+   */
+  const getAIExplanations = async () => {
+    setLoadingExplanations(true);
+    const supabase = createClient();
+    
+    // Get all questions
+    const allQuestions = exam.sections.flatMap(s => s.questions);
+    
+    // For each wrong answer, ask Dash AI for explanation
+    for (const [qId, qFeedback] of Object.entries(feedback)) {
+      if (!qFeedback.isCorrect) {
+        const question = allQuestions.find(q => q.id === qId);
+        
+        if (!question) continue;
+        
+        try {
+          const { data } = await supabase.functions.invoke('ai-proxy-simple', {
+            body: {
+              payload: {
+                prompt: `You are a helpful South African tutor explaining exam answers to ${exam.grade || 'Grade 12'} students.
 
-  const handleSubmit = () => {
+QUESTION (${question.marks} marks): ${question.text}
+${question.options ? `\nOPTIONS:\n${question.options.map((opt, idx) => `${String.fromCharCode(65 + idx)}. ${opt}`).join('\n')}` : ''}
+
+STUDENT'S ANSWER: ${studentAnswers[qId] || 'No answer provided'}
+
+CORRECT ANSWER: ${question.correctAnswer || 'See marking memorandum'}
+
+Please provide a clear, encouraging explanation that includes:
+1. Why the student's answer is incorrect
+2. The correct approach step-by-step
+3. Common mistakes to avoid
+4. A helpful tip to remember this concept
+
+Use simple, encouraging language. Be concise but thorough.`,
+                context: 'exam_explanation',
+                metadata: { language: 'en-ZA', grade: exam.grade || 'Grade 12' }
+              }
+            }
+          });
+          
+          if (data?.content) {
+            setExplanations(prev => ({
+              ...prev,
+              [qId]: data.content
+            }));
+          }
+        } catch (error) {
+          console.error(`[ExamInteractiveView] Error getting explanation for ${qId}:`, error);
+        }
+      }
+    }
+    
+    setLoadingExplanations(false);
+  };
+
+  const handleSubmit = async () => {
+    setSaving(true);
     const feedbackResults: Record<string, QuestionFeedback> = {};
     let earnedMarks = 0;
 
@@ -46,8 +115,20 @@ export function ExamInteractiveView({ exam, onClose }: ExamInteractiveViewProps)
     });
 
     setFeedback(feedbackResults);
-    setScore({ earned: earnedMarks, total: exam.totalMarks });
+    const finalScore = { earned: earnedMarks, total: exam.totalMarks };
+    setScore(finalScore);
     setSubmitted(true);
+
+    // Save progress to database
+    await saveProgress(
+      studentAnswers,
+      finalScore,
+      exam.title,
+      exam.grade || 'Grade 12',
+      exam.subject || 'General'
+    );
+    
+    setSaving(false);
 
     // Scroll to top to see results
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -167,31 +248,62 @@ export function ExamInteractiveView({ exam, onClose }: ExamInteractiveViewProps)
 
         {/* Feedback */}
         {submitted && questionFeedback && (
-          <div
-            style={{
-              marginTop: 'var(--space-3)',
-              padding: 'var(--space-3)',
-              background: questionFeedback.isCorrect
-                ? 'rgba(52, 199, 89, 0.1)'
-                : 'rgba(255, 59, 48, 0.1)',
-              borderRadius: 'var(--radius-2)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 'var(--space-2)',
-            }}
-          >
-            {questionFeedback.isCorrect ? (
-              <CheckCircle2 className="w-5 h-5" style={{ color: 'var(--success)' }} />
-            ) : (
-              <XCircle className="w-5 h-5" style={{ color: 'var(--danger)' }} />
-            )}
-            <div style={{ flex: 1 }}>
-              <p style={{ fontSize: 13, margin: 0 }}>{questionFeedback.feedback}</p>
-              <p className="muted" style={{ fontSize: 12, marginTop: 4, marginBottom: 0 }}>
-                Marks awarded: {questionFeedback.marks}/{question.marks}
-              </p>
+          <>
+            <div
+              style={{
+                marginTop: 'var(--space-3)',
+                padding: 'var(--space-3)',
+                background: questionFeedback.isCorrect
+                  ? 'rgba(52, 199, 89, 0.1)'
+                  : 'rgba(255, 59, 48, 0.1)',
+                borderRadius: 'var(--radius-2)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 'var(--space-2)',
+              }}
+            >
+              {questionFeedback.isCorrect ? (
+                <CheckCircle2 className="w-5 h-5" style={{ color: 'var(--success)' }} />
+              ) : (
+                <XCircle className="w-5 h-5" style={{ color: 'var(--danger)' }} />
+              )}
+              <div style={{ flex: 1 }}>
+                <p style={{ fontSize: 13, margin: 0 }}>{questionFeedback.feedback}</p>
+                <p className="muted" style={{ fontSize: 12, marginTop: 4, marginBottom: 0 }}>
+                  Marks awarded: {questionFeedback.marks}/{question.marks}
+                </p>
+              </div>
             </div>
-          </div>
+            
+            {/* AI Explanation (if available) */}
+            {explanations[question.id] && (
+              <div style={{
+                marginTop: 'var(--space-3)',
+                padding: 'var(--space-4)',
+                background: 'linear-gradient(135deg, rgba(124, 58, 237, 0.05), rgba(124, 58, 237, 0.1))',
+                borderRadius: 'var(--radius-2)',
+                borderLeft: '3px solid var(--primary)',
+                boxShadow: '0 2px 8px rgba(124, 58, 237, 0.1)'
+              }}>
+                <div style={{ 
+                  fontWeight: 600, 
+                  marginBottom: 'var(--space-3)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  color: 'var(--primary)'
+                }}>
+                  <Bot className="icon20" />
+                  <span style={{ fontSize: 15 }}>💡 Dash AI Explanation</span>
+                </div>
+                <div className="markdown-content" style={{ fontSize: 14, lineHeight: 1.6 }}>
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {explanations[question.id]}
+                  </ReactMarkdown>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
     );
@@ -296,16 +408,65 @@ export function ExamInteractiveView({ exam, onClose }: ExamInteractiveViewProps)
 
       {/* Submit Button */}
       {!submitted && (
-        <div style={{ position: 'sticky', bottom: 0, padding: 'var(--space-4)', background: 'var(--background)', borderTop: '1px solid var(--border)' }}>
+        <div style={{ position: 'sticky', bottom: 0, padding: 'var(--space-4)', background: 'var(--bg)', borderTop: '1px solid var(--border)', zIndex: 10 }}>
           <button
             className="btn btnPrimary"
             onClick={handleSubmit}
-            disabled={answeredCount === 0}
+            disabled={answeredCount === 0 || saving}
             style={{ width: '100%', fontSize: 16, padding: 'var(--space-4)' }}
           >
             <FileCheck className="icon16" />
-            Submit Exam ({answeredCount}/{totalQuestions} answered)
+            {saving ? 'Submitting...' : `Submit Exam (${answeredCount}/${totalQuestions} answered)`}
           </button>
+          {answeredCount === 0 && (
+            <p className="muted text-center" style={{ fontSize: 12, marginTop: 'var(--space-2)', marginBottom: 0 }}>
+              Please answer at least one question before submitting
+            </p>
+          )}
+        </div>
+      )}
+      
+      {/* AI Explanations Button */}
+      {submitted && Object.values(feedback).some(f => !f.isCorrect) && (
+        <div style={{ 
+          marginTop: 'var(--space-4)', 
+          padding: 'var(--space-4)',
+          background: 'linear-gradient(135deg, var(--surface), var(--surface-2))',
+          borderRadius: 'var(--radius-2)',
+          border: '1px solid var(--border)',
+          textAlign: 'center'
+        }}>
+          <div style={{ marginBottom: 'var(--space-3)' }}>
+            <Sparkles style={{ width: 32, height: 32, color: 'var(--primary)', margin: '0 auto' }} />
+          </div>
+          <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 'var(--space-2)' }}>
+            Need help understanding your mistakes?
+          </h3>
+          <p className="muted" style={{ fontSize: 14, marginBottom: 'var(--space-4)', maxWidth: 500, margin: '0 auto var(--space-4)' }}>
+            Dash AI can provide detailed step-by-step explanations for each question you got wrong, helping you learn from your mistakes.
+          </p>
+          <button 
+            className="btn btnPrimary"
+            onClick={getAIExplanations}
+            disabled={loadingExplanations || Object.keys(explanations).length > 0}
+            style={{ 
+              fontSize: 16, 
+              padding: 'var(--space-3) var(--space-6)',
+              minWidth: 280
+            }}
+          >
+            <Bot className="icon20" />
+            {loadingExplanations 
+              ? 'Getting Explanations...' 
+              : Object.keys(explanations).length > 0
+              ? '✓ Explanations Loaded'
+              : '💡 Get AI Explanations'}
+          </button>
+          {Object.keys(explanations).length > 0 && (
+            <p className="muted" style={{ fontSize: 12, marginTop: 'var(--space-2)', marginBottom: 0 }}>
+              ✨ Scroll up to see explanations for each incorrect answer
+            </p>
+          )}
         </div>
       )}
 

@@ -8,6 +8,7 @@ import remarkGfm from 'remark-gfm';
 import { parseExamMarkdown } from '@/lib/examParser';
 import { ExamInteractiveView } from './exam-prep/ExamInteractiveView';
 import { useAIConversation } from '@/lib/hooks/useAIConversation';
+import { useExamSession } from '@/lib/hooks/useExamSession';
 
 const TRUTHY_ENV_VALUES = new Set(['true', '1', 'yes', 'y', 'on', 'enabled']);
 const FALSY_ENV_VALUES = new Set(['false', '0', 'no', 'n', 'off', 'disabled']);
@@ -62,6 +63,7 @@ export function AskAIWidget({
   const [loading, setLoading] = useState(false);
   const [hasProcessedInitial, setHasProcessedInitial] = useState(false);
   const [interactiveExam, setInteractiveExam] = useState<any>(null);
+  const [currentGenerationId, setCurrentGenerationId] = useState<string | null>(null);
   const scrollerRef = useRef<HTMLDivElement>(null);
   const examSetRef = useRef(false);
   
@@ -70,6 +72,9 @@ export function AskAIWidget({
     messages: persistedMessages, 
     saveMessages 
   } = useAIConversation(conversationId || null);
+  
+  // NEW: Exam session management
+  const { saveExamGeneration } = useExamSession(null);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -199,10 +204,40 @@ export function AskAIWidget({
                 
                 if (resultData.success && resultData.data?.sections) {
                   examSetRef.current = true;
+                  
+                  // Save to database before showing
+                  try {
+                    const generationId = await saveExamGeneration(
+                      resultData.data,
+                      initialPrompt, // original prompt
+                      resultData.data.title || 'Generated Exam',
+                      resultData.data.grade,
+                      resultData.data.subject
+                    );
+                    setCurrentGenerationId(generationId);
+                  } catch (error) {
+                    console.error('[DashAI] Failed to save exam:', error);
+                  }
+                  
                   setInteractiveExam(resultData.data);
                   return;
                 } else if (resultData.sections) {
                   examSetRef.current = true;
+                  
+                  // Save to database before showing
+                  try {
+                    const generationId = await saveExamGeneration(
+                      resultData,
+                      initialPrompt, // original prompt
+                      resultData.title || 'Generated Exam',
+                      resultData.grade,
+                      resultData.subject
+                    );
+                    setCurrentGenerationId(generationId);
+                  } catch (error) {
+                    console.error('[DashAI] Failed to save exam:', error);
+                  }
+                  
                   setInteractiveExam(resultData);
                   return;
                 }
@@ -217,6 +252,21 @@ export function AskAIWidget({
             const parsedExam = parseExamMarkdown(content);
             if (parsedExam) {
               examSetRef.current = true;
+              
+              // Save to database before showing
+              try {
+                const generationId = await saveExamGeneration(
+                  parsedExam,
+                  initialPrompt, // original prompt
+                  parsedExam.title,
+                  parsedExam.grade,
+                  parsedExam.subject
+                );
+                setCurrentGenerationId(generationId);
+              } catch (error) {
+                console.error('[DashAI] Failed to save exam:', error);
+              }
+              
               setInteractiveExam(parsedExam);
             }
           }
@@ -329,6 +379,7 @@ export function AskAIWidget({
         <div style={{ height: '100%', overflowY: 'auto' }}>
           <ExamInteractiveView
             exam={interactiveExam}
+            generationId={currentGenerationId}
             onClose={() => setInteractiveExam(null)}
           />
         </div>

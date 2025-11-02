@@ -102,6 +102,7 @@ export default function MyExamsPage() {
     return (
       <ExamInteractiveView
         exam={selectedExam}
+        generationId={selectedExam.generationId}
         onClose={() => {
           setSelectedExam(null);
           fetchMyExams(); // Refresh to show new scores
