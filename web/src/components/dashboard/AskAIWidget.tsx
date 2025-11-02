@@ -139,42 +139,145 @@ export function AskAIWidget({
         throw error;
       }
       
-        // Handle tool execution
-        if (data?.tool_use && data?.tool_results) {
-          let toolResults;
-          const resultContent = data.tool_results[0]?.content;
-          
-          // Try to parse as JSON, but handle error strings gracefully
-          if (typeof resultContent === 'string') {
-            if (resultContent.startsWith('Error:') || resultContent.startsWith('{') === false) {
-              // It's an error message, not JSON
-              toolResults = { error: resultContent };
-            } else {
-              try {
-                toolResults = JSON.parse(resultContent);
-              } catch (e) {
-                console.error('[DashAI] Failed to parse tool result as JSON:', e);
-                toolResults = { error: resultContent };
+      // Handle interactive exam mode FIRST (before adding to messages)
+      if (enableInteractive && !examSetRef.current) {
+        if (data?.tool_results && Array.isArray(data.tool_results)) {
+          for (const toolResult of data.tool_results) {
+            try {
+              // Check if content is an error message first
+              if (typeof toolResult.content === 'string') {
+                // Try to parse as JSON, but handle errors gracefully
+                if (toolResult.content.startsWith('Error:') || toolResult.content.startsWith('{') === false) {
+                  console.error('[DashAI] Tool execution failed:', toolResult.content);
+                  setMessages(prev => [...prev, {
+                    role: 'assistant',
+                    text: `❌ Exam generation failed: ${toolResult.content}\n\nPlease try again with different parameters.`,
+                  }]);
+                  continue;
+                }
               }
+              
+              const resultData = typeof toolResult.content === 'string' 
+                ? JSON.parse(toolResult.content)
+                : toolResult.content;
+              
+              if (resultData.success && resultData.data?.sections) {
+                examSetRef.current = true;
+                
+                // Save to database before showing
+                try {
+                  const generationId = await saveExamGeneration(
+                    resultData.data,
+                    text, // original prompt
+                    resultData.data.title || 'Generated Exam',
+                    resultData.data.grade,
+                    resultData.data.subject
+                  );
+                  setCurrentGenerationId(generationId);
+                } catch (error) {
+                  console.error('[DashAI] Failed to save exam:', error);
+                }
+                
+                setInteractiveExam(resultData.data);
+                setLoading(false);
+                return;
+              } else if (resultData.sections) {
+                examSetRef.current = true;
+                
+                // Save to database before showing
+                try {
+                  const generationId = await saveExamGeneration(
+                    resultData,
+                    text, // original prompt
+                    resultData.title || 'Generated Exam',
+                    resultData.grade,
+                    resultData.subject
+                  );
+                  setCurrentGenerationId(generationId);
+                } catch (error) {
+                  console.error('[DashAI] Failed to save exam:', error);
+                }
+                
+                setInteractiveExam(resultData);
+                setLoading(false);
+                return;
+              }
+            } catch (e) {
+              console.error('[DashAI] Failed to parse tool result:', e);
+              // Show user-friendly error message
+              setMessages(prev => [...prev, {
+                role: 'assistant',
+                text: `❌ Failed to process exam generation result. The AI may have returned an error:\n\n${toolResult.content}\n\nPlease try again.`,
+              }]);
             }
-          } else {
-            toolResults = resultContent;
           }
-          
-          setMessages((m) => [
-            ...m,
-            { 
-              role: 'tool', 
-              text: `🔧 ${data.tool_use[0]?.name}`,
-              tool: {
-                name: data.tool_use[0]?.name,
-                input: data.tool_use[0]?.input,
-                results: toolResults
-              }
-            }
-          ]);
         }
+        
+        // Fallback to markdown parsing
+        const content = data?.content || data?.error?.message || '';
+        if (content) {
+          const parsedExam = parseExamMarkdown(content);
+          if (parsedExam) {
+            examSetRef.current = true;
+            
+            // Save to database before showing
+            try {
+              const generationId = await saveExamGeneration(
+                parsedExam,
+                text, // original prompt
+                parsedExam.title,
+                parsedExam.grade,
+                parsedExam.subject
+              );
+              setCurrentGenerationId(generationId);
+            } catch (error) {
+              console.error('[DashAI] Failed to save exam:', error);
+            }
+            
+            setInteractiveExam(parsedExam);
+            setLoading(false);
+            return; // Don't add to messages, we're showing it interactively
+          }
+        }
+      }
       
+      // Handle tool execution (non-interactive mode)
+      if (data?.tool_use && data?.tool_results) {
+        let toolResults;
+        const resultContent = data.tool_results[0]?.content;
+        
+        // Try to parse as JSON, but handle error strings gracefully
+        if (typeof resultContent === 'string') {
+          if (resultContent.startsWith('Error:') || resultContent.startsWith('{') === false) {
+            // It's an error message, not JSON
+            toolResults = { error: resultContent };
+          } else {
+            try {
+              toolResults = JSON.parse(resultContent);
+            } catch (e) {
+              console.error('[DashAI] Failed to parse tool result as JSON:', e);
+              toolResults = { error: resultContent };
+            }
+          }
+        } else {
+          toolResults = resultContent;
+        }
+        
+        setMessages((m) => [
+          ...m,
+          { 
+            role: 'tool', 
+            text: `🔧 ${data.tool_use[0]?.name}`,
+            tool: {
+              name: data.tool_use[0]?.name,
+              input: data.tool_use[0]?.input,
+              results: toolResults
+            }
+          }
+        ]);
+      }
+      
+      // If we didn't show interactive exam, add content to messages
       const content = data?.content || data?.error?.message || 'No response from AI';
       if (content) {
         setMessages((m) => [...m, { role: 'assistant', text: content }]);
