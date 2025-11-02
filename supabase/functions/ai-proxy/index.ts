@@ -395,7 +395,7 @@ async function executeGenerateCapsExamTool(
     const seriesPattern = /\b\d+(\.\d+)?\b\s*(,|;|\n)\s*\b\d+(\.\d+)?\b/;
 
     // Table-like rows inline: "Class A - 12; Class B - 15; Class C - 18"
-    const dashPattern = /([a-z][a-z\- ]{1,20})\s*(-|–|—)\s*\d+(\.\d+)?\s*(;|,|\n)/i;
+    const dashPattern = /([a-z][a-z\- ]{1,20})\s*(-|?|?)\s*\d+(\.\d+)?\s*(;|,|\n)/i;
 
     return kvMatches >= 2 || seriesPattern.test(t) || dashPattern.test(t);
   };
@@ -454,8 +454,8 @@ async function executeGenerateCapsExamTool(
       
       // Check for action verbs (age-appropriate - foundation phase uses simpler verbs)
       const actionVerbs = isFoundationPhase
-        ? /\b(count|circle|match|choose|select|find|name|list|show|draw|color|colour|write|identify|point|tick|cross|trace|cut|paste|measure|sort|group|build|make)\b/i
-        : /\b(calculate|compute|simplify|solve|list|identify|name|describe|explain|compare|choose|select|find|determine|evaluate|analyze|analyse|write|state|give|show|classify|match|order|arrange|label|prove|derive|expand|factorise|factorize|convert|graph|plot|sketch|measure|estimate|construct)\b/i;
+        ? /\b(count|circle|match|choose|select|find|name|list|show|draw|color|colour|write|identify|point|tick|cross|trace|cut|paste|measure|sort|group|build|make|complete|fill)\b/i
+        : /\b(calculate|compute|simplify|solve|list|identify|name|describe|explain|compare|choose|select|find|determine|evaluate|analyze|analyse|write|state|give|show|classify|match|order|arrange|label|prove|derive|expand|factorise|factorize|convert|graph|plot|sketch|measure|estimate|construct|complete|continue|extend|fill)\b/i;
       
       if (!actionVerbs.test(qText)) {
         const suggestionVerbs = isFoundationPhase 
@@ -681,20 +681,20 @@ async function callClaude(
       ],
       system: `You are Dash, a smart colleague helping with EduDash Pro.
 
-🌍 MULTILINGUAL CONVERSATION RULES:
-- If user speaks Zulu → respond naturally in Zulu
-- If user speaks Afrikaans → respond naturally in Afrikaans  
-- If user speaks English → respond naturally in English
+?? MULTILINGUAL CONVERSATION RULES:
+- If user speaks Zulu ? respond naturally in Zulu
+- If user speaks Afrikaans ? respond naturally in Afrikaans  
+- If user speaks English ? respond naturally in English
 - DO NOT explain what the user said or translate
 - DO NOT teach language unless explicitly asked
 - Just have a normal conversation in their language
 
 EXAMPLES:
-❌ BAD: "'Unjani' means 'How are you' in Zulu. It's a common greeting..."
-✅ GOOD: "Ngiyaphila, ngiyabonga! Wena unjani?" (if they spoke Zulu)
+? BAD: "'Unjani' means 'How are you' in Zulu. It's a common greeting..."
+? GOOD: "Ngiyaphila, ngiyabonga! Wena unjani?" (if they spoke Zulu)
 
-❌ BAD: "You asked 'How are you' in Zulu. Let me explain the counting song 'Onjani desh'..."
-✅ GOOD: "Ngiyaphila kahle, ngiyabonga ukubuza. Ungisiza kanjani namuhla?"
+? BAD: "You asked 'How are you' in Zulu. Let me explain the counting song 'Onjani desh'..."
+? GOOD: "Ngiyaphila kahle, ngiyabonga ukubuza. Ungisiza kanjani namuhla?"
 
 RESPONSE STYLE:
 - Natural, conversational (like a smart colleague)
