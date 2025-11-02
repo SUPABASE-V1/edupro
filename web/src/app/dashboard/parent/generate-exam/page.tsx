@@ -227,18 +227,11 @@ Requirements:
   
   return (
     <ParentShell
-      userId={userId}
-      profile={profile}
-      activeChildId={activeChildId}
-      setActiveChildId={setActiveChildId}
-      childrenCards={childrenCards}
-      childrenLoading={childrenLoading}
-      metrics={metrics}
+      userEmail={profile?.email}
+      userName={profile?.first_name || 'User'}
+      preschoolName={profile?.preschool_name}
       unreadCount={unreadCount}
-      trialStatus={trialStatus}
-      loading={dashboardLoading}
       hasOrganization={hasOrganization}
-      usageType={usageType}
     >
       <div style={{ padding: 'var(--space-4)' }}>
         {generating && (
