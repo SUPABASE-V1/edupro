@@ -277,21 +277,15 @@ export default function ParentDashboard() {
           </CollapsibleSection>
         )}
 
-        {/* Exam Prep Widget */}
-        {activeChild && activeChild.progressScore > 50 && (
-          <div className="section" style={{ marginTop: 0 }}>
-            <div className="card" style={{ 
-              padding: 'var(--space-5)', 
-              background: 'linear-gradient(135deg, rgba(251, 191, 36, 0.05) 0%, rgba(245, 158, 11, 0.05) 100%)', 
-              border: '1px solid rgba(251, 191, 36, 0.2)' 
-            }}>
-              <ExamPrepWidget
-                onAskDashAI={(prompt, display) => handleAskFromActivity(prompt, display)}
-                guestMode={false}
-              />
-            </div>
-          </div>
-        )}
+        {/* CAPS Exam Preparation Widget - ALWAYS SHOW */}
+        <CollapsibleSection title="CAPS Exam Preparation" icon={GraduationCap} defaultCollapsed={false}>
+          <ExamPrepWidget
+            onAskDashAI={(prompt, display, language, enableInteractive) => 
+              handleAskFromActivity(prompt, display, language, enableInteractive)
+            }
+            guestMode={false}
+          />
+        </CollapsibleSection>
       </div>
 
       {/* AI Widget Modal */}
