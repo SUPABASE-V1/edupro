@@ -83,14 +83,9 @@ export function AskAIWidget({
     }
   }, [messages]);
 
-  // Auto-populate initial prompt (but don't send yet)
+  // Auto-populate and run initial prompt
   useEffect(() => {
     if (!initialPrompt || hasProcessedInitial) return;
-    
-    // Just populate the input, don't auto-send
-    setHasProcessedInitial(true);
-    setInput(initialPrompt);
-    return; // Skip auto-send
     
     const runInitial = async () => {
       setHasProcessedInitial(true);
@@ -112,7 +107,8 @@ export function AskAIWidget({
         const { data: sessionData } = await supabase.auth.getSession();
         const token = sessionData.session?.access_token;
         
-        const { data, error } = await supabase.functions.invoke('ai-proxy-simple', {
+        // Use ai-proxy (not ai-proxy-simple) for exam generation with tool support
+        const { data, error } = await supabase.functions.invoke('ai-proxy', {
           body: {
             scope: 'parent',
             service_type: 'homework_help',
@@ -151,7 +147,7 @@ export function AskAIWidget({
           if (error.name === 'FunctionsFetchError') {
             setMessages((m) => [...m, { 
               role: 'assistant', 
-              text: `❌ **AI Service Not Deployed**\n\nThe \`ai-proxy-simple\` Edge Function is not deployed yet.\n\n**To fix this:**\n\n1. Open a terminal in your project\n2. Run:\n   \`\`\`bash\n   cd supabase/functions\n   supabase functions deploy ai-proxy-simple\n   \`\`\`\n\n3. Or deploy via Supabase Dashboard:\n   - Go to **Functions** → **Create Function**\n   - Name: \`ai-proxy-simple\`\n   - Copy code from \`/workspace/supabase/functions/ai-proxy-simple/index.ts\`\n   - Click **Deploy**\n\nOnce deployed, refresh this page and try again!` 
+              text: `❌ **AI Service Not Deployed**\n\nThe \`ai-proxy\` Edge Function is not deployed yet.\n\n**To fix this:**\n\n1. Open a terminal in your project\n2. Run:\n   \`\`\`bash\n   cd supabase/functions\n   supabase functions deploy ai-proxy\n   \`\`\`\n\n3. Or deploy via Supabase Dashboard:\n   - Go to **Functions** → **Create Function**\n   - Name: \`ai-proxy\`\n   - Copy code from \`/supabase/functions/ai-proxy/index.ts\`\n   - Click **Deploy**\n\nOnce deployed, refresh this page and try again!` 
             }]);
             setLoading(false);
             return;
@@ -189,15 +185,25 @@ export function AskAIWidget({
         }
         
         const content = data?.content || data?.error?.message || 'No response from AI';
-        if (content) {
-          setMessages((m) => [...m, { role: 'assistant', text: content }]);
-        }
         
-        // Handle interactive exam mode
+        // Handle interactive exam mode FIRST (before adding to messages)
         if (enableInteractive && !examSetRef.current) {
           if (data?.tool_results && Array.isArray(data.tool_results)) {
             for (const toolResult of data.tool_results) {
               try {
+                // Check if content is an error message first
+                if (typeof toolResult.content === 'string') {
+                  // Try to parse as JSON, but handle errors gracefully
+                  if (toolResult.content.startsWith('Error:') || toolResult.content.startsWith('{') === false) {
+                    console.error('[DashAI] Tool execution failed:', toolResult.content);
+                    setMessages(prev => [...prev, {
+                      role: 'assistant',
+                      text: `❌ Exam generation failed: ${toolResult.content}\n\nPlease try again with different parameters.`,
+                    }]);
+                    continue;
+                  }
+                }
+                
                 const resultData = typeof toolResult.content === 'string' 
                   ? JSON.parse(toolResult.content)
                   : toolResult.content;
@@ -243,6 +249,11 @@ export function AskAIWidget({
                 }
               } catch (e) {
                 console.error('[DashAI] Failed to parse tool result:', e);
+                // Show user-friendly error message
+                setMessages(prev => [...prev, {
+                  role: 'assistant',
+                  text: `❌ Failed to process exam generation result. The AI may have returned an error:\n\n${toolResult.content}\n\nPlease try again.`,
+                }]);
               }
             }
           }
@@ -268,8 +279,14 @@ export function AskAIWidget({
               }
               
               setInteractiveExam(parsedExam);
+              return; // Don't add to messages, we're showing it interactively
             }
           }
+        }
+        
+        // If we didn't show interactive exam, add content to messages
+        if (content) {
+          setMessages((m) => [...m, { role: 'assistant', text: content }]);
         }
       } catch (err: any) {
         console.error('[DashAI] Error:', err);
@@ -308,7 +325,7 @@ export function AskAIWidget({
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData.session?.access_token;
       
-      const { data, error } = await supabase.functions.invoke('ai-proxy-simple', {
+      const { data, error } = await supabase.functions.invoke('ai-proxy', {
         body: {
           scope: 'parent',
           service_type: 'homework_help',
@@ -376,12 +393,45 @@ export function AskAIWidget({
   if (fullscreen) {
     if (interactiveExam) {
       return (
-        <div style={{ height: '100%', overflowY: 'auto' }}>
-          <ExamInteractiveView
-            exam={interactiveExam}
-            generationId={currentGenerationId}
-            onClose={() => setInteractiveExam(null)}
-          />
+        <div className="app" style={{ height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          {/* Header */}
+          <div className="topbar" style={{ flexShrink: 0 }}>
+            <div className="topbarEdge">
+              <div className="topbarRow">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: '50%',
+                    background: 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <Sparkles className="icon20" style={{ color: 'white' }} />
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: 16 }}>Dash AI</div>
+                    <div style={{ fontSize: 12, color: 'var(--muted)' }}>
+                      {interactiveExam.title || displayMessage || 'Interactive Exam'}
+                    </div>
+                  </div>
+                </div>
+                <button className="iconBtn" onClick={() => setInteractiveExam(null)} aria-label="Close">
+                  <X className="icon16" />
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          {/* Exam Content - Scrollable */}
+          <div style={{ flex: 1, overflow: 'auto' }}>
+            <ExamInteractiveView
+              exam={interactiveExam}
+              generationId={currentGenerationId}
+              onClose={() => setInteractiveExam(null)}
+            />
+          </div>
         </div>
       );
     }

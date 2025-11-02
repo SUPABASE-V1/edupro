@@ -93,32 +93,80 @@ export function useExamSession(generationId: string | null) {
         return null;
       }
       
+      // First check if user profile exists
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('id, role')
+        .eq('id', sessionData.session.user.id)
+        .single();
+      
+      if (profileError) {
+        console.error('[useExamSession] Profile check error:', profileError);
+        console.error('[useExamSession] User ID:', sessionData.session.user.id);
+        console.error('[useExamSession] ⚠️ Profile may not exist. Please ensure user has completed onboarding.');
+        return null;
+      }
+      
+      console.log('[useExamSession] User profile found:', {
+        userId: profileData.id,
+        role: profileData.role
+      });
+      
+      // Prepare the data to insert
+      const insertData = {
+        user_id: sessionData.session.user.id,
+        grade: grade || examData?.grade || 'Grade 10',
+        subject: subject || examData?.subject || 'General',
+        exam_type: 'practice_test' as const,
+        prompt: prompt || 'Generated exam',
+        generated_content: typeof examData === 'string' ? examData : JSON.stringify(examData),
+        display_title: title || 'Practice Exam',
+        status: 'completed' as const,
+        model_used: 'claude-3-5-sonnet-20240620',
+        viewed_at: new Date().toISOString(),
+        metadata: {
+          source: 'interactive_exam',
+          generated_at: new Date().toISOString()
+        }
+      };
+      
+      console.log('[useExamSession] Saving exam generation:', {
+        userId: insertData.user_id,
+        grade: insertData.grade,
+        subject: insertData.subject,
+        title: insertData.display_title
+      });
+      
       const { data, error } = await supabase
         .from('exam_generations')
-        .insert({
-          user_id: sessionData.session.user.id,
-          grade: grade || examData.grade || 'unknown',
-          subject: subject || examData.subject || 'General',
-          exam_type: 'practice_test',
-          prompt,
-          generated_content: JSON.stringify(examData),
-          display_title: title,
-          status: 'completed',
-          model_used: 'claude-3-5-sonnet-20240620',
-          viewed_at: new Date().toISOString()
-        })
+        .insert(insertData)
         .select()
         .single();
       
       if (error) {
         console.error('[useExamSession] Save generation error:', error);
+        console.error('[useExamSession] Error code:', error.code);
+        console.error('[useExamSession] Error message:', error.message);
+        console.error('[useExamSession] Error details:', error.details);
+        console.error('[useExamSession] Error hint:', error.hint);
+        console.error('[useExamSession] Full error object:', JSON.stringify(error, null, 2));
+        
+        // Provide helpful debugging info
+        if (error.code === 'PGRST116') {
+          console.error('[useExamSession] ❌ RLS Policy Violation: User does not have INSERT permission on exam_generations');
+          console.error('[useExamSession] 💡 This usually means:');
+          console.error('[useExamSession]    1. User profile does not exist in profiles table');
+          console.error('[useExamSession]    2. RLS policies are too restrictive');
+          console.error('[useExamSession]    3. User is not authenticated properly');
+        }
+        
         return null;
       }
       
-      console.log('[useExamSession] Exam generation saved:', data.id);
+      console.log('[useExamSession] ✅ Exam generation saved successfully:', data.id);
       return data.id;
     } catch (err) {
-      console.error('[useExamSession] Exception:', err);
+      console.error('[useExamSession] Exception during save:', err);
       return null;
     }
   };
