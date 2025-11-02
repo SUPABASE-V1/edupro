@@ -139,23 +139,41 @@ export function AskAIWidget({
         throw error;
       }
       
-      // Handle tool execution
-      if (data?.tool_use && data?.tool_results) {
-        setMessages((m) => [
-          ...m,
-          { 
-            role: 'tool', 
-            text: `🔧 ${data.tool_use[0]?.name}`,
-            tool: {
-              name: data.tool_use[0]?.name,
-              input: data.tool_use[0]?.input,
-              results: typeof data.tool_results[0]?.content === 'string' 
-                ? JSON.parse(data.tool_results[0]?.content || '{}')
-                : data.tool_results[0]?.content
+        // Handle tool execution
+        if (data?.tool_use && data?.tool_results) {
+          let toolResults;
+          const resultContent = data.tool_results[0]?.content;
+          
+          // Try to parse as JSON, but handle error strings gracefully
+          if (typeof resultContent === 'string') {
+            if (resultContent.startsWith('Error:') || resultContent.startsWith('{') === false) {
+              // It's an error message, not JSON
+              toolResults = { error: resultContent };
+            } else {
+              try {
+                toolResults = JSON.parse(resultContent);
+              } catch (e) {
+                console.error('[DashAI] Failed to parse tool result as JSON:', e);
+                toolResults = { error: resultContent };
+              }
             }
+          } else {
+            toolResults = resultContent;
           }
-        ]);
-      }
+          
+          setMessages((m) => [
+            ...m,
+            { 
+              role: 'tool', 
+              text: `🔧 ${data.tool_use[0]?.name}`,
+              tool: {
+                name: data.tool_use[0]?.name,
+                input: data.tool_use[0]?.input,
+                results: toolResults
+              }
+            }
+          ]);
+        }
       
       const content = data?.content || data?.error?.message || 'No response from AI';
       if (content) {
