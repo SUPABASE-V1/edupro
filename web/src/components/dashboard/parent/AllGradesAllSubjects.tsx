@@ -17,8 +17,10 @@ import {
   MapPin, 
   Clock, 
   Monitor,
-  Sparkles
+  Sparkles,
+  ChevronRight
 } from 'lucide-react';
+import { useState } from 'react';
 
 // Complete CAPS Subject Coverage
 const CAPS_SUBJECTS = {
@@ -69,6 +71,14 @@ interface AllGradesAllSubjectsProps {
 }
 
 export function AllGradesAllSubjects({ onSelectSubject }: AllGradesAllSubjectsProps) {
+  const [expandedPhases, setExpandedPhases] = useState<Record<string, boolean>>({
+    'FET Phase (Grade 10-12)': true, // Exam-critical phase expanded by default
+  });
+
+  const togglePhase = (phase: string) => {
+    setExpandedPhases(prev => ({ ...prev, [phase]: !prev[phase] }));
+  };
+
   return (
     <div className="section">
       <div className="sectionTitle">
@@ -93,65 +103,106 @@ export function AllGradesAllSubjects({ onSelectSubject }: AllGradesAllSubjectsPr
       </div>
 
       {Object.entries(CAPS_SUBJECTS).map(([phase, subjects]) => (
-        <div key={phase} style={{ marginBottom: 24 }}>
-          <div style={{
-            fontWeight: 700,
-            fontSize: 14,
-            marginBottom: 12,
-            color: 'var(--text)',
-            borderBottom: '2px solid var(--border)',
-            paddingBottom: 8
-          }}>
-            {phase}
-          </div>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
-            gap: 10
-          }}>
-            {subjects.map(subject => (
-              <button
-                key={`${phase}-${subject.name}`}
-                onClick={() => onSelectSubject(subject.name, subject.grades)}
-                className="card"
-                style={{
-                  padding: '12px 14px',
-                  cursor: 'pointer',
-                  border: '1px solid var(--border)',
-                  background: 'var(--card-bg)',
-                  textAlign: 'left',
-                  transition: 'all 0.2s',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 10
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = '#8b5cf6';
-                  e.currentTarget.style.background = 'rgba(139, 92, 246, 0.05)';
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = 'var(--border)';
-                  e.currentTarget.style.background = 'var(--card-bg)';
-                  e.currentTarget.style.transform = 'translateY(0)';
-                }}
-              >
-                {/* Render icon component */}
-                <subject.icon 
-                  size={20} 
-                  style={{ color: subject.color, flexShrink: 0 }} 
-                />
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 2, color: 'var(--text)' }}>
-                    {subject.name}
+        <div key={phase} style={{ marginBottom: 16 }}>
+          {/* Collapsible Phase Header */}
+          <button
+            onClick={() => togglePhase(phase)}
+            style={{
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '12px 16px',
+              background: 'var(--surface-1)',
+              border: '1px solid var(--border)',
+              borderRadius: 8,
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              marginBottom: expandedPhases[phase] ? 12 : 0
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(139, 92, 246, 0.05)';
+              e.currentTarget.style.borderColor = '#8b5cf6';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'var(--surface-1)';
+              e.currentTarget.style.borderColor = 'var(--border)';
+            }}
+          >
+            <div style={{
+              fontWeight: 700,
+              fontSize: 14,
+              color: 'var(--text)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8
+            }}>
+              <ChevronRight 
+                size={16} 
+                style={{ 
+                  transform: expandedPhases[phase] ? 'rotate(90deg)' : 'rotate(0deg)',
+                  transition: 'transform 0.2s',
+                  color: '#8b5cf6'
+                }} 
+              />
+              {phase}
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--muted)' }}>
+              {subjects.length} subjects
+            </div>
+          </button>
+
+          {/* Collapsible Subject Grid */}
+          {expandedPhases[phase] && (
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+              gap: 10
+            }}>
+              {subjects.map(subject => (
+                <button
+                  key={`${phase}-${subject.name}`}
+                  onClick={() => onSelectSubject(subject.name, subject.grades)}
+                  className="card"
+                  style={{
+                    padding: '12px 14px',
+                    cursor: 'pointer',
+                    border: '1px solid var(--border)',
+                    background: 'var(--card-bg)',
+                    textAlign: 'left',
+                    transition: 'all 0.2s',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = '#8b5cf6';
+                    e.currentTarget.style.background = 'rgba(139, 92, 246, 0.05)';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = 'var(--border)';
+                    e.currentTarget.style.background = 'var(--card-bg)';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                  }}
+                >
+                  {/* Render icon component */}
+                  <subject.icon 
+                    size={20} 
+                    style={{ color: subject.color, flexShrink: 0 }} 
+                  />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 2, color: 'var(--text)' }}>
+                      {subject.name}
+                    </div>
+                    <div style={{ fontSize: 11, color: 'var(--muted)' }}>
+                      Grades {subject.grades}
+                    </div>
                   </div>
-                  <div style={{ fontSize: 11, color: 'var(--muted)' }}>
-                    Grades {subject.grades}
-                  </div>
-                </div>
-              </button>
-            ))}
-          </div>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       ))}
 

@@ -75,16 +75,15 @@ export default function LessonsPage() {
               border: '1px solid rgba(16, 185, 129, 0.2)',
               textAlign: 'left'
             }}>
-              <h3 style={{ marginTop: 0, marginBottom: 16, fontSize: 18 }}>Coming Soon! ??</h3>
-              <p style={{ marginBottom: 16, color: 'var(--muted)' }}>
-                We're building an amazing lessons library that will include:
+                            <h3 style={{ marginTop: 0, marginBottom: 16, fontSize: 18 }}>Coming Soon! 📚</h3>
+              <p style={{ color: 'var(--muted)', marginBottom: 16, fontSize: 14 }}>
+                We're building an incredible lesson library for you. Here's what's coming:
               </p>
-              <ul style={{ marginBottom: 24, color: 'var(--muted)', lineHeight: 1.8 }}>
-                <li>?? CAPS-aligned curriculum for all grades</li>
-                <li>?? Video lessons with interactive elements</li>
-                <li>?? Practice exercises and quizzes</li>
-                <li>?? Progress tracking per subject</li>
-                <li>? Personalized learning paths</li>
+              <ul style={{ color: 'var(--muted)', marginLeft: 20, fontSize: 14, lineHeight: 1.8 }}>
+                <li>✅ CAPS-aligned curriculum for all grades</li>
+                <li>🎥 Video lessons with interactive elements</li>
+                <li>✍️ Practice exercises and quizzes</li>
+                <li>📊 Progress tracking per subject</li>
               </ul>
               
               <div style={{
@@ -94,7 +93,7 @@ export default function LessonsPage() {
                 border: '1px solid var(--border)'
               }}>
                 <p style={{ margin: 0, fontSize: 14, color: 'var(--muted)' }}>
-                  ?? <strong>In the meantime:</strong> Try our AI Help feature to get instant homework assistance and explanations!
+                  💡 <strong>In the meantime:</strong> Try our AI Help feature to get instant homework assistance and explanations!
                 </p>
               </div>
 

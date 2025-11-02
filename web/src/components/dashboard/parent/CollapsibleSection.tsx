@@ -20,26 +20,55 @@ export function CollapsibleSection({
   const [collapsed, setCollapsed] = useState(defaultCollapsed);
 
   return (
-    <div className="overflow-hidden rounded-2xl">
+    <div className="section overflow-hidden rounded-lg">
       <button
         onClick={() => setCollapsed(!collapsed)}
-        className="w-full flex items-center justify-between bg-gradient-to-br from-slate-800/70 to-slate-800/50 backdrop-blur-sm px-5 py-3.5 sm:py-4 rounded-t-2xl hover:from-slate-800/80 hover:to-slate-800/60 transition-all duration-200 border border-slate-700/50 shadow-lg"
+        style={{
+          width: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          background: 'linear-gradient(135deg, rgba(18, 24, 38, 0.95), rgba(22, 30, 46, 0.9))',
+          backdropFilter: 'blur(8px)',
+          padding: 'var(--space-4)',
+          borderRadius: 'var(--radius-lg)',
+          border: '1px solid var(--border)',
+          cursor: 'pointer',
+          transition: 'all 0.2s ease',
+          WebkitTapHighlightColor: 'transparent',
+          minHeight: '56px'
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.borderColor = 'var(--primary)';
+          e.currentTarget.style.background = 'linear-gradient(135deg, rgba(18, 24, 38, 1), rgba(22, 30, 46, 0.95))';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.borderColor = 'var(--border)';
+          e.currentTarget.style.background = 'linear-gradient(135deg, rgba(18, 24, 38, 0.95), rgba(22, 30, 46, 0.9))';
+        }}
       >
         <div className="flex items-center gap-3">
           {Icon && (
-            <div className="p-2 bg-blue-500/20 rounded-lg">
-              <Icon className="w-5 h-5 text-blue-400" />
+            <div style={{
+              padding: 'var(--space-2)',
+              background: 'rgba(124, 58, 237, 0.15)',
+              borderRadius: 'var(--radius-md)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <Icon className="icon20" style={{ color: 'var(--primary)' }} />
             </div>
           )}
-          <h2 className="text-base lg:text-lg font-bold tracking-tight text-white">
+          <h2 className="h2" style={{ fontSize: 15 }}>
             {title}
           </h2>
         </div>
         <motion.div
           animate={{ rotate: collapsed ? 0 : 90 }}
-          transition={{ duration: 0.2 }}
+          transition={{ duration: 0.2, ease: 'easeInOut' }}
         >
-          <ChevronRight className="w-5 h-5 text-slate-300" />
+          <ChevronRight className="icon20" style={{ color: 'var(--muted)' }} />
         </motion.div>
       </button>
       <AnimatePresence initial={false}>
@@ -48,10 +77,11 @@ export function CollapsibleSection({
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            transition={{ duration: 0.25, ease: 'easeInOut' }}
             className="overflow-hidden"
+            style={{ marginTop: 'var(--space-3)' }}
           >
-            <div className="bg-gradient-to-br from-slate-800/40 to-slate-900/40 backdrop-blur-sm px-5 sm:px-6 py-5 sm:py-6 rounded-b-2xl border-l border-r border-b border-slate-700/50 shadow-lg">
+            <div>
               {children}
             </div>
           </motion.div>

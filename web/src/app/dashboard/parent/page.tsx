@@ -154,45 +154,38 @@ export default function ParentDashboard() {
 
         {childrenCards.length > 0 && (
           <CollapsibleSection title="My Children" icon={Users} defaultCollapsed={false}>
-            <div style={{ 
-              display: 'flex', 
-              gap: 'var(--space-3)', 
-              overflowX: 'auto', 
-              paddingBottom: 'var(--space-2)' 
-            }}>
+            <div className="flex gap-3 overflow-x-auto" style={{ paddingBottom: 'var(--space-2)' }}>
               {childrenCards.map((child) => (
                 <div
                   key={child.id}
-                  className="card"
+                  className="card card-interactive"
                   style={{
-                    padding: 'var(--space-4)',
-                    cursor: 'pointer',
                     border: activeChildId === child.id ? '2px solid var(--primary)' : undefined,
                     minWidth: '280px',
                     flexShrink: 0
                   }}
                   onClick={() => setActiveChildId(child.id)}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-3)' }}>
+                  <div className="flex items-center gap-3 mb-3">
                     <div className="avatar" style={{ width: 48, height: 48, fontSize: 20 }}>
                       {child.firstName[0]}{child.lastName[0]}
                     </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 700, fontSize: 16 }}>
+                    <div className="flex-1">
+                      <div className="font-bold" style={{ fontSize: 16 }}>
                         {child.firstName} {child.lastName}
                       </div>
-                      <div style={{ fontSize: 12, color: 'var(--muted)' }}>
+                      <div className="text-xs" style={{ color: 'var(--muted)' }}>
                         {child.grade}
                       </div>
                     </div>
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-2)' }}>
-                    <div style={{ fontSize: 11, color: 'var(--muted)' }}>
-                      <div style={{ fontWeight: 600, fontSize: 16 }}>{child.homeworkPending}</div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="text-xs" style={{ color: 'var(--muted)' }}>
+                      <div className="font-semibold" style={{ fontSize: 16 }}>{child.homeworkPending}</div>
                       Homework
                     </div>
-                    <div style={{ fontSize: 11, color: 'var(--muted)' }}>
-                      <div style={{ fontWeight: 600, fontSize: 16 }}>{child.upcomingEvents}</div>
+                    <div className="text-xs" style={{ color: 'var(--muted)' }}>
+                      <div className="font-semibold" style={{ fontSize: 16 }}>{child.upcomingEvents}</div>
                       Events
                     </div>
                   </div>

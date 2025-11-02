@@ -3,12 +3,12 @@
 import { useRouter } from 'next/navigation';
 
 const PRIORITY_SUBJECTS = [
-  { name: 'Mathematics', emoji: '??', color: '#3b82f6', grade: 'all' },
-  { name: 'Physical Sciences', emoji: '??', color: '#10b981', grade: '10-12' },
-  { name: 'Life Sciences', emoji: '??', color: '#22c55e', grade: '10-12' },
-  { name: 'English', emoji: '??', color: '#8b5cf6', grade: 'all' },
-  { name: 'Afrikaans', emoji: '??', color: '#f59e0b', grade: 'all' },
-  { name: 'Natural Sciences', emoji: '??', color: '#06b6d4', grade: '7-9' },
+  { name: 'Mathematics', emoji: '🔢', color: '#3b82f6', grade: 'all' },
+  { name: 'Physical Sciences', emoji: '⚗️', color: '#10b981', grade: '10-12' },
+  { name: 'Life Sciences', emoji: '🧬', color: '#22c55e', grade: '10-12' },
+  { name: 'English', emoji: '📖', color: '#8b5cf6', grade: 'all' },
+  { name: 'Afrikaans', emoji: '🗣️', color: '#f59e0b', grade: 'all' },
+  { name: 'Natural Sciences', emoji: '🔬', color: '#06b6d4', grade: '7-9' },
 ];
 
 interface QuickSubjectPracticeProps {
@@ -28,7 +28,7 @@ export function QuickSubjectPractice({ childAge = 10, onSelectSubject }: QuickSu
   return (
     <div className="section">
       <div className="sectionTitle">
-        <span style={{ fontSize: 16 }}>?</span>
+        <span style={{ fontSize: 16 }}>🎯</span>
         Quick Practice
       </div>
       <div style={{ 

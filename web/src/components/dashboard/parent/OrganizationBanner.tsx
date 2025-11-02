@@ -49,7 +49,7 @@ export function OrganizationBanner({
       onClick={() => router.push('/dashboard/parent/preschool')}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
-        <span style={{ fontSize: 16, flexShrink: 0 }}>??</span>
+        <span style={{ fontSize: 16, flexShrink: 0 }}>🏫</span>
         <span style={{
           fontSize: 13,
           fontWeight: 600,

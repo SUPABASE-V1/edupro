@@ -38,7 +38,7 @@ export function EmergencyExamHelp({ onClick }: EmergencyExamHelpProps) {
           e.currentTarget.style.boxShadow = '0 4px 20px rgba(236, 72, 153, 0.3)';
         }}
       >
-        <span style={{ fontSize: 28 }}>??</span>
+        <span style={{ fontSize: 28 }}>⚡</span>
         <div style={{ textAlign: 'left' }}>
           <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 2 }}>
             Emergency Exam Help

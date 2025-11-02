@@ -51,9 +51,9 @@ export function TrialBanner({ trialStatus }: TrialBannerProps) {
         <Clock size={18} style={{ flexShrink: 0 }} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <span style={{ fontWeight: 600, fontSize: 14 }}>
-            {daysLeft === 0 ? '?? Trial Ends Today!' : 
+            {daysLeft === 0 ? '⏰ Trial Ends Today!' : 
              daysLeft === 1 ? '? Last Day of Trial' :
-             `? ${daysLeft} Days Left ? ${trialStatus.plan_name} Trial`}
+             `${daysLeft} Days Left ? ${trialStatus.plan_name} Trial`}
           </span>
         </div>
       </div>
