@@ -211,26 +211,32 @@ function getToolsForRole(role: string, tier: string): ClaudeTool[] {
   if (['parent', 'teacher', 'principal'].includes(role)) {
     tools.push({
       name: 'generate_caps_exam',
-      description: `Generate a structured, CAPS-aligned examination paper for INTERACTIVE use (no images/diagrams available). 
-      
-CRITICAL RULES - Questions MUST:
-1. Include ALL data inline as text (e.g., "Sequence: 2, 5, 8, 11, 14" NOT "Find the pattern in the diagram")
-2. Use clear action verbs (Calculate, List, Identify, Rewrite, Complete, etc.)
-3. Be self-contained - NO references to: diagrams, charts, graphs, images, figures, tables (unless data is provided as text)
+      description: `Generate a structured, CAPS-aligned examination paper with interactive questions.
 
-EXAMPLES OF VALID QUESTIONS:
+DIAGRAM SUPPORT:
+You can now generate visual aids using diagrams!
+For questions needing charts, flowcharts, or visual aids, include diagram data in the question.
+
+CRITICAL RULES - Questions MUST:
+1. Include ALL data inline as text OR use diagram field for visual aids
+2. Use clear action verbs (Calculate, List, Identify, Rewrite, Complete, etc.)
+3. For questions needing visuals: Add diagram data to the question object
+
+WHEN TO USE DIAGRAMS:
+? Bar/line/pie charts (data interpretation)
+? Flowcharts (algorithms, processes)
+? Geometric shapes (math, angles)
+? Number lines (operations, fractions)
+
+EXAMPLES WITH DIAGRAMS:
+Chart question: Include diagram field with {type:"chart", data:{chartType:"bar", data:[{name:"Jan",value:120}]}}
+Flowchart: Include diagram field with {type:"mermaid", data:"flowchart TD\\nA-->B"}
+
+EXAMPLES WITHOUT DIAGRAMS:
 ? "Calculate the common difference: 2, 5, 8, 11, 14"
-? "Complete the sequence: 10, 15, 20, __, __"
-? "Given the data: Jan:120, Feb:150, Mar:180, calculate the average"
 ? "Rewrite in past tense: The children are playing"
 
-EXAMPLES OF INVALID QUESTIONS (will be rejected):
-? "Refer to the diagram to find X"
-? "Use the graph below to calculate..."
-? "See the table and answer..."
-? "Based on the picture, identify..."
-
-When user requests exam, generate questions that work WITHOUT any visual aids.`,
+Use diagrams to make CAPS questions more engaging and realistic!`,
       input_schema: {
         type: 'object',
         properties: {
