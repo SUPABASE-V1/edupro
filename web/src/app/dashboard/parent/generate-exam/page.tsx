@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ParentShell } from '@/components/dashboard/parent/ParentShell';
-import { useParentDashboardData } from '@/lib/hooks/parent/useParentDashboardData';
+import { useParentDashboardData } from '@/lib/hooks/useParentDashboardData';
 import { ExamInteractiveView } from '@/components/dashboard/exam-prep/ExamInteractiveView';
 import { useExamSession } from '@/lib/hooks/useExamSession';
 import { createClient } from '@/lib/supabase/client';
