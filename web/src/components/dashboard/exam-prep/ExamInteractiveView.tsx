@@ -7,6 +7,7 @@ import { useExamSession } from '@/lib/hooks/useExamSession';
 import { createClient } from '@/lib/supabase/client';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { ExamDiagram } from './ExamDiagram';
 
 interface ExamInteractiveViewProps {
   exam: ParsedExam;
@@ -189,6 +190,9 @@ Use simple, encouraging language. Be concise but thorough.`,
             [{question.marks} {question.marks === 1 ? 'mark' : 'marks'}]
           </div>
         </div>
+
+        {/* Diagram (if present) */}
+        {question.diagram && <ExamDiagram diagram={question.diagram} />}
 
         {/* Question Input */}
         {question.type === 'multiple_choice' && question.options ? (
