@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { BookOpen, FileText, Brain, Target, Sparkles, GraduationCap, Clock, Award, Globe } from 'lucide-react';
 
 interface ExamPrepWidgetProps {
@@ -258,7 +259,7 @@ Use the generate_caps_exam tool now.`;
 
 ${isFoundationPhase ? `
 **FOUNDATION PHASE SPECIFIC REQUIREMENTS:**
-- Use EMOJIS and symbols to make it engaging (😊, 🐕, 🏠, 🎈)
+- Use EMOJIS and symbols to make it engaging (??, ??, ??, ??)
 - Provide WORD BANKS for fill-in-the-blank questions
 - Use [PICTURE: description] to indicate where images should be shown
 - Keep ALL sentences under 5 words for Grade R-1
@@ -283,7 +284,7 @@ Generate an interactive, age-appropriate practice examination paper for ${gradeI
 
 **Output Structure (INTERACTIVE FORMAT):**
 
-# 🎓 DEPARTMENT OF BASIC EDUCATION
+# ?? DEPARTMENT OF BASIC EDUCATION
 # ${gradeInfo?.label} ${selectedSubject}
 # PRACTICE EXAMINATION ${new Date().getFullYear()}
 
@@ -347,19 +348,19 @@ phase === 'senior' ? `
 6. Questions must be answerable in the allocated time
 
 **WRONG - Too vague (teacher would NEVER write this):**
-❌ "A building contractor is planning to construct a house. The contractor wants to use suitable materials."
+? "A building contractor is planning to construct a house. The contractor wants to use suitable materials."
    - No question! What should the student do?
-❌ "A teacher wants to demonstrate the process of melting to the class."
+? "A teacher wants to demonstrate the process of melting to the class."
    - No clear instruction! What is being asked?
-❌ "Find the common difference in the sequence."
+? "Find the common difference in the sequence."
    - Missing data! Which sequence?
 
 **CORRECT - Clear teacher instructions:**
-✅ "A building contractor must choose between brick, wood, and steel for house walls. **List TWO advantages** of using brick."
-✅ "Ice is heated from 0°C to 10°C. **Describe what happens** to the water particles during this process."
-✅ "**Calculate** the common difference in this sequence: 2, 5, 8, 11, 14"
-✅ "A substance has tightly packed particles in a fixed pattern. **Identify** the state of matter."
-✅ "**Choose** the correct answer: Which animal is a mammal? A) Snake  B) Eagle  C) Dolphin  D) Frog"
+? "A building contractor must choose between brick, wood, and steel for house walls. **List TWO advantages** of using brick."
+? "Ice is heated from 0?C to 10?C. **Describe what happens** to the water particles during this process."
+? "**Calculate** the common difference in this sequence: 2, 5, 8, 11, 14"
+? "A substance has tightly packed particles in a fixed pattern. **Identify** the state of matter."
+? "**Choose** the correct answer: Which animal is a mammal? A) Snake  B) Eagle  C) Dolphin  D) Frog"
 
 [Continue with ${complexity.marks / 2} questions max]
 
@@ -375,7 +376,7 @@ phase === 'senior' ? `
 
 ## SECTION A
 **Question 1:** (X marks)
-- Correct answer: [simple, clear answer] ✓
+- Correct answer: [simple, clear answer] ?
 ${isFoundationPhase ? '- Accept phonetic spelling for Foundation Phase' : '- Award marks for method and answer'}
 
 [Complete memo for all questions]
@@ -403,9 +404,9 @@ ${isFoundationPhase ? '- Accept phonetic spelling for Foundation Phase' : '- Awa
 
 ---
 
-© ${new Date().getFullYear()} EduDash Pro • Age-Appropriate CAPS-Aligned Resources`;
+? ${new Date().getFullYear()} EduDash Pro ? Age-Appropriate CAPS-Aligned Resources`;
 
-      display = `Practice Test: ${gradeInfo?.label} ${selectedSubject} • CAPS-Aligned Exam Paper with Marking Memo (${languageName})`;
+      display = `Practice Test: ${gradeInfo?.label} ${selectedSubject} ? CAPS-Aligned Exam Paper with Marking Memo (${languageName})`;
     } else if (selectedExamType === 'revision_notes') {
       prompt = `You are Dash, a South African education assistant specializing in CAPS curriculum.
 
@@ -463,9 +464,9 @@ Generate comprehensive revision notes for ${gradeInfo?.label} ${selectedSubject}
 
 ---
 
-© ${new Date().getFullYear()} EduDash Pro • CAPS-Aligned Revision Resources`;
+? ${new Date().getFullYear()} EduDash Pro ? CAPS-Aligned Revision Resources`;
 
-      display = `Revision Notes: ${gradeInfo?.label} ${selectedSubject} • CAPS Term 4 Focus Areas (${languageName})`;
+      display = `Revision Notes: ${gradeInfo?.label} ${selectedSubject} ? CAPS Term 4 Focus Areas (${languageName})`;
     } else if (selectedExamType === 'study_guide') {
       prompt = `You are Dash, a South African education assistant specializing in CAPS curriculum.
 
@@ -479,7 +480,7 @@ Generate a 7-day intensive study schedule for ${gradeInfo?.label} ${selectedSubj
 - Timeline: 7 days leading up to exam
 - Include: Daily topics, practice exercises, review sessions, rest periods
 - Realistic time allocations
-- South African school context (考虑 daily homework, other subjects)
+- South African school context (?? daily homework, other subjects)
 
 **Output Structure:**
 
@@ -493,8 +494,8 @@ Generate a 7-day intensive study schedule for ${gradeInfo?.label} ${selectedSubj
 ---
 
 ## Day 1 (Monday): [Main Topic]
-⏰ **Time:** 75 minutes  
-🎯 **Focus:** [Specific CAPS topic]
+? **Time:** 75 minutes  
+?? **Focus:** [Specific CAPS topic]
 
 **Morning Session (40 min):**
 - [ ] Review notes: [Specific subtopic 1]
@@ -521,8 +522,8 @@ Generate a 7-day intensive study schedule for ${gradeInfo?.label} ${selectedSubj
 ---
 
 ## Day 7 (Sunday): Final Review & Rest
-⏰ **Time:** 45 minutes + rest  
-🎯 **Focus:** Consolidation & confidence building
+? **Time:** 45 minutes + rest  
+?? **Focus:** Consolidation & confidence building
 
 **Morning (45 min):**
 - [ ] Quick revision: All key formulas
@@ -531,16 +532,16 @@ Generate a 7-day intensive study schedule for ${gradeInfo?.label} ${selectedSubj
 - [ ] Practice 3 easy warm-up questions
 
 **Afternoon:**
-- 🛑 NO HEAVY STUDYING
-- ✅ Light review of one-page summary
-- ✅ Pack exam materials (calculator, pens, ID)
-- ✅ Prepare healthy snacks for exam day
-- ✅ Set 2 alarms for exam morning
+- ?? NO HEAVY STUDYING
+- ? Light review of one-page summary
+- ? Pack exam materials (calculator, pens, ID)
+- ? Prepare healthy snacks for exam day
+- ? Set 2 alarms for exam morning
 
 **Evening:**
-- 🌙 Early bedtime (8-9 hours sleep)
-- 📵 No screens 1 hour before bed
-- 🧘 Relaxation or light exercise
+- ?? Early bedtime (8-9 hours sleep)
+- ?? No screens 1 hour before bed
+- ?? Relaxation or light exercise
 
 ---
 
@@ -559,11 +560,11 @@ Generate a 7-day intensive study schedule for ${gradeInfo?.label} ${selectedSubj
 - Make notes of what you don't understand
 
 **Self-Care Reminders:**
-- 🥤 Drink water regularly
-- 🍎 Eat brain-healthy foods
-- 💤 Get 8 hours sleep each night
-- 🏃 Take movement breaks
-- 🧠 Don't cram the night before
+- ?? Drink water regularly
+- ?? Eat brain-healthy foods
+- ?? Get 8 hours sleep each night
+- ?? Take movement breaks
+- ?? Don't cram the night before
 
 ---
 
@@ -589,9 +590,9 @@ Generate a 7-day intensive study schedule for ${gradeInfo?.label} ${selectedSubj
 
 ---
 
-© ${new Date().getFullYear()} EduDash Pro • CAPS-Aligned Study Resources`;
+? ${new Date().getFullYear()} EduDash Pro ? CAPS-Aligned Study Resources`;
 
-      display = `Study Guide: ${gradeInfo?.label} ${selectedSubject} • 7-Day Exam Preparation Plan (${languageName})`;
+      display = `Study Guide: ${gradeInfo?.label} ${selectedSubject} ? 7-Day Exam Preparation Plan (${languageName})`;
     } else if (selectedExamType === 'flashcards') {
       prompt = `You are Dash, a South African education assistant specializing in CAPS curriculum.
 
@@ -652,15 +653,15 @@ Generate 30 flashcards for ${gradeInfo?.label} ${selectedSubject} covering essen
 - Evening: Focus on difficult cards
 
 **Mastery Levels:**
-- ✅ Got it right immediately → Review in 3 days
-- 🤔 Got it right after thinking → Review tomorrow
-- ❌ Got it wrong → Review today + tomorrow
+- ? Got it right immediately ? Review in 3 days
+- ?? Got it right after thinking ? Review tomorrow
+- ? Got it wrong ? Review today + tomorrow
 
 ---
 
-© ${new Date().getFullYear()} EduDash Pro • CAPS-Aligned Study Resources`;
+? ${new Date().getFullYear()} EduDash Pro ? CAPS-Aligned Study Resources`;
 
-      display = `Flashcards: ${gradeInfo?.label} ${selectedSubject} • 30 Essential CAPS Concepts (${languageName})`;
+      display = `Flashcards: ${gradeInfo?.label} ${selectedSubject} ? 30 Essential CAPS Concepts (${languageName})`;
     }
     
     // Store prompt and display for preview
@@ -669,14 +670,32 @@ Generate 30 flashcards for ${gradeInfo?.label} ${selectedSubject} covering essen
   };
 
   const handleConfirmGenerate = () => {
-    if (!onAskDashAI || !customPrompt) return;
+    if (!customPrompt) return;
     
-    // For practice tests, enable interactive mode
+    // For practice tests, navigate to dedicated exam generation page
     const isInteractive = selectedExamType === 'practice_test';
-    const display = `${EXAM_TYPES.find(e => e.id === selectedExamType)?.label}: ${gradeInfo?.label} ${selectedSubject} (${LANGUAGE_OPTIONS[selectedLanguage]})`;
     
-    onAskDashAI(customPrompt, display, selectedLanguage, isInteractive);
-    setShowPromptPreview(false);
+    if (isInteractive) {
+      // Navigate to dedicated page for better UX
+      const params = new URLSearchParams({
+        grade: selectedGrade,
+        subject: selectedSubject,
+        type: selectedExamType,
+        language: selectedLanguage,
+        prompt: customPrompt
+      });
+      
+      router.push(`/dashboard/parent/generate-exam?${params.toString()}`);
+      setShowPromptPreview(false);
+      return;
+    }
+    
+    // For non-interactive (study guides, memos), use modal if available
+    if (onAskDashAI) {
+      const display = `${EXAM_TYPES.find(e => e.id === selectedExamType)?.label}: ${gradeInfo?.label} ${selectedSubject} (${LANGUAGE_OPTIONS[selectedLanguage]})`;
+      onAskDashAI(customPrompt, display, selectedLanguage, false);
+      setShowPromptPreview(false);
+    }
   };
 
   const handleCancelPreview = () => {
@@ -722,7 +741,7 @@ Generate 30 flashcards for ${gradeInfo?.label} ${selectedSubject} covering essen
                 <span style={{ fontWeight: 700, fontSize: 16 }}>Review & Customize Prompt</span>
               </div>
               <button onClick={handleCancelPreview} className="iconBtn" aria-label="Close">
-                ✕
+                ?
               </button>
             </div>
 
@@ -781,7 +800,7 @@ Generate 30 flashcards for ${gradeInfo?.label} ${selectedSubject} covering essen
                 border: '1px solid rgba(59, 130, 246, 0.3)'
               }}>
                 <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-                  <strong>💡 Customization Tips:</strong>
+                  <strong>?? Customization Tips:</strong>
                   <ul style={{ margin: '0.5rem 0', paddingLeft: '1.5rem' }}>
                     <li>Want specific topics? Add: "Focus on [topic1], [topic2]"</li>
                     <li>Adjust difficulty? Add: "Make questions [easier/harder] than usual"</li>
@@ -888,7 +907,7 @@ Generate 30 flashcards for ${gradeInfo?.label} ${selectedSubject} covering essen
           ))}
         </select>
         <p className="muted" style={{ fontSize: 11, marginTop: 'var(--space-2)' }}>
-          🇿🇦 All exam content will be generated in your selected language
+          ???? All exam content will be generated in your selected language
         </p>
       </div>
 
@@ -975,7 +994,7 @@ Generate 30 flashcards for ${gradeInfo?.label} ${selectedSubject} covering essen
       </button>
 
       <p className="muted" style={{ fontSize: 11, marginTop: 'var(--space-3)', textAlign: 'center' }}>
-        🇿🇦 CAPS-aligned content generated by Dash AI • Exams next week? We've got you covered!
+        ???? CAPS-aligned content generated by Dash AI ? Exams next week? We've got you covered!
       </p>
     </>
   );

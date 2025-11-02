@@ -121,10 +121,11 @@ export function AskAIWidget({
           enable_tools: true,
           payload: {
             prompt: text,
-            context: 'general_question',
+            context: enableInteractive ? 'caps_exam_preparation' : 'general_question',
             metadata: {
-              source: 'dashboard',
-              language: language || 'en-ZA'
+              source: enableInteractive ? 'exam_generator' : 'dashboard',
+              language: language || 'en-ZA',
+              enableInteractive: enableInteractive
             }
           },
           metadata: {
