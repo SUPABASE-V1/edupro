@@ -6,7 +6,166 @@ import { createClient } from '@/lib/supabase/client';
 import { useTenantSlug } from '@/lib/tenant/useTenantSlug';
 import { useUserProfile } from '@/lib/hooks/useUserProfile';
 import { ParentShell } from '@/components/dashboard/parent/ParentShell';
-import { MessageSquare, Send, Search, ArrowLeft } from 'lucide-react';
+import { useParentThreads } from '@/lib/hooks/parent/useParentMessaging';
+import type { MessageThread } from '@/lib/hooks/parent/useParentMessaging';
+import { MessageSquare, Send, Search, ArrowLeft, User, School, ChevronRight } from 'lucide-react';
+
+// Format timestamp for message threads
+const formatMessageTime = (timestamp: string): string => {
+  const now = new Date();
+  const messageTime = new Date(timestamp);
+  const diffInHours = Math.abs(now.getTime() - messageTime.getTime()) / (1000 * 60 * 60);
+  
+  if (diffInHours < 1) {
+    return 'Just now';
+  } else if (diffInHours < 24) {
+    return messageTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  } else if (diffInHours < 168) { // 7 days
+    return messageTime.toLocaleDateString([], { weekday: 'short' });
+  } else {
+    return messageTime.toLocaleDateString([], { month: 'short', day: 'numeric' });
+  }
+};
+
+// Thread item component
+interface ThreadItemProps {
+  thread: MessageThread;
+  onPress: () => void;
+}
+
+const ThreadItem: React.FC<ThreadItemProps> = ({ thread, onPress }) => {
+  // Get the other participant (teacher/principal)
+  const otherParticipant = thread.participants?.find(p => p.role !== 'parent');
+  const participantName = otherParticipant?.user_profile ? 
+    `${otherParticipant.user_profile.first_name} ${otherParticipant.user_profile.last_name}`.trim() :
+    'Teacher';
+    
+  const participantRole = otherParticipant?.user_profile?.role || 'teacher';
+  
+  // Student name for context
+  const studentName = thread.student ? 
+    `${thread.student.first_name} ${thread.student.last_name}`.trim() :
+    'General';
+  
+  const hasUnread = (thread.unread_count || 0) > 0;
+  
+  return (
+    <div
+      onClick={onPress}
+      className="card"
+      style={{
+        padding: '16px',
+        marginBottom: '12px',
+        display: 'flex',
+        alignItems: 'center',
+        cursor: 'pointer',
+        borderLeft: hasUnread ? '4px solid var(--primary)' : 'none',
+        transition: 'transform 0.2s, box-shadow 0.2s',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.transform = 'translateY(-2px)';
+        e.currentTarget.style.boxShadow = '0 8px 16px rgba(0,0,0,0.1)';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.transform = 'translateY(0)';
+        e.currentTarget.style.boxShadow = 'none';
+      }}
+    >
+      {/* Avatar */}
+      <div style={{
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        background: 'var(--primary-subtle)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 12,
+        flexShrink: 0
+      }}>
+        {participantRole === 'principal' ? (
+          <School size={24} color="var(--primary)" />
+        ) : (
+          <User size={24} color="var(--primary)" />
+        )}
+      </div>
+      
+      {/* Content */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+          <span style={{
+            fontSize: 16,
+            fontWeight: hasUnread ? 700 : 600,
+            color: 'var(--text-primary)'
+          }}>
+            {participantName}
+          </span>
+          {thread.last_message && (
+            <span style={{ fontSize: 12, color: 'var(--muted)', whiteSpace: 'nowrap' }}>
+              {formatMessageTime(thread.last_message.created_at)}
+            </span>
+          )}
+        </div>
+        
+        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 4 }}>
+          <span style={{ fontSize: 12, color: 'var(--primary)', textTransform: 'capitalize' }}>
+            {participantRole}
+          </span>
+          {thread.student && (
+            <span style={{ fontSize: 12, color: 'var(--muted)', marginLeft: 8 }}>
+              ? {studentName}
+            </span>
+          )}
+        </div>
+        
+        {thread.last_message ? (
+          <p style={{
+            fontSize: 14,
+            color: hasUnread ? 'var(--text-primary)' : 'var(--muted)',
+            fontWeight: hasUnread ? 500 : 400,
+            margin: 0,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap'
+          }}>
+            {thread.last_message.content}
+          </p>
+        ) : (
+          <p style={{
+            fontSize: 14,
+            color: 'var(--muted)',
+            fontStyle: 'italic',
+            margin: 0
+          }}>
+            No messages yet
+          </p>
+        )}
+      </div>
+      
+      {/* Right section */}
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', marginLeft: 12 }}>
+        <ChevronRight size={16} color="var(--muted)" />
+        {hasUnread && (
+          <div style={{
+            background: 'var(--primary)',
+            borderRadius: 10,
+            minWidth: 20,
+            height: 20,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginTop: 4,
+            padding: '0 6px'
+          }}>
+            <span style={{ color: 'white', fontSize: 12, fontWeight: 600 }}>
+              {thread.unread_count && thread.unread_count > 9 ? '9+' : thread.unread_count}
+            </span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
 
 export default function MessagesPage() {
   const router = useRouter();
@@ -16,6 +175,10 @@ export default function MessagesPage() {
   const { slug } = useTenantSlug(userId);
   const { profile, loading: profileLoading } = useUserProfile(userId);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  
+  // Fetch message threads
+  const { data: threads, isLoading: threadsLoading, error, refetch } = useParentThreads(userId);
 
   useEffect(() => {
     const initAuth = async () => {
@@ -36,13 +199,35 @@ export default function MessagesPage() {
     initAuth();
   }, [router, supabase]);
 
+  // Filter threads based on search query
+  const filteredThreads = threads?.filter(thread => {
+    if (!searchQuery) return true;
+    
+    const query = searchQuery.toLowerCase();
+    const participant = thread.participants?.find(p => p.role !== 'parent');
+    const participantName = participant?.user_profile ? 
+      `${participant.user_profile.first_name} ${participant.user_profile.last_name}`.toLowerCase() :
+      '';
+    const studentName = thread.student ? 
+      `${thread.student.first_name} ${thread.student.last_name}`.toLowerCase() :
+      '';
+    const lastMessage = thread.last_message?.content.toLowerCase() || '';
+    
+    return participantName.includes(query) || 
+           studentName.includes(query) || 
+           lastMessage.includes(query) ||
+           thread.subject.toLowerCase().includes(query);
+  });
+
   if (loading || profileLoading) {
     return (
-      <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      <div className="app" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
+        <div className="spinner"></div>
       </div>
     );
   }
+
+  const totalUnread = threads?.reduce((sum, thread) => sum + (thread.unread_count || 0), 0) || 0;
 
   return (
     <ParentShell 
@@ -50,58 +235,96 @@ export default function MessagesPage() {
       userEmail={userEmail} 
       userName={profile?.firstName}
       preschoolName={profile?.preschoolName}
-      unreadCount={0}
+      unreadCount={totalUnread}
     >
       <div className="container">
-        {/* Back Button */}
-        <button
-          onClick={() => router.push('/dashboard/parent')}
-          className="btn"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 8,
-            marginBottom: 24,
-            background: 'var(--surface-1)',
-            border: '1px solid var(--border)',
-            color: 'var(--text)',
-            padding: '8px 16px',
-            borderRadius: 8,
-            cursor: 'pointer',
-            fontSize: 14,
-            fontWeight: 500
-          }}
-        >
-          <ArrowLeft size={16} />
-          Back to Dashboard
-        </button>
-
+        {/* Header */}
         <div className="section">
           <h1 className="h1">Messages</h1>
           <p className="muted">Communicate with teachers and school staff</p>
         </div>
+
+        {/* Search Bar */}
         <div className="section">
-          <div className="card p-md">
-            <div className="relative mb-sm">
-              <input
-                type="text"
-                placeholder="Search messages..."
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg pl-4 pr-10 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <div style={{ position: 'relative' }}>
+            <input
+              type="text"
+              placeholder="Search messages..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '12px 16px 12px 44px',
+                borderRadius: 12,
+                border: '1px solid var(--border)',
+                background: 'var(--surface-1)',
+                color: 'var(--text-primary)',
+                fontSize: 15,
+                outline: 'none'
+              }}
+            />
+            <Search 
+              size={20} 
+              color="var(--muted)" 
+              style={{ 
+                position: 'absolute', 
+                left: 14, 
+                top: '50%', 
+                transform: 'translateY(-50%)' 
+              }} 
+            />
+          </div>
+        </div>
+
+        {/* Messages List */}
+        <div className="section">
+          {threadsLoading && (
+            <div style={{ textAlign: 'center', padding: '40px 0' }}>
+              <div className="spinner" style={{ margin: '0 auto' }}></div>
             </div>
-            <div className="text-center py-lg">
-              <MessageSquare className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No Messages Yet</h3>
-              <p className="text-gray-400 text-sm mb-4">
-                When teachers or school staff send you messages, they'll appear here.
-              </p>
-              <button className="btn btnPrimary inline-flex items-center gap-2">
-                <Send className="w-4 h-4" />
-                Start New Conversation
+          )}
+
+          {error && (
+            <div className="card" style={{ padding: 24, textAlign: 'center' }}>
+              <p style={{ color: 'var(--danger)', marginBottom: 12 }}>Failed to load messages</p>
+              <button className="btn btnSecondary" onClick={() => refetch()}>
+                Try Again
               </button>
             </div>
-          </div>
+          )}
+
+          {!threadsLoading && !error && filteredThreads && filteredThreads.length > 0 && (
+            <div>
+              {filteredThreads.map((thread) => (
+                <ThreadItem
+                  key={thread.id}
+                  thread={thread}
+                  onPress={() => router.push(`/dashboard/parent/messages/${thread.id}`)}
+                />
+              ))}
+            </div>
+          )}
+
+          {!threadsLoading && !error && filteredThreads && filteredThreads.length === 0 && (
+            <div className="card" style={{ padding: 48, textAlign: 'center' }}>
+              <MessageSquare size={64} color="var(--muted)" style={{ margin: '0 auto 16px' }} />
+              <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 8 }}>
+                {searchQuery ? 'No matching messages' : 'No Messages Yet'}
+              </h3>
+              <p style={{ color: 'var(--muted)', fontSize: 14, marginBottom: 24 }}>
+                {searchQuery 
+                  ? 'Try a different search term' 
+                  : 'When teachers or school staff send you messages, they'll appear here.'
+                }
+              </p>
+              {!searchQuery && (
+                <button className="btn btnPrimary" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                  <Send size={16} />
+                  Start New Conversation
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </ParentShell>
