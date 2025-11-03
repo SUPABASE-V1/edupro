@@ -187,10 +187,27 @@ export function useExamSession(generationId: string | null) {
     }
     
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
+      // Save to localStorage first as backup
+      const backup = { answers, score, examTitle, grade, subject, timestamp: Date.now() };
+      localStorage.setItem(`exam_backup_${generationId || 'temp'}`, JSON.stringify(backup));
+      
+      // Try to get session
+      let { data: sessionData } = await supabase.auth.getSession();
+      
+      // If no session, try to refresh
       if (!sessionData.session) {
-        console.error('[useExamSession] Not authenticated');
-        return false;
+        console.warn('[useExamSession] No session found, attempting refresh...');
+        const { data: refreshData } = await supabase.auth.refreshSession();
+        
+        if (!refreshData.session) {
+          console.error('[useExamSession] Not authenticated after refresh');
+          if (typeof window !== 'undefined') {
+            alert('⚠️ Session expired. Your progress is saved locally. Please log in to sync to cloud.');
+          }
+          return false;
+        }
+        
+        sessionData = refreshData;
       }
       
       const percentage = (score.earned / score.total) * 100;
@@ -210,10 +227,17 @@ export function useExamSession(generationId: string | null) {
       
       if (error) {
         console.error('[useExamSession] Save progress error:', error);
+        if (typeof window !== 'undefined') {
+          alert('❌ Could not sync progress to cloud. Your answers are saved locally.');
+        }
         return false;
       }
       
       console.log(`[useExamSession] Progress saved: ${percentage.toFixed(1)}%`);
+      
+      // Clear localStorage backup on successful save
+      localStorage.removeItem(`exam_backup_${generationId || 'temp'}`);
+      
       return true;
     } catch (err) {
       console.error('[useExamSession] Exception:', err);
