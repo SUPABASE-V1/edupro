@@ -151,7 +151,7 @@ export async function logUsage(
       input_tokens: params.tokensIn,
       output_tokens: params.tokensOut,
       total_cost: params.cost,
-      processing_time_ms: params.processingTimeMs,
+      response_time_ms: params.processingTimeMs, // Fixed: use response_time_ms to match schema
       input_text: params.inputText,
       output_text: params.outputText,
       error_message: params.errorMessage,
