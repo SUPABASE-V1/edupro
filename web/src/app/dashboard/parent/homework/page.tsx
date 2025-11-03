@@ -4,9 +4,12 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useParentDashboardData } from '@/lib/hooks/useParentDashboardData';
-import { useChildHomework, useHomeworkStats } from '@/lib/hooks/parent/useHomework';
 import { ParentShell } from '@/components/dashboard/parent/ParentShell';
 import { FileText, Sparkles, CheckCircle2, Clock, AlertCircle, Calendar, BookOpen } from 'lucide-react';
+
+// Disable static generation for this page
+export const dynamic = 'force-dynamic';
+export const dynamicParams = true;
 
 // Format due date
 const formatDueDate = (dueDateStr: string): { text: string; isOverdue: boolean; isDueSoon: boolean } => {
@@ -36,6 +39,10 @@ export default function HomeworkPage() {
   const supabase = createClient();
   const [userId, setUserId] = useState<string>();
   const [loading, setLoading] = useState(true);
+  const [homework, setHomework] = useState<any[]>([]);
+  const [stats, setStats] = useState<any>(null);
+  const [homeworkLoading, setHomeworkLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   
   // Get parent dashboard data
   const {
@@ -48,10 +55,6 @@ export default function HomeworkPage() {
     setActiveChildId,
   } = useParentDashboardData();
   
-  // Get homework data for active child
-  const { data: homework, isLoading: homeworkLoading, error } = useChildHomework(activeChildId || undefined, userId);
-  const { data: stats } = useHomeworkStats(activeChildId || undefined, userId);
-  
   useEffect(() => {
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -60,6 +63,37 @@ export default function HomeworkPage() {
       setLoading(false);
     })();
   }, [router, supabase.auth]);
+
+  // Fetch homework data when activeChildId changes
+  useEffect(() => {
+    if (!activeChildId || !userId) return;
+    
+    const fetchHomework = async () => {
+      setHomeworkLoading(true);
+      try {
+        // Fetch homework assignments
+        const { data, error: hwError } = await supabase
+          .from('homework')
+          .select('*, submissions(*)')
+          .eq('child_id', activeChildId)
+          .order('due_date', { ascending: true });
+        
+        if (hwError) throw hwError;
+        setHomework(data || []);
+        
+        // Calculate stats
+        const pending = data?.filter(hw => !hw.submissions || hw.submissions.length === 0).length || 0;
+        const completed = data?.filter(hw => hw.submissions && hw.submissions.length > 0).length || 0;
+        setStats({ pending, completed, total: data?.length || 0 });
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
+        setHomeworkLoading(false);
+      }
+    };
+    
+    fetchHomework();
+  }, [activeChildId, userId, supabase]);
 
   if (loading) {
     return (

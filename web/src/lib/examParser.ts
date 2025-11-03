@@ -281,6 +281,29 @@ export function gradeAnswer(
   const studentNormalized = studentAnswer.trim().toLowerCase().replace(/\s+/g, ' ');
   const correctNormalized = question.correctAnswer.toString().trim().toLowerCase().replace(/\s+/g, ' ');
   
+  // Math operation synonyms for better matching
+  const mathSynonyms: Record<string, string[]> = {
+    'add': ['plus', 'sum', 'addition', 'added', 'total', '+'],
+    'subtract': ['minus', 'difference', 'take away', 'less', 'subtracted', '-'],
+    'multiply': ['times', 'product', 'multiplied by', 'x', '*', '×'],
+    'divide': ['divided by', 'quotient', 'split', '÷', '/'],
+    'equal': ['equals', 'is', '=', 'same as'],
+    'hundred': ['hundreds', '100'],
+    'thousand': ['thousands', '1000'],
+    'million': ['millions', '1000000'],
+  };
+  
+  // Replace synonyms in both answers for better matching
+  let studentProcessed = studentNormalized;
+  let correctProcessed = correctNormalized;
+  
+  for (const [key, synonyms] of Object.entries(mathSynonyms)) {
+    for (const synonym of synonyms) {
+      studentProcessed = studentProcessed.replace(new RegExp(`\\b${synonym}\\b`, 'g'), key);
+      correctProcessed = correctProcessed.replace(new RegExp(`\\b${synonym}\\b`, 'g'), key);
+    }
+  }
+  
   // Multiple choice with correct answer
   if (question.type === 'multiple_choice') {
     // Handle different formats: "A", "a", "A.", "a)", "Option A", etc.
@@ -322,6 +345,20 @@ export function gradeAnswer(
         };
       }
       
+      // Check if close (for encouraging feedback)
+      const closeCount = studentNums.filter((num, idx) => {
+        const tolerance = Math.abs(correctNums[idx] * 0.1); // 10% tolerance for "close"
+        return Math.abs(num - correctNums[idx]) <= tolerance;
+      }).length;
+      
+      if (closeCount >= studentNums.length * 0.7) {
+        return {
+          isCorrect: false,
+          feedback: `🔶 Close! You got ${closeCount}/${studentNums.length} numbers right. Expected: "${question.correctAnswer}"`,
+          marks: 0,
+        };
+      }
+      
       return {
         isCorrect: false,
         feedback: `✗ Incorrect. Expected: "${question.correctAnswer}"`,
@@ -329,27 +366,48 @@ export function gradeAnswer(
       };
     }
     
-    // For single number
-    if (studentNums.length === 1 && correctNums.length === 1) {
-      const tolerance = Math.abs(correctNums[0] * 0.001) || 0.01;
-      const isCorrect = Math.abs(studentNums[0] - correctNums[0]) <= tolerance;
+    // For single number - extract just the number from both answers
+    if (studentNums.length >= 1 && correctNums.length >= 1) {
+      // Use first number found in each answer
+      const studentNum = studentNums[0];
+      const correctNum = correctNums[0];
+      
+      const tolerance = Math.abs(correctNum * 0.001) || 0.01;
+      const isCorrect = Math.abs(studentNum - correctNum) <= tolerance;
+      
+      // Check if close but not exact
+      const isClose = !isCorrect && Math.abs(studentNum - correctNum) <= Math.abs(correctNum * 0.05); // 5% tolerance
+      
+      if (isCorrect) {
+        return {
+          isCorrect: true,
+          feedback: '✓ Correct!',
+          marks: question.marks,
+        };
+      }
+      
+      if (isClose) {
+        return {
+          isCorrect: false,
+          feedback: `🔶 Very close! Your answer: ${studentNum}, Expected: ${correctNum}`,
+          marks: 0,
+        };
+      }
       
       return {
-        isCorrect,
-        feedback: isCorrect 
-          ? '✓ Correct!' 
-          : `✗ Incorrect. Expected: "${question.correctAnswer}"`,
-        marks: isCorrect ? question.marks : 0,
+        isCorrect: false,
+        feedback: `✗ Incorrect. Expected: "${question.correctAnswer}"`,
+        marks: 0,
       };
     }
   }
   
   // Text-based comparison (for words like "hundreds", "tens", etc.)
   // Remove all punctuation and extra spaces for comparison
-  const studentClean = studentNormalized.replace(/[.,;:!?]/g, '').trim();
-  const correctClean = correctNormalized.replace(/[.,;:!?]/g, '').trim();
+  const studentClean = studentProcessed.replace(/[.,;:!?]/g, '').trim();
+  const correctClean = correctProcessed.replace(/[.,;:!?]/g, '').trim();
   
-  // Exact match (after normalization)
+  // Exact match (after normalization and synonym replacement)
   if (studentClean === correctClean) {
     return {
       isCorrect: true,
@@ -373,6 +431,8 @@ export function gradeAnswer(
     'six': 6, 'seven': 7, 'eight': 8, 'nine': 9, 'ten': 10,
     'eleven': 11, 'twelve': 12, 'thirteen': 13, 'fourteen': 14, 'fifteen': 15,
     'sixteen': 16, 'seventeen': 17, 'eighteen': 18, 'nineteen': 19, 'twenty': 20,
+    'thirty': 30, 'forty': 40, 'fifty': 50, 'sixty': 60, 'seventy': 70, 
+    'eighty': 80, 'ninety': 90, 'hundred': 100, 'thousand': 1000,
   };
   
   const studentWords = studentClean.split(/\s+/);
@@ -395,6 +455,17 @@ export function gradeAnswer(
     }
   }
   
+  // Calculate similarity for "close" feedback
+  const similarity = calculateSimilarity(studentClean, correctClean);
+  
+  if (similarity > 0.7) {
+    return {
+      isCorrect: false,
+      feedback: `🔶 Close! Check your spelling and wording. Expected: "${question.correctAnswer}"`,
+      marks: 0,
+    };
+  }
+  
   // Not a match
   const result = {
     isCorrect: false,
@@ -404,5 +475,42 @@ export function gradeAnswer(
   
   console.log('[gradeAnswer] Result:', result);
   return result;
+}
+
+/**
+ * Calculate similarity between two strings (simple Levenshtein-based)
+ */
+function calculateSimilarity(s1: string, s2: string): number {
+  const longer = s1.length > s2.length ? s1 : s2;
+  const shorter = s1.length > s2.length ? s2 : s1;
+  
+  if (longer.length === 0) return 1.0;
+  
+  const editDistance = levenshteinDistance(longer, shorter);
+  return (longer.length - editDistance) / longer.length;
+}
+
+/**
+ * Levenshtein distance for spell-check tolerance
+ */
+function levenshteinDistance(s1: string, s2: string): number {
+  const costs: number[] = [];
+  for (let i = 0; i <= s1.length; i++) {
+    let lastValue = i;
+    for (let j = 0; j <= s2.length; j++) {
+      if (i === 0) {
+        costs[j] = j;
+      } else if (j > 0) {
+        let newValue = costs[j - 1];
+        if (s1.charAt(i - 1) !== s2.charAt(j - 1)) {
+          newValue = Math.min(Math.min(newValue, lastValue), costs[j]) + 1;
+        }
+        costs[j - 1] = lastValue;
+        lastValue = newValue;
+      }
+    }
+    if (i > 0) costs[s2.length] = lastValue;
+  }
+  return costs[s2.length];
 }
 

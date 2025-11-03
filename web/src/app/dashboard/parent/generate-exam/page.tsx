@@ -115,6 +115,8 @@ Requirements:
         throw new Error(invokeError.message || 'Failed to invoke AI service');
       }
       
+      console.log('[GenerateExam] AI Response:', JSON.stringify(data, null, 2));
+      
       setProgress('Processing exam data...');
       
       // Parse exam from tool results
@@ -202,6 +204,11 @@ Requirements:
       
     } catch (err: any) {
       console.error('[GenerateExam] Error:', err);
+      console.error('[GenerateExam] Full error details:', {
+        message: err.message,
+        stack: err.stack,
+        data: err.data
+      });
       setError(err.message || 'Failed to generate exam. Please try again.');
       setGenerating(false);
       setProgress('');

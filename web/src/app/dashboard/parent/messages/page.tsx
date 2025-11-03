@@ -6,9 +6,12 @@ import { createClient } from '@/lib/supabase/client';
 import { useTenantSlug } from '@/lib/tenant/useTenantSlug';
 import { useUserProfile } from '@/lib/hooks/useUserProfile';
 import { ParentShell } from '@/components/dashboard/parent/ParentShell';
-import { useParentThreads } from '@/lib/hooks/parent/useParentMessaging';
 import type { MessageThread } from '@/lib/hooks/parent/useParentMessaging';
 import { MessageSquare, Send, Search, ArrowLeft, User, School, ChevronRight } from 'lucide-react';
+
+// Disable static generation for this page
+export const dynamic = 'force-dynamic';
+export const dynamicParams = true;
 
 // Format timestamp for message threads
 const formatMessageTime = (timestamp: string): string => {
@@ -176,9 +179,31 @@ export default function MessagesPage() {
   const { profile, loading: profileLoading } = useUserProfile(userId);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  
-  // Fetch message threads
-  const { data: threads, isLoading: threadsLoading, error, refetch } = useParentThreads(userId);
+  const [threads, setThreads] = useState<MessageThread[]>([]);
+  const [threadsLoading, setThreadsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch threads function
+  const fetchThreads = async () => {
+    if (!userId) return;
+    
+    setThreadsLoading(true);
+    try {
+      const { data, error: threadsError } = await supabase
+        .from('message_threads')
+        .select('*, participants(*), student:students(*), last_message:messages(*)')
+        .eq('created_by', userId)
+        .order('last_message_at', { ascending: false });
+      
+      if (threadsError) throw threadsError;
+      setThreads((data as any[]) || []);
+      setError(null);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setThreadsLoading(false);
+    }
+  };
 
   useEffect(() => {
     const initAuth = async () => {
@@ -198,6 +223,11 @@ export default function MessagesPage() {
 
     initAuth();
   }, [router, supabase]);
+
+  // Fetch message threads when userId is available
+  useEffect(() => {
+    fetchThreads();
+  }, [userId]);
 
   // Filter threads based on search query
   const filteredThreads = threads?.filter(thread => {
@@ -287,7 +317,7 @@ export default function MessagesPage() {
           {error && (
             <div className="card" style={{ padding: 24, textAlign: 'center' }}>
               <p style={{ color: 'var(--danger)', marginBottom: 12 }}>Failed to load messages</p>
-              <button className="btn btnSecondary" onClick={() => refetch()}>
+              <button className="btn btnSecondary" onClick={() => window.location.reload()}>
                 Try Again
               </button>
             </div>

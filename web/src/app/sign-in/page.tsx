@@ -87,9 +87,21 @@ function SignInFormWithParams() {
           overflow-x: hidden;
           max-width: 100vw;
         }
+        @media (min-width: 640px) {
+          .sign-in-container {
+            padding: 20px !important;
+            align-items: center !important;
+          }
+          .sign-in-card {
+            max-width: 500px !important;
+            border: 1px solid #1f1f23 !important;
+            border-radius: 12px !important;
+            padding: 40px !important;
+          }
+        }
       `}</style>
-      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#0a0a0f", fontFamily: "system-ui, sans-serif", overflowX: "hidden", padding: "20px" }}>
-        <div style={{ width: "100%", maxWidth: "500px", background: "#111113", padding: "40px", border: "1px solid #1f1f23", boxSizing: "border-box", borderRadius: "12px" }}>
+      <div className="sign-in-container" style={{ minHeight: "100vh", display: "flex", alignItems: "stretch", justifyContent: "center", background: "#0a0a0f", fontFamily: "system-ui, sans-serif", overflowX: "hidden", padding: "0" }}>
+        <div className="sign-in-card" style={{ width: "100%", background: "#111113", padding: "24px", border: "none", boxSizing: "border-box", borderRadius: "0" }}>
         {/* Header with icon */}
         <div style={{ textAlign: "center", marginBottom: 32 }}>
           <div style={{ width: 64, height: 64, background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", fontSize: 32 }}>

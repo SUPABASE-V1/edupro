@@ -141,6 +141,7 @@ export async function logUsage(
 ): Promise<void> {
   try {
     const { error } = await supabaseAdmin.from('ai_usage_logs').insert({
+      ai_service_id: null, // Not using ai_services table currently
       user_id: params.userId,
       preschool_id: params.organizationId,
       organization_id: params.organizationId,

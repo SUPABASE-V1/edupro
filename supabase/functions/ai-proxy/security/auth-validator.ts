@@ -38,10 +38,10 @@ export async function validateAuth(
 
     // Get profile data with organization info
     const { data: profile, error: profileError } = await supabaseAdmin
-      .from('users')
-      .select('organization_id, preschool_id, subscription_tier, role')
-      .eq('auth_user_id', user.id)
-      .single()
+      .from('profiles')
+      .select('organization_id, preschool_id, role')
+      .eq('id', user.id)
+      .maybeSingle()
 
     // Profile is optional for some use cases
     return {

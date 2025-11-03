@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { CheckCircle2, XCircle, FileCheck, AlertCircle, Bot, Sparkles } from 'lucide-react';
 import { ParsedExam, ExamQuestion, gradeAnswer } from '@/lib/examParser';
 import { useExamSession } from '@/lib/hooks/useExamSession';
@@ -33,8 +33,17 @@ export function ExamInteractiveView({ exam, generationId, onClose }: ExamInterac
   const [explanations, setExplanations] = useState<Record<string, string>>({});
   const [loadingExplanations, setLoadingExplanations] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   
   const { saveProgress } = useExamSession(generationId || null);
+
+  // Detect mobile on mount and resize
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 640);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const handleAnswerChange = (questionId: string, answer: string) => {
     setStudentAnswers((prev) => ({
@@ -164,11 +173,12 @@ Use simple, encouraging language. Be concise but thorough.`,
         style={{
           padding: 'var(--space-4)',
           background: 'var(--card)',
-          borderRadius: 'var(--radius-2)',
+          borderRadius: isMobile ? '0' : 'var(--radius-2)',
           border: submitted
             ? `2px solid ${questionFeedback?.isCorrect ? 'var(--success)' : 'var(--danger)'}`
             : '1px solid var(--border)',
-          marginBottom: 'var(--space-4)',
+          marginBottom: isMobile ? '0' : 'var(--space-4)',
+          borderBottom: isMobile ? '1px solid var(--border)' : undefined,
         }}
       >
         {/* Question Header */}
@@ -335,13 +345,19 @@ Use simple, encouraging language. Be concise but thorough.`,
   const totalQuestions = exam.sections.reduce((sum, s) => sum + s.questions.length, 0);
 
   return (
-    <div style={{ maxWidth: 900, margin: '0 auto', padding: 'var(--space-4)' }}>
+    <div style={{ 
+      maxWidth: isMobile ? '100%' : 900, 
+      margin: '0 auto', 
+      padding: isMobile ? '0' : 'var(--space-4)',
+      paddingBottom: isMobile && !submitted ? '80px' : undefined, // Space for fixed button on mobile
+    }}>
       {/* Header */}
       <div style={{
         padding: 'var(--space-4)',
         background: 'var(--card)',
-        borderRadius: 'var(--radius-2)',
-        marginBottom: 'var(--space-4)',
+        borderRadius: isMobile ? '0' : 'var(--radius-2)',
+        marginBottom: isMobile ? '0' : 'var(--space-4)',
+        borderBottom: isMobile ? '1px solid var(--border)' : undefined,
       }}>
         <h1 style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 'var(--space-2)' }}>
           {exam.title}
@@ -412,15 +428,15 @@ Use simple, encouraging language. Be concise but thorough.`,
 
       {/* Sections */}
       {exam.sections && Array.isArray(exam.sections) && exam.sections.map((section, sectionIdx) => (
-        <div key={sectionIdx} style={{ marginBottom: 'var(--space-4)' }}>
+        <div key={sectionIdx} style={{ marginBottom: isMobile ? '0' : 'var(--space-4)' }}>
           <h2 style={{
             fontSize: 20,
             fontWeight: 'bold',
-            marginBottom: 'var(--space-3)',
+            marginBottom: isMobile ? '0' : 'var(--space-3)',
             padding: 'var(--space-3)',
             background: 'var(--primary)',
             color: '#fff',
-            borderRadius: 'var(--radius-2)',
+            borderRadius: isMobile ? '0' : 'var(--radius-2)',
           }}>
             {section.title}
           </h2>
@@ -430,7 +446,19 @@ Use simple, encouraging language. Be concise but thorough.`,
 
       {/* Submit Button */}
       {!submitted && (
-        <div style={{ position: 'sticky', bottom: 0, padding: 'var(--space-4)', background: 'var(--bg)', borderTop: '1px solid var(--border)', zIndex: 10 }}>
+        <div style={{ 
+          position: isMobile ? 'fixed' : 'sticky', 
+          bottom: 0, 
+          left: isMobile ? 0 : 'auto',
+          right: isMobile ? 0 : 'auto',
+          maxWidth: isMobile ? '100%' : 900,
+          margin: isMobile ? '0' : '0 auto',
+          padding: 'var(--space-4)', 
+          background: 'var(--bg)', 
+          borderTop: '1px solid var(--border)', 
+          zIndex: 50,
+          boxShadow: '0 -2px 10px rgba(0, 0, 0, 0.1)',
+        }}>
           <button
             className="btn btnPrimary"
             onClick={handleSubmit}
