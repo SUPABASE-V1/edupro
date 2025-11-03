@@ -114,6 +114,12 @@ export function AskAIWidget({
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData.session?.access_token;
       
+      // Build conversation history from existing messages
+      const conversationHistory = messages.map(msg => ({
+        role: msg.role === 'tool' ? 'assistant' : msg.role,
+        content: msg.text
+      }));
+      
       const { data, error } = await supabase.functions.invoke('ai-proxy', {
         body: {
           scope: 'parent',
@@ -122,6 +128,7 @@ export function AskAIWidget({
           payload: {
             prompt: text,
             context: enableInteractive ? 'caps_exam_preparation' : 'general_question',
+            conversationHistory: conversationHistory.length > 0 ? conversationHistory : undefined,
             metadata: {
               source: enableInteractive ? 'exam_generator' : 'dashboard',
               language: language || 'en-ZA',

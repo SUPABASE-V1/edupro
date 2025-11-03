@@ -222,25 +222,38 @@ export function ExamPrepWidget({ onAskDashAI, guestMode = false }: ExamPrepWidge
     const isFoundationPhase = phase === 'foundation';
 
     if (selectedExamType === 'practice_test') {
-      // NEW: Use tool-based generation for structured output
-      prompt = `Generate a CAPS-aligned practice examination for ${gradeInfo?.label} ${selectedSubject} in ${languageName}.
+      // Conversational approach - let Dash decide when to use the tool
+      prompt = `You are Dash, a South African CAPS curriculum expert helping a ${gradeInfo?.label} student prepare for a ${selectedSubject} exam in ${languageName}.
 
-IMPORTANT: You MUST use the 'generate_caps_exam' tool to create this exam. Do NOT write markdown.
-
-Key requirements:
-- Student age: ${gradeInfo?.age} years old
+**Student Context:**
+- Grade: ${gradeInfo?.label} (Ages ${gradeInfo?.age})
+- Subject: ${selectedSubject}
+- Language: ${languageName} (${selectedLanguage})
 - Duration: ${complexity.duration}
 - Total marks: ${complexity.marks}
-- Language: ${languageName} (${selectedLanguage})
-- Question types: ${complexity.questionTypes}
 
-Every question MUST:
-1. Start with a clear action verb (${isFoundationPhase ? 'Circle, Count, Match, Choose' : phase === 'intermediate' ? 'List, Calculate, Identify, Describe' : phase === 'senior' ? 'Analyze, Evaluate, Explain, Compare' : 'Critically analyze, Evaluate, Justify, Synthesize'})
-2. Include ALL data needed to answer (sequences, options, scenarios)
-3. Be answerable without images/diagrams (use text descriptions)
-4. Be age-appropriate for ${gradeInfo?.age}-year-olds
+**Your Task:**
+Have a natural conversation to understand what the student needs, THEN generate a CAPS-aligned practice test using the 'generate_caps_exam' tool.
 
-Use the generate_caps_exam tool now.`;
+**Conversation Flow:**
+1. First, greet warmly and ask what specific topics they'd like to focus on
+2. If they're unsure, suggest 2-3 main topics from the CAPS curriculum
+3. Ask about difficulty preference (easier warm-up, standard, or challenging)
+4. ONLY AFTER understanding their needs, use the generate_caps_exam tool
+
+**Important Guidelines:**
+- Be conversational and helpful, not robotic
+- Understand context from their short answers ("Yes", "Algebra", "harder", etc.)
+- Once you have enough info, use the generate_caps_exam tool
+- The exam MUST be in ${languageName} - every question, instruction, and memo
+
+**CAPS Curriculum Focus:**
+${complexity.questionTypes}
+
+**Age-Appropriate Instructions:**
+${complexity.instructions}
+
+Let's start: Say hello and ask what specific topics they'd like to practice for their ${selectedSubject} exam.`;
       
       // OLD PROMPT (keep as fallback if tool fails):
       const fallbackPrompt = `You are Dash, a South African education assistant specializing in CAPS (Curriculum and Assessment Policy Statement) curriculum.

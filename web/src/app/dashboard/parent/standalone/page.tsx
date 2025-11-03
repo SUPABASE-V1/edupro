@@ -48,6 +48,7 @@ export default function StandaloneParentDashboard() {
   const [aiDisplay, setAIDisplay] = useState('');
   const [aiLanguage, setAiLanguage] = useState<string>('en-ZA');
   const [aiInteractive, setAiInteractive] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   // Stats for standalone parents
   const [stats, setStats] = useState({
@@ -56,6 +57,14 @@ export default function StandaloneParentDashboard() {
     examPrepsGenerated: 0,
     studyStreak: 0,
   });
+
+  // Detect mobile on mount and resize
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 640);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   useEffect(() => {
     const initAuth = async () => {
@@ -359,37 +368,66 @@ export default function StandaloneParentDashboard() {
           </div>
         )}
 
-        {/* Main Features Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 24, marginBottom: 32 }}>
-          {/* Quick Actions */}
-          <div style={{ background: '#1e293b', padding: 24, borderRadius: 16, border: '1px solid #334155' }}>
+        {/* Add Child Button */}
+        {children.length === 0 && (
+          <div style={{ marginBottom: 32 }}>
+            <Link
+              href="/dashboard/parent/register-child"
+              style={{
+                display: 'block',
+                padding: 24,
+                background: 'linear-gradient(135deg, #06b6d4, #0891b2)',
+                border: 0,
+                borderRadius: 16,
+                color: 'white',
+                fontSize: 16,
+                fontWeight: 600,
+                textDecoration: 'none',
+                textAlign: 'center',
+              }}
+            >
+              + Add Your First Child
+            </Link>
+          </div>
+        )}
+
+        {/* Quick Actions Grid (Mobile) */}
+        {isMobile && (
+          <div style={{ marginBottom: 32 }}>
             <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
               <Sparkles size={20} style={{ color: '#3b82f6' }} />
               Quick Actions
             </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ 
+              display: 'grid', 
+              gridTemplateColumns: 'repeat(2, 1fr)', 
+              gap: 12,
+            }}>
               <button
                 onClick={() => setShowAskAI(true)}
                 style={{
-                  padding: 16,
+                  padding: 20,
                   background: 'linear-gradient(135deg, #3b82f6, #2563eb)',
                   border: 0,
-                  borderRadius: 10,
+                  borderRadius: 12,
                   color: 'white',
-                  fontSize: 15,
+                  fontSize: 14,
                   fontWeight: 600,
                   cursor: 'pointer',
                   display: 'flex',
+                  flexDirection: 'column',
                   alignItems: 'center',
-                  gap: 12,
-                  textAlign: 'left',
+                  justifyContent: 'center',
+                  gap: 8,
+                  textAlign: 'center',
+                  minHeight: 120,
                 }}
               >
-                <Brain size={20} />
+                <Brain size={28} />
                 <div>
-                  <div>AI Homework Helper</div>
-                  <div style={{ fontSize: 12, opacity: 0.9, fontWeight: 400 }}>
-                    {stats.homeworkHelpsUsed}/{stats.homeworkHelpsLimit} used this month
+                  <div style={{ marginBottom: 4 }}>AI Homework</div>
+                  <div style={{ fontSize: 11, opacity: 0.9, fontWeight: 400 }}>
+                    {stats.homeworkHelpsUsed}/{stats.homeworkHelpsLimit}
                   </div>
                 </div>
               </button>
@@ -397,53 +435,124 @@ export default function StandaloneParentDashboard() {
               <Link
                 href="/exam-prep"
                 style={{
-                  padding: 16,
-                  background: '#334155',
-                  border: '1px solid #475569',
-                  borderRadius: 10,
-                  color: '#e2e8f0',
-                  fontSize: 15,
+                  padding: 20,
+                  background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                  border: 0,
+                  borderRadius: 12,
+                  color: 'white',
+                  fontSize: 14,
                   fontWeight: 600,
                   textDecoration: 'none',
                   display: 'flex',
+                  flexDirection: 'column',
                   alignItems: 'center',
-                  gap: 12,
+                  justifyContent: 'center',
+                  gap: 8,
+                  textAlign: 'center',
+                  minHeight: 120,
                 }}
               >
-                <GraduationCap size={20} />
-                <div>Generate Exam Prep</div>
+                <GraduationCap size={28} />
+                <div>Exam Prep</div>
               </Link>
 
               <button
                 onClick={() => alert('Coming soon: Track your child\'s progress over time')}
                 style={{
-                  padding: 16,
-                  background: '#334155',
-                  border: '1px solid #475569',
-                  borderRadius: 10,
+                  padding: 20,
+                  background: '#1e293b',
+                  border: '1px solid #334155',
+                  borderRadius: 12,
                   color: '#e2e8f0',
-                  fontSize: 15,
+                  fontSize: 14,
                   fontWeight: 600,
                   cursor: 'pointer',
                   display: 'flex',
+                  flexDirection: 'column',
                   alignItems: 'center',
-                  gap: 12,
-                  textAlign: 'left',
+                  justifyContent: 'center',
+                  gap: 8,
+                  textAlign: 'center',
+                  minHeight: 120,
                 }}
               >
-                <TrendingUp size={20} />
-                <div>View Progress</div>
+                <TrendingUp size={28} />
+                <div>Progress</div>
               </button>
 
               {subscriptionTier !== 'parent-plus' && (
                 <Link
                   href="/pricing"
                   style={{
+                    padding: 20,
+                    background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
+                    border: 0,
+                    borderRadius: 12,
+                    color: 'white',
+                    fontSize: 14,
+                    fontWeight: 600,
+                    textDecoration: 'none',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8,
+                    textAlign: 'center',
+                    minHeight: 120,
+                  }}
+                >
+                  <Crown size={28} />
+                  <div>Upgrade</div>
+                </Link>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Main Features Grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(320px, 1fr))', gap: 24, marginBottom: 32 }}>
+          {/* Quick Actions (Desktop Only) */}
+          {!isMobile && (
+            <div style={{ background: '#1e293b', padding: 24, borderRadius: 16, border: '1px solid #334155' }}>
+              <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Sparkles size={20} style={{ color: '#3b82f6' }} />
+                Quick Actions
+              </h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <button
+                  onClick={() => setShowAskAI(true)}
+                  style={{
                     padding: 16,
-                    background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                    background: 'linear-gradient(135deg, #3b82f6, #2563eb)',
                     border: 0,
                     borderRadius: 10,
                     color: 'white',
+                    fontSize: 15,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 12,
+                    textAlign: 'left',
+                  }}
+                >
+                  <Brain size={20} />
+                  <div>
+                    <div>AI Homework Helper</div>
+                    <div style={{ fontSize: 12, opacity: 0.9, fontWeight: 400 }}>
+                      {stats.homeworkHelpsUsed}/{stats.homeworkHelpsLimit} used this month
+                    </div>
+                  </div>
+                </button>
+
+                <Link
+                  href="/exam-prep"
+                  style={{
+                    padding: 16,
+                    background: '#334155',
+                    border: '1px solid #475569',
+                    borderRadius: 10,
+                    color: '#e2e8f0',
                     fontSize: 15,
                     fontWeight: 600,
                     textDecoration: 'none',
@@ -452,12 +561,55 @@ export default function StandaloneParentDashboard() {
                     gap: 12,
                   }}
                 >
-                  <Crown size={20} />
-                  <div>Upgrade to Plus</div>
+                  <GraduationCap size={20} />
+                  <div>Generate Exam Prep</div>
                 </Link>
-              )}
+
+                <button
+                  onClick={() => alert('Coming soon: Track your child\'s progress over time')}
+                  style={{
+                    padding: 16,
+                    background: '#334155',
+                    border: '1px solid #475569',
+                    borderRadius: 10,
+                    color: '#e2e8f0',
+                    fontSize: 15,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 12,
+                    textAlign: 'left',
+                  }}
+                >
+                  <TrendingUp size={20} />
+                  <div>View Progress</div>
+                </button>
+
+                {subscriptionTier !== 'parent-plus' && (
+                  <Link
+                    href="/pricing"
+                    style={{
+                      padding: 16,
+                      background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                      border: 0,
+                      borderRadius: 10,
+                      color: 'white',
+                      fontSize: 15,
+                      fontWeight: 600,
+                      textDecoration: 'none',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 12,
+                    }}
+                  >
+                    <Crown size={20} />
+                    <div>Upgrade to Plus</div>
+                  </Link>
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Learning Tips */}
           <div style={{ background: '#1e293b', padding: 24, borderRadius: 16, border: '1px solid #334155' }}>
