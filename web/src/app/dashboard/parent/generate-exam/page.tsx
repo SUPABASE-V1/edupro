@@ -228,8 +228,8 @@ Requirements:
   return (
     <ParentShell
       userEmail={profile?.email}
-      userName={profile?.first_name || 'User'}
-      preschoolName={profile?.preschool_name}
+      userName={profile?.firstName || 'User'}
+      preschoolName={profile?.preschoolName}
       unreadCount={unreadCount}
       hasOrganization={hasOrganization}
     >
